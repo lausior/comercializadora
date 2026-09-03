@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Panel de gestión</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+    <header class="topbar">
+
+        <div class="topbar-left">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span>Comparador</span>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+
+            <!-- Bloqueo de pantalla -->
+            <button class="topbar-button" title="Bloquear pantalla">
+                <span>🔒</span>
+                <span>Bloquear</span>
+            </button>
+
+            <!-- Cerrar sesión -->
+            <button class="logout-button">
+                <span>↪</span>
+                <span>Cerrar sesión</span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         CONTENEDOR PRINCIPAL
+    ========================== -->
+    <div class="app-container">
+
+
+        <!-- =========================
+             SIDEBAR
+        ========================== -->
+        <aside class="sidebar">
+
+            <nav class="sidebar-nav">
+
+                <a href="index.html" class="menu-item">
+                    <span class="menu-icon">🏠</span>
+                    <span>Inicio</span>
+                </a>
+
+                <a href="planificador.html" class="menu-item">
+                    <span class="menu-icon">📅</span>
+                    <span>Planificador</span>
+                </a>
+
+                <a href="partes.html" class="menu-item">
+                    <span class="menu-icon">📄</span>
+                    <span>Partes</span>
+                </a>
+
+                <a href="incidencias.html" class="menu-item">
+                    <span class="menu-icon">⚠️</span>
+                    <span>Incidencias</span>
+                </a>
+
+                <a href="clientes.html" class="menu-item">
+                    <span class="menu-icon">👥</span>
+                    <span>Clientes</span>
+                </a>
+
+                <div class="menu-separator"></div>
+
+                <a href="seguridad.html" class="menu-item">
+                    <span class="menu-icon">🔐</span>
+                    <span>Seguridad</span>
+                </a>
+
+                <a href="usuarios.html" class="menu-item">
+                    <span class="menu-icon">👤</span>
+                    <span>Usuarios</span>
+                </a>
+
+                <a href="logs.html" class="menu-item">
+                    <span class="menu-icon">📋</span>
+                    <span>Logs</span>
+                </a>
+
+                <a href="configuracion.html" class="menu-item active">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Configuración</span>
+                </a>
+
+                <a href="ayuda.html" class="menu-item">
+                    <span class="menu-icon">❓</span>
+                    <span>Ayuda</span>
+                </a>
+
+            </nav>
+
+        </aside>
+
+
+
+        <!-- =========================
+             CONTENIDO
+        ========================== -->
+
+        <main class="main-content">
+
+            <!-- CABECERA -->
+            <div class="page-header">
+
+                <div>
+                    <h1>Planificador</h1>
+                    <p>Organiza y gestiona las tareas del sistema</p>
+                </div>
+
+                <div class="page-header-actions">
+
+                    <div class="page-date">
+                        3 septiembre 2026
+                    </div>
+
+                    <button class="config-save-button">
+                        + Nueva planificación
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- RESUMEN -->
+            <section class="dashboard-cards">
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon blue">
+                        ▣
+                    </div>
+
+                    <div class="card-info">
+                        <span class="card-label">Tareas pendientes</span>
+                        <strong>12</strong>
+                        <small>Por realizar</small>
+                    </div>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon orange">
+                        ◷
+                    </div>
+
+                    <div class="card-info">
+                        <span class="card-label">En curso</span>
+                        <strong>5</strong>
+                        <small>Actualmente</small>
+                    </div>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon green">
+                        ✓
+                    </div>
+
+                    <div class="card-info">
+                        <span class="card-label">Completadas</span>
+                        <strong>28</strong>
+                        <small>Este mes</small>
+                    </div>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon purple">
+                        !
+                    </div>
+
+                    <div class="card-info">
+                        <span class="card-label">Vencidas</span>
+                        <strong>2</strong>
+                        <small>Requieren atención</small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- CONTROLES -->
+            <section class="planner-toolbar">
+
+                <div class="planner-filters">
+
+                    <select class="planner-select">
+                        <option>Todos los estados</option>
+                        <option>Pendiente</option>
+                        <option>En curso</option>
+                        <option>Completada</option>
+                        <option>Vencida</option>
+                    </select>
+
+
+                    <select class="planner-select">
+                        <option>Todos los responsables</option>
+                        <option>Administrador</option>
+                        <option>Juan García</option>
+                        <option>María López</option>
+                    </select>
+
+                </div>
+
+
+                <div class="planner-view-buttons">
+
+                    <button class="planner-view-button">
+                        Día
+                    </button>
+
+                    <button class="planner-view-button active">
+                        Semana
+                    </button>
+
+                    <button class="planner-view-button">
+                        Mes
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- PLANIFICADOR -->
+            <section class="planner-grid">
+
+
+                <!-- CALENDARIO -->
+                <div class="panel planner-calendar">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <h2>Planificación semanal</h2>
+                            <p>31 agosto — 6 septiembre 2026</p>
+                        </div>
+
+                        <div class="calendar-navigation">
+
+                            <button class="calendar-button">
+                                ‹
+                            </button>
+
+                            <button class="calendar-today">
+                                Hoy
+                            </button>
+
+                            <button class="calendar-button">
+                                ›
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="calendar-week">
+
+                        <!-- LUNES -->
+                        <div class="calendar-day">
+
+                            <div class="calendar-day-header">
+                                <span>LUN</span>
+                                <strong>31</strong>
+                            </div>
+
+                            <div class="calendar-task blue-task">
+                                <strong>Revisar tarifas</strong>
+                                <small>09:00 · Tarifas</small>
+                            </div>
+
+                            <div class="calendar-task green-task">
+                                <strong>Cliente nuevo</strong>
+                                <small>12:00 · Clientes</small>
+                            </div>
+
+                        </div>
+
+
+                        <!-- MARTES -->
+                        <div class="calendar-day">
+
+                            <div class="calendar-day-header">
+                                <span>MAR</span>
+                                <strong>1</strong>
+                            </div>
+
+                            <div class="calendar-task orange-task">
+                                <strong>Revisar incidencia</strong>
+                                <small>10:30 · Incidencias</small>
+                            </div>
+
+                        </div>
+
+
+                        <!-- MIÉRCOLES -->
+                        <div class="calendar-day today">
+
+                            <div class="calendar-day-header">
+                                <span>MIÉ</span>
+                                <strong>2</strong>
+                            </div>
+
+                            <div class="calendar-task blue-task">
+                                <strong>Actualizar tarifas</strong>
+                                <small>09:30 · Tarifas</small>
+                            </div>
+
+                            <div class="calendar-task purple-task">
+                                <strong>Comparación pendiente</strong>
+                                <small>16:00 · Comparador</small>
+                            </div>
+
+                        </div>
+
+
+                        <!-- JUEVES -->
+                        <div class="calendar-day selected-day">
+
+                            <div class="calendar-day-header">
+                                <span>JUE</span>
+                                <strong>3</strong>
+                            </div>
+
+                            <div class="calendar-task orange-task">
+                                <strong>Revisión de datos</strong>
+                                <small>09:00 · Clientes</small>
+                            </div>
+
+                            <div class="calendar-task green-task">
+                                <strong>Validar planificación</strong>
+                                <small>14:30 · Sistema</small>
+                            </div>
+
+                        </div>
+
+
+                        <!-- VIERNES -->
+                        <div class="calendar-day">
+
+                            <div class="calendar-day-header">
+                                <span>VIE</span>
+                                <strong>4</strong>
+                            </div>
+
+                            <div class="calendar-task blue-task">
+                                <strong>Revisión semanal</strong>
+                                <small>11:00 · Sistema</small>
+                            </div>
+
+                        </div>
+
+
+                        <!-- SÁBADO -->
+                        <div class="calendar-day weekend">
+
+                            <div class="calendar-day-header">
+                                <span>SÁB</span>
+                                <strong>5</strong>
+                            </div>
+
+                        </div>
+
+
+                        <!-- DOMINGO -->
+                        <div class="calendar-day weekend">
+
+                            <div class="calendar-day-header">
+                                <span>DOM</span>
+                                <strong>6</strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PRÓXIMAS TAREAS -->
+                <div class="panel upcoming-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <h2>Próximas tareas</h2>
+                            <p>Tareas programadas</p>
+                        </div>
+
+                        <button class="panel-action">
+                            Ver todas
+                        </button>
+
+                    </div>
+
+
+                    <div class="upcoming-list">
+
+
+                        <div class="upcoming-item">
+
+                            <div class="upcoming-date">
+                                <strong>03</strong>
+                                <span>SEP</span>
+                            </div>
+
+                            <div class="upcoming-content">
+                                <strong>Revisión de datos</strong>
+                                <span>Cliente · 09:00</span>
+                            </div>
+
+                            <span class="status-badge status-pending">
+                                Pendiente
+                            </span>
+
+                        </div>
+
+
+                        <div class="upcoming-item">
+
+                            <div class="upcoming-date">
+                                <strong>03</strong>
+                                <span>SEP</span>
+                            </div>
+
+                            <div class="upcoming-content">
+                                <strong>Validar planificación</strong>
+                                <span>Sistema · 14:30</span>
+                            </div>
+
+                            <span class="status-badge status-progress">
+                                En curso
+                            </span>
+
+                        </div>
+
+
+                        <div class="upcoming-item">
+
+                            <div class="upcoming-date">
+                                <strong>04</strong>
+                                <span>SEP</span>
+                            </div>
+
+                            <div class="upcoming-content">
+                                <strong>Revisión semanal</strong>
+                                <span>Sistema · 11:00</span>
+                            </div>
+
+                            <span class="status-badge status-pending">
+                                Pendiente
+                            </span>
+
+                        </div>
+
+
+                        <div class="upcoming-item">
+
+                            <div class="upcoming-date">
+                                <strong>07</strong>
+                                <span>SEP</span>
+                            </div>
+
+                            <div class="upcoming-content">
+                                <strong>Actualizar tarifas</strong>
+                                <span>Tarifas · 09:00</span>
+                            </div>
+
+                            <span class="status-badge status-pending">
+                                Pendiente
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- TAREAS RECIENTES -->
+            <section class="panel planner-tasks-panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Tareas recientes</h2>
+                        <p>Últimas tareas gestionadas</p>
+                    </div>
+
+                    <button class="panel-action">
+                        Ver historial
+                    </button>
+
+                </div>
+
+
+                <div class="planner-table">
+
+                    <div class="planner-table-header">
+                        <span>Tarea</span>
+                        <span>Área</span>
+                        <span>Responsable</span>
+                        <span>Fecha</span>
+                        <span>Estado</span>
+                    </div>
+
+
+                    <div class="planner-table-row">
+
+                        <span>
+                            Actualizar tarifa Endesa
+                        </span>
+
+                        <span>
+                            Tarifas
+                        </span>
+
+                        <span>
+                            Juan García
+                        </span>
+
+                        <span>
+                            02/09/2026
+                        </span>
+
+                        <span class="status-badge status-complete">
+                            Completada
+                        </span>
+
+                    </div>
+
+
+                    <div class="planner-table-row">
+
+                        <span>
+                            Revisar datos de cliente
+                        </span>
+
+                        <span>
+                            Clientes
+                        </span>
+
+                        <span>
+                            María López
+                        </span>
+
+                        <span>
+                            02/09/2026
+                        </span>
+
+                        <span class="status-badge status-progress">
+                            En curso
+                        </span>
+
+                    </div>
+
+
+                    <div class="planner-table-row">
+
+                        <span>
+                            Revisar incidencia #1042
+                        </span>
+
+                        <span>
+                            Incidencias
+                        </span>
+
+                        <span>
+                            Administrador
+                        </span>
+
+                        <span>
+                            01/09/2026
+                        </span>
+
+                        <span class="status-badge status-pending">
+                            Pendiente
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+
+    </div>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+    <footer class="footer">
+
+        <span>© 2026 Comparador</span>
+
+        <span>
+            Versión 1.0.0
+        </span>
+
+    </footer>
+
+</body>
+
+</html>
