@@ -8,7 +8,7 @@
 
     <title>Usuarios - Comparador Eléctrico</title>
 
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260904">
 
 </head>
 
