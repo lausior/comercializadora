@@ -2,114 +2,30 @@
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Configuración - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
 
-    <!-- =========================
-         BARRA SUPERIOR
-    ========================== -->
 
-    <!-- =========================
-         HEADER
-    ========================== -->
-    <header class="topbar">
-
-        <div class="topbar-left">
-            <div class="logo">
-                <span class="logo-icon">⚡</span>
-                <span>Comparador</span>
-            </div>
-        </div>
-
-        <div class="topbar-right">
-
-            <!-- Bloqueo de pantalla -->
-            <button class="topbar-button" title="Bloquear pantalla">
-                <span>🔒</span>
-                <span>Bloquear</span>
-            </button>
-
-            <!-- Cerrar sesión -->
-            <button class="logout-button">
-                <span>↪</span>
-                <span>Cerrar sesión</span>
-            </button>
-
-        </div>
-
-    </header>
+<?php include 'templates/header.php'; ?>
 
 
-    <!-- =========================
-         MENÚ LATERAL
-    ========================== -->
+<!-- =========================
+     CONTENEDOR PRINCIPAL
+========================== -->
 
-    <aside class="sidebar">
+<div class="app-container">
 
-        <nav class="sidebar-nav">
 
-            <a href="index.html" class="menu-item">
-                <span class="menu-icon">🏠</span>
-                <span>Inicio</span>
-            </a>
-
-            <a href="planificador.html" class="menu-item">
-                <span class="menu-icon">📅</span>
-                <span>Planificador</span>
-            </a>
-
-            <a href="partes.html" class="menu-item">
-                <span class="menu-icon">📄</span>
-                <span>Partes</span>
-            </a>
-
-            <a href="incidencias.html" class="menu-item">
-                <span class="menu-icon">⚠️</span>
-                <span>Incidencias</span>
-            </a>
-
-            <a href="clientes.html" class="menu-item">
-                <span class="menu-icon">👥</span>
-                <span>Clientes</span>
-            </a>
-
-            <div class="menu-separator"></div>
-
-            <a href="seguridad.html" class="menu-item">
-                <span class="menu-icon">🔐</span>
-                <span>Seguridad</span>
-            </a>
-
-            <a href="usuarios.html" class="menu-item">
-                <span class="menu-icon">👤</span>
-                <span>Usuarios</span>
-            </a>
-
-            <a href="logs.html" class="menu-item">
-                <span class="menu-icon">📋</span>
-                <span>Logs</span>
-            </a>
-
-            <a href="configuracion.html" class="menu-item active">
-                <span class="menu-icon">⚙️</span>
-                <span>Configuración</span>
-            </a>
-
-            <a href="ayuda.html" class="menu-item">
-                <span class="menu-icon">❓</span>
-                <span>Ayuda</span>
-            </a>
-
-        </nav>
-
-    </aside>
+    <?php include 'templates/sidebar.php'; ?>
 
 
     <!-- =========================
@@ -117,6 +33,7 @@
     ========================== -->
 
     <main class="main-content">
+
 
         <div class="page-header">
 
@@ -159,9 +76,11 @@
                         Nombre de la aplicación
                     </label>
 
-                    <input type="text"
-                           id="app-name"
-                           value="Comparador Eléctrico">
+                    <input
+                        type="text"
+                        id="app-name"
+                        value="Comparador Eléctrico"
+                    >
 
                 </div>
 
@@ -172,9 +91,11 @@
                         Empresa
                     </label>
 
-                    <input type="text"
-                           id="company-name"
-                           placeholder="Nombre de la empresa">
+                    <input
+                        type="text"
+                        id="company-name"
+                        placeholder="Nombre de la empresa"
+                    >
 
                 </div>
 
@@ -231,11 +152,13 @@
                         IVA (%)
                     </label>
 
-                    <input type="number"
-                           id="iva"
-                           value="21"
-                           min="0"
-                           step="0.01">
+                    <input
+                        type="number"
+                        id="iva"
+                        value="21"
+                        min="0"
+                        step="0.01"
+                    >
 
                 </div>
 
@@ -246,11 +169,13 @@
                         Impuesto eléctrico (%)
                     </label>
 
-                    <input type="number"
-                           id="tax"
-                           value="5.11269632"
-                           min="0"
-                           step="0.0001">
+                    <input
+                        type="number"
+                        id="tax"
+                        value="5.11269632"
+                        min="0"
+                        step="0.0001"
+                    >
 
                 </div>
 
@@ -276,7 +201,10 @@
 
                     <label>
 
-                        <input type="checkbox" checked>
+                        <input
+                            type="checkbox"
+                            checked
+                        >
 
                         Mostrar precios con impuestos
 
@@ -360,7 +288,10 @@
 
                     <label>
 
-                        <input type="checkbox" checked>
+                        <input
+                            type="checkbox"
+                            checked
+                        >
 
                         Activar tarifas
 
@@ -396,16 +327,22 @@
 
                 <div class="system-item">
 
-                    <span>Versión</span>
+                    <span>
+                        Versión
+                    </span>
 
-                    <strong>1.0.0</strong>
+                    <strong>
+                        1.0.0
+                    </strong>
 
                 </div>
 
 
                 <div class="system-item">
 
-                    <span>Estado</span>
+                    <span>
+                        Estado
+                    </span>
 
                     <span class="system-status">
                         ● Sistema operativo
@@ -416,13 +353,16 @@
 
                 <div class="system-item">
 
-                    <span>Última copia de seguridad</span>
+                    <span>
+                        Última copia de seguridad
+                    </span>
 
                     <strong>
                         No realizada
                     </strong>
 
                 </div>
+
 
                 <button class="config-secondary-button">
                     💾 Crear copia de seguridad
@@ -432,29 +372,15 @@
 
         </section>
 
+
     </main>
 
+</div>
 
-    <!-- =========================
-         FOOTER
-    ========================== -->
 
-    <footer class="footer">
+<?php include 'templates/footer.php'; ?>
 
-        <div class="footer-left">
-            <span>
-                © 2026 Comparador Eléctrico
-            </span>
-        </div>
-
-        <div class="footer-right">
-            <span>
-                Versión 1.0.0
-            </span>
-        </div>
-
-    </footer>
 
 </body>
-</html>
 
+</html>

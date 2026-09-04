@@ -1,101 +1,31 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Logs - Comparador Eléctrico</title>
+
     <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
 
-    <!-- =========================
-         BARRA SUPERIOR
-    ========================== -->
 
-    <header class="topbar">
-
-        <div class="logo">
-            ⚡ Comparador
-        </div>
-
-        <div class="topbar-actions">
-            <button class="lock-button" title="Bloquear pantalla">
-                🔒
-            </button>
-
-            <button class="logout-button">
-                Cerrar sesión
-            </button>
-        </div>
-
-    </header>
+<?php include 'templates/header.php'; ?>
 
 
-    <!-- =========================
-         MENÚ LATERAL
-    ========================== -->
+<!-- =========================
+     CONTENEDOR PRINCIPAL
+========================== -->
 
-    <aside class="sidebar">
+<div class="app-container">
 
-        <nav class="sidebar-nav">
 
-            <a href="index.html" class="menu-item">
-                <span class="menu-icon">🏠</span>
-                <span>Inicio</span>
-            </a>
-
-            <a href="planificador.html" class="menu-item">
-                <span class="menu-icon">📅</span>
-                <span>Planificador</span>
-            </a>
-
-            <a href="partes.html" class="menu-item">
-                <span class="menu-icon">📄</span>
-                <span>Partes</span>
-            </a>
-
-            <a href="incidencias.html" class="menu-item">
-                <span class="menu-icon">⚠️</span>
-                <span>Incidencias</span>
-            </a>
-
-            <a href="clientes.html" class="menu-item">
-                <span class="menu-icon">👥</span>
-                <span>Clientes</span>
-            </a>
-
-            <div class="menu-separator"></div>
-
-            <a href="seguridad.html" class="menu-item">
-                <span class="menu-icon">🔐</span>
-                <span>Seguridad</span>
-            </a>
-
-            <a href="usuarios.html" class="menu-item">
-                <span class="menu-icon">👤</span>
-                <span>Usuarios</span>
-            </a>
-
-            <a href="logs.html" class="menu-item">
-                <span class="menu-icon">📋</span>
-                <span>Logs</span>
-            </a>
-
-            <a href="configuracion.html" class="menu-item active">
-                <span class="menu-icon">⚙️</span>
-                <span>Configuración</span>
-            </a>
-
-            <a href="ayuda.html" class="menu-item">
-                <span class="menu-icon">❓</span>
-                <span>Ayuda</span>
-            </a>
-
-        </nav>
-
-    </aside>
+    <?php include 'templates/sidebar.php'; ?>
 
 
     <!-- =========================
@@ -104,14 +34,22 @@
 
     <main class="main-content">
 
+
         <div class="logs-header">
 
             <div>
+
                 <h1>Logs</h1>
-                <p>Registro de actividad del sistema</p>
+
+                <p>
+                    Registro de actividad del sistema
+                </p>
+
             </div>
 
+
             <div class="logs-actions">
+
                 <button class="logs-btn">
                     🔄 Actualizar
                 </button>
@@ -119,6 +57,7 @@
                 <button class="logs-btn primary">
                     ⬇ Exportar
                 </button>
+
             </div>
 
         </div>
@@ -130,42 +69,77 @@
 
         <div class="logs-filters">
 
+
             <div class="filter-group">
-                <label for="tipo">Tipo de evento</label>
+
+                <label for="tipo">
+                    Tipo de evento
+                </label>
 
                 <select id="tipo">
+
                     <option>Todos</option>
                     <option>Información</option>
                     <option>Éxito</option>
                     <option>Advertencia</option>
                     <option>Error</option>
+
                 </select>
+
             </div>
 
 
             <div class="filter-group">
-                <label for="usuario">Usuario</label>
+
+                <label for="usuario">
+                    Usuario
+                </label>
 
                 <select id="usuario">
-                    <option>Todos los usuarios</option>
-                    <option>admin</option>
-                    <option>juan</option>
-                    <option>maria</option>
-                    <option>soporte</option>
+
+                    <option>
+                        Todos los usuarios
+                    </option>
+
+                    <option>
+                        admin
+                    </option>
+
+                    <option>
+                        juan
+                    </option>
+
+                    <option>
+                        maria
+                    </option>
+
+                    <option>
+                        soporte
+                    </option>
+
                 </select>
+
             </div>
 
 
             <div class="filter-group">
-                <label for="fecha">Fecha</label>
 
-                <input type="date" id="fecha">
+                <label for="fecha">
+                    Fecha
+                </label>
+
+                <input
+                    type="date"
+                    id="fecha"
+                >
+
             </div>
 
 
             <button class="logs-btn primary">
                 🔎 Filtrar
             </button>
+
 
         </div>
 
@@ -176,32 +150,88 @@
 
         <div class="logs-table-container">
 
+
             <table class="logs-table">
 
-                <thead>
 
-                    <tr>
-                        <th>Fecha y hora</th>
-                        <th>Tipo</th>
-                        <th>Usuario</th>
-                        <th>Evento</th>
-                        <th>Descripción</th>
-                        <th>IP</th>
-                    </tr>
+               <thead>
 
-                </thead>
+    <tr>
+
+        <th>
+            <span class="sortable-header">
+                Fecha y hora
+                <button class="sort-button" type="button" title="Ordenar por fecha">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+        <th>
+            <span class="sortable-header">
+                Tipo
+                <button class="sort-button" type="button" title="Ordenar por tipo">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+        <th>
+            <span class="sortable-header">
+                Usuario
+                <button class="sort-button" type="button" title="Ordenar por usuario">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+        <th>
+            <span class="sortable-header">
+                Evento
+                <button class="sort-button" type="button" title="Ordenar por evento">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+        <th>
+            <span class="sortable-header">
+                Descripción
+                <button class="sort-button" type="button" title="Ordenar por descripción">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+        <th>
+            <span class="sortable-header">
+                IP
+                <button class="sort-button" type="button" title="Ordenar por IP">
+                    ↕
+                </button>
+            </span>
+        </th>
+
+    </tr>
+
+</thead>
+
 
                 <tbody>
 
+
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 10:42:15
                         </td>
 
                         <td>
+
                             <span class="log-badge log-success">
                                 Éxito
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -219,18 +249,22 @@
                         <td>
                             192.168.1.10
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 10:35:48
                         </td>
 
                         <td>
+
                             <span class="log-badge log-info">
                                 Información
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -248,18 +282,22 @@
                         <td>
                             192.168.1.24
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 10:21:03
                         </td>
 
                         <td>
+
                             <span class="log-badge log-warning">
                                 Advertencia
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -277,18 +315,22 @@
                         <td>
                             192.168.1.15
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 09:58:27
                         </td>
 
                         <td>
+
                             <span class="log-badge log-error">
                                 Error
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -306,18 +348,22 @@
                         <td>
                             192.168.1.15
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 09:45:12
                         </td>
 
                         <td>
+
                             <span class="log-badge log-success">
                                 Éxito
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -335,18 +381,22 @@
                         <td>
                             192.168.1.30
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 09:32:41
                         </td>
 
                         <td>
+
                             <span class="log-badge log-info">
                                 Información
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -364,18 +414,22 @@
                         <td>
                             192.168.1.10
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 09:15:22
                         </td>
 
                         <td>
+
                             <span class="log-badge log-success">
                                 Éxito
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -393,18 +447,22 @@
                         <td>
                             192.168.1.24
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             03/09/2026 08:57:09
                         </td>
 
                         <td>
+
                             <span class="log-badge log-warning">
                                 Advertencia
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -422,18 +480,22 @@
                         <td>
                             192.168.1.50
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             02/09/2026 18:43:55
                         </td>
 
                         <td>
+
                             <span class="log-badge log-success">
                                 Éxito
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -451,18 +513,22 @@
                         <td>
                             192.168.1.15
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             02/09/2026 17:25:31
                         </td>
 
                         <td>
+
                             <span class="log-badge log-info">
                                 Información
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -480,18 +546,22 @@
                         <td>
                             192.168.1.10
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             02/09/2026 16:48:17
                         </td>
 
                         <td>
+
                             <span class="log-badge log-error">
                                 Error
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -509,18 +579,22 @@
                         <td>
                             192.168.1.30
                         </td>
+
                     </tr>
 
 
                     <tr>
+
                         <td class="log-date">
                             02/09/2026 15:12:44
                         </td>
 
                         <td>
+
                             <span class="log-badge log-success">
                                 Éxito
                             </span>
+
                         </td>
 
                         <td class="log-user">
@@ -538,11 +612,14 @@
                         <td>
                             192.168.1.10
                         </td>
+
                     </tr>
+
 
                 </tbody>
 
             </table>
+
 
         </div>
 
@@ -553,11 +630,14 @@
 
         <div class="logs-footer">
 
+
             <span>
                 Mostrando 12 registros
             </span>
 
+
             <div class="pagination">
+
 
                 <button class="active">
                     1
@@ -575,33 +655,24 @@
                     →
                 </button>
 
+
             </div>
 
+
         </div>
+
 
     </main>
 
 
-    <!-- =========================
-         FOOTER
-    ========================== -->
+</div>
 
-    <footer class="footer">
 
-        <div class="footer-left">
-            <span>
-                © 2026 Comparador Eléctrico
-            </span>
-        </div>
+<?php include 'templates/footer.php'; ?>
 
-        <div class="footer-right">
-            <span>
-                Versión 1.0.0
-            </span>
-        </div>
-
-    </footer>
+<script src="js/logs.js"></script>
 
 </body>
+
 </html>
-```
+
