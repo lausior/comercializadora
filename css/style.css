@@ -2121,3 +2121,56 @@ select:focus-visible {
         justify-content: center;
     }
 }
+
+
+/* =========================================
+   ORDENACIÓN TABLA CLIENTES
+========================================= */
+
+.sortable-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.sort-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.sort-button:hover {
+    border-color: var(--line-strong);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.sort-button:focus-visible {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+    outline: none;
+}
+
+.sort-button.sort-disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+.sort-button.sort-disabled:hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+}
