@@ -1,3 +1,11 @@
+<?php
+
+session_start();
+
+$errorLogin = $_SESSION['login_error'] ?? '';
+unset($_SESSION['login_error']);
+
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -31,15 +39,24 @@
             </div>
 
 
-            <form action="index.php" method="POST" class="login-form" novalidate>
+            <?php if ($errorLogin !== ''): ?>
+
+                <div class="form-error-general" style="display: block;">
+                    <?= htmlspecialchars($errorLogin) ?>
+                </div>
+
+            <?php endif; ?>
+
+
+            <form action="procesar_login.php" method="POST" class="login-form" novalidate>
 
                 <div class="form-group">
 
                     <label for="usuario">
-                        Usuario o correo electrónico
+                        Usuario
                     </label>
 
-                    <input type="text" id="usuario" name="usuario" placeholder="Introduce tu usuario"
+                    <input type="text" id="usuario" name="usuario" placeholder="Código empresa-ID-usuario"
                         autocomplete="username" required>
 
                 </div>
