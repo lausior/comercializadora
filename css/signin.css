@@ -1,0 +1,504 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+
+/* =========================================================
+   1. RESET
+========================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* =========================================================
+   2. ESTILOS GENERALES
+========================================================= */
+
+html,
+body {
+    min-width: 320px;
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        radial-gradient(
+            circle at 100% 0,
+            #eaf2ff 0,
+            transparent 28rem
+        ),
+        #f4f7fb;
+
+    color: #172033;
+
+    font-family:
+        'DM Sans',
+        'Segoe UI',
+        sans-serif;
+
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   3. CONTENEDOR
+========================================================= */
+
+.signin-page {
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+}
+
+
+/* =========================================================
+   4. TARJETA
+========================================================= */
+
+.signin-card {
+    width: 100%;
+    max-width: 480px;
+
+    padding: 36px;
+
+    background: #ffffff;
+
+    border: 1px solid #e3e8f0;
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 50px rgba(28, 43, 73, .10);
+}
+
+
+/* =========================================================
+   5. CABECERA
+========================================================= */
+
+.signin-header {
+    margin-bottom: 28px;
+    text-align: center;
+}
+
+.signin-logo {
+    width: 56px;
+    height: 56px;
+
+    display: grid;
+    place-items: center;
+
+    margin: 0 auto 16px;
+
+    border-radius: 14px;
+
+    background: #0f2f5f;
+    color: #8fc0ff;
+
+    font-size: 25px;
+}
+
+.signin-header h1 {
+    margin-bottom: 7px;
+
+    color: #172033;
+
+    font-family:
+        'Space Grotesk',
+        sans-serif;
+
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.signin-header p {
+    color: #7d889c;
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   6. FORMULARIO
+========================================================= */
+
+.signin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-group label {
+    color: #526078;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   7. INPUTS
+========================================================= */
+
+.form-group input {
+    width: 100%;
+    height: 44px;
+
+    padding: 0 13px;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #172033;
+
+    font-size: 14px;
+
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        background .2s ease;
+}
+
+.form-group input::placeholder {
+    color: #a0aabc;
+}
+
+.form-group input:hover {
+    border-color: #aebbd0;
+}
+
+.form-group input:focus {
+    outline: none;
+
+    border-color: #1769e0;
+
+    box-shadow:
+        0 0 0 3px rgba(23, 105, 224, .12);
+}
+
+
+/* =========================================================
+   8. CONTRASEÑA
+========================================================= */
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+
+    top: 50%;
+    right: 9px;
+
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+    place-items: center;
+
+    transform: translateY(-50%);
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 6px;
+
+    background: transparent;
+    color: #7d889c;
+
+    font-size: 15px;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        color .2s ease;
+}
+
+.password-toggle:hover {
+    background: #f0f5fc;
+    color: #1769e0;
+}
+
+.password-toggle:focus-visible {
+    outline: 3px solid rgba(23, 105, 224, .16);
+}
+
+
+/* =========================================================
+   9. AYUDA DE CONTRASEÑA
+========================================================= */
+
+.password-help {
+    color: #7d889c;
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   10. TÉRMINOS
+========================================================= */
+
+.terms {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 8px;
+
+    margin-top: 2px;
+
+    color: #526078;
+
+    font-size: 12px;
+    line-height: 1.5;
+
+    cursor: pointer;
+}
+
+.terms input {
+    width: 15px;
+    height: 15px;
+
+    margin-top: 2px;
+
+    flex-shrink: 0;
+
+    accent-color: #1769e0;
+}
+
+.terms a {
+    color: #1769e0;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.terms a:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================================================
+   11. BOTÓN
+========================================================= */
+
+.signin-button {
+    width: 100%;
+    min-height: 44px;
+
+    margin-top: 4px;
+
+    border: 1px solid #1769e0;
+    border-radius: 8px;
+
+    background: #1769e0;
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        transform .1s ease;
+}
+
+.signin-button:hover {
+    background: #1254b5;
+    border-color: #1254b5;
+}
+
+.signin-button:active {
+    transform: translateY(1px);
+}
+
+.signin-button:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   12. ENLACE AL LOGIN
+========================================================= */
+
+.signin-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    margin-top: 22px;
+
+    color: #7d889c;
+    font-size: 12px;
+}
+
+.signin-login a {
+    color: #1769e0;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.signin-login a:hover {
+    text-decoration: underline;
+}
+
+
+/* =========================================================
+   13. FOOTER
+========================================================= */
+
+.signin-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-top: 26px;
+    padding-top: 18px;
+
+    border-top: 1px solid #e3e8f0;
+
+    color: #7d889c;
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   14. MENSAJE GENERAL DE ERROR
+========================================================= */
+
+.signin-error {
+    margin-bottom: 18px;
+    padding: 11px 13px;
+
+    border: 1px solid #f0c6ca;
+    border-radius: 8px;
+
+    background: #fff0f1;
+    color: #b42331;
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   15. MENSAJE GENERAL DE ÉXITO
+========================================================= */
+
+.signin-success {
+    margin-bottom: 18px;
+    padding: 11px 13px;
+
+    border: 1px solid #b9dfcb;
+    border-radius: 8px;
+
+    background: #e8f7ef;
+    color: #16845b;
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   16. ERRORES DE CAMPOS
+========================================================= */
+
+.form-group input.input-error {
+    border-color: #b42331;
+    background: #fffafa;
+}
+
+.form-group input.input-error:focus {
+    border-color: #b42331;
+
+    box-shadow:
+        0 0 0 3px rgba(180, 35, 49, .12);
+}
+
+.form-group input.input-valid {
+    border-color: #16845b;
+}
+
+.field-error {
+    display: block;
+
+    color: #b42331;
+
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.field-success {
+    display: block;
+
+    color: #16845b;
+
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   17. RESPONSIVE
+========================================================= */
+
+@media (max-width: 520px) {
+
+    .signin-page {
+        padding: 16px;
+    }
+
+    .signin-card {
+        padding: 28px 22px;
+        border-radius: 14px;
+    }
+
+    .signin-header {
+        margin-bottom: 24px;
+    }
+
+    .signin-header h1 {
+        font-size: 22px;
+    }
+
+    .signin-form {
+        gap: 14px;
+    }
+
+    .signin-footer {
+        flex-direction: column;
+        justify-content: center;
+    }
+
+}
+
