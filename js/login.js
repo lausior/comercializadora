@@ -21,6 +21,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       PANTALLA DE BLOQUEO: NUNCA AUTORRELLENAR LA CONTRASEÑA
+       El usuario ya viene fijo (readonly); si el navegador
+       reconoce ese usuario y "recuerda" su contraseña, la
+       rellenaría solo, lo que anula el sentido del bloqueo.
+       Se vacía nada más cargar y otra vez un instante después,
+       porque el autorrelleno del navegador puede llegar
+       después del propio DOMContentLoaded.
+    ========================================================== */
+
+    if (form.dataset.bloqueado === '1') {
+
+        password.value = '';
+
+        setTimeout(() => {
+            password.value = '';
+        }, 120);
+
+    }
+
+
+    /* =========================================================
        MOSTRAR / OCULTAR CONTRASEÑA
     ========================================================== */
 

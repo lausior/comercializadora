@@ -171,6 +171,37 @@ body {
         0 0 0 3px rgba(23, 105, 224, .12);
 }
 
+.form-group input[readonly] {
+    background: #f0f3f8;
+
+    color: #56617a;
+
+    cursor: default;
+}
+
+.form-group input[readonly]:focus {
+    border-color: #cbd5e1;
+
+    box-shadow: none;
+}
+
+.login-cambiar-usuario {
+    align-self: flex-start;
+
+    margin-top: -1px;
+
+    color: #1769e0;
+
+    font-size: 11.5px;
+    font-weight: 600;
+
+    text-decoration: none;
+}
+
+.login-cambiar-usuario:hover {
+    text-decoration: underline;
+}
+
 
 /* =========================================================
    CONTRASEÑA

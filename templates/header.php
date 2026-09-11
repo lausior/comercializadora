@@ -14,7 +14,7 @@
 
         <!-- Bloqueo de pantalla -->
         <a
-            href="/comercializadora/login.php"
+            href="/comercializadora/bloquear.php"
             class="topbar-button"
             title="Bloquear pantalla"
         >

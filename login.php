@@ -5,6 +5,9 @@ session_start();
 $errorLogin = $_SESSION['login_error'] ?? '';
 unset($_SESSION['login_error']);
 
+$usuarioBloqueado = $_GET['usuario'] ?? '';
+$estaBloqueado = $usuarioBloqueado !== '';
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,7 +36,9 @@ unset($_SESSION['login_error']);
                 <h1>Comparador Eléctrico</h1>
 
                 <p>
-                    Accede al panel de gestión
+                    <?= $estaBloqueado
+                        ? 'Sesión bloqueada. Introduce tu contraseña para continuar.'
+                        : 'Accede al panel de gestión' ?>
                 </p>
 
             </div>
@@ -48,7 +53,8 @@ unset($_SESSION['login_error']);
             <?php endif; ?>
 
 
-            <form action="procesar_login.php" method="POST" class="login-form" novalidate>
+            <form action="procesar_login.php" method="POST" class="login-form" novalidate
+                data-bloqueado="<?= $estaBloqueado ? '1' : '0' ?>">
 
                 <div class="form-group">
 
@@ -57,7 +63,14 @@ unset($_SESSION['login_error']);
                     </label>
 
                     <input type="text" id="usuario" name="usuario" placeholder="Código empresa-ID-usuario"
-                        autocomplete="username" required>
+                        autocomplete="username" value="<?= htmlspecialchars($usuarioBloqueado) ?>"
+                        <?= $estaBloqueado ? 'readonly' : '' ?> required>
+
+                    <?php if ($estaBloqueado): ?>
+                        <a href="/comercializadora/login.php" class="login-cambiar-usuario">
+                            ¿No eres tú? Usa otro usuario
+                        </a>
+                    <?php endif; ?>
 
                 </div>
 
@@ -71,7 +84,8 @@ unset($_SESSION['login_error']);
                     <div class="password-wrapper">
 
                         <input type="password" id="password" name="password" placeholder="Introduce tu contraseña"
-                            autocomplete="current-password" required>
+                            autocomplete="<?= $estaBloqueado ? 'new-password' : 'current-password' ?>"
+                            <?= $estaBloqueado ? 'autofocus' : '' ?> required>
 
                         <button type="button" class="password-toggle" id="togglePassword"
                             aria-label="Mostrar contraseña">

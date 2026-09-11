@@ -155,6 +155,7 @@ $_SESSION['nombre']           = $usuario['nombre'];
 $_SESSION['apellidos']        = $usuario['apellidos'];
 $_SESSION['id_empresa']       = $usuario['id_empresa'];
 $_SESSION['empresa']          = $usuario['empresa'];
+$_SESSION['codigo_empresa']   = $usuario['codigo_empresa'];
 $_SESSION['id_rol']           = $usuario['id_rol'];
 $_SESSION['rol']              = $usuario['rol'];
 $_SESSION['cambiar_password'] = (int) $usuario['cambiar_password'];
