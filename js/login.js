@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
 
-            /* Comprobar nombre de usuario */
+            /* Comprobar nombre de usuario (o el compuesto codigo-id-username) */
 
             const usuarioRegex =
                 /^[a-zA-Z0-9._-]+$/;
@@ -169,6 +169,16 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================================
        VALIDAR CONTRASEÑA
     ========================================================== */
+    //
+    // OJO: esto es el LOGIN, no la pantalla de crear una
+    // contraseña nueva. Aquí solo comprobamos que no esté
+    // vacía; la política de complejidad (8 caracteres,
+    // mayúsculas, números, símbolos...) se exige únicamente
+    // al establecer una contraseña nueva, no para iniciar
+    // sesión con la que ya se tiene (incluida la inicial
+    // "123456" del primer acceso).
+    //
+    // =========================================================
 
     function validarPassword() {
 
@@ -182,17 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarError(
                 password,
                 'Introduce tu contraseña.'
-            );
-
-            return false;
-        }
-
-
-        if (valor.length < 8) {
-
-            mostrarError(
-                password,
-                'La contraseña debe tener al menos 8 caracteres.'
             );
 
             return false;
@@ -253,9 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Validación correcta. Enviando formulario...');
 
         /*
-         * Enviamos el formulario directamente respetando:
-         * action="index.php"
-         * method="POST"
+         * Enviamos el formulario directamente respetando el
+         * action="procesar_login.php" del <form>.
          */
         HTMLFormElement.prototype.submit.call(form);
 
@@ -293,4 +291,3 @@ document.addEventListener('DOMContentLoaded', () => {
     password.addEventListener('blur', validarPassword);
 
 });
-

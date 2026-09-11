@@ -1,3 +1,11 @@
+<?php
+
+session_start();
+
+require_once __DIR__ . '/../config/permisos.php';
+requerirPermiso('seguridad');
+
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>

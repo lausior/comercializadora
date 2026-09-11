@@ -6,10 +6,15 @@ require_once __DIR__ . '/config/database.php';
 
 
 // =====================================================
-// SI YA HAY SESIÓN, DIRECTO AL PANEL
+// SI YA HAY SESIÓN, DIRECTO AL PANEL (evita que un usuario ya logueado vuelva al panel de login)
 // =====================================================
 
-if (isset($_SESSION['id_usuario'])) {
+if (isset($_SESSION['id_usuario'])) { 
+
+    if (!empty($_SESSION['cambiar_password'])) {
+        header('Location: /comercializadora/cambiar_password.php');
+        exit;
+    }
 
     header('Location: /comercializadora/index.php');
     exit;
@@ -38,7 +43,7 @@ $password         = $_POST['password'] ?? '';
 
 
 // =====================================================
-// FUNCIÓN PARA VOLVER AL LOGIN CON UN ERROR
+// FUNCIÓN PARA VOLVER AL LOGIN CON UN ERROR (redirige al login y muestra un mensaje de error)
 // =====================================================
 
 function volverConError(string $mensaje): void
@@ -51,7 +56,7 @@ function volverConError(string $mensaje): void
 
 
 // =====================================================
-// VALIDAR CAMPOS BÁSICOS
+// SI ALGÚN CAMPO ESTÁ VACÍO MUESTRA MENSAJE DE ERROR
 // =====================================================
 
 if ($usuarioCompuesto === '' || $password === '') {
@@ -65,19 +70,19 @@ if ($usuarioCompuesto === '' || $password === '') {
 // Ejemplo: 1001-15-jperez
 // =====================================================
 
-$partes = explode('-', $usuarioCompuesto);
+$partes = explode('-', $usuarioCompuesto);  //separa por -
 
-if (count($partes) !== 3) {
+if (count($partes) !== 3) { //comprueba que haya 3 partes
     volverConError('El usuario introducido no tiene un formato válido.');
 }
 
-[$codigoEmpresa, $idUsuario, $username] = $partes;
+[$codigoEmpresa, $idUsuario, $username] = $partes; //guarda cada parte en su variable
 
-$codigoEmpresa = (int) $codigoEmpresa;
+$codigoEmpresa = (int) $codigoEmpresa; // casting
 $idUsuario     = (int) $idUsuario;
 $username      = trim($username);
 
-if ($codigoEmpresa <= 0 || $idUsuario <= 0 || $username === '') {
+if ($codigoEmpresa <= 0 || $idUsuario <= 0 || $username === '') { //comprueba el formato introducido
     volverConError('El usuario introducido no tiene un formato válido.');
 }
 

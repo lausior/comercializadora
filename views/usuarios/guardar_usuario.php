@@ -1,5 +1,10 @@
 <?php
 
+session_start();
+
+require_once '../../config/permisos.php';
+requerirPermiso('usuarios');
+
 require_once '../../config/database.php';
 
 
@@ -329,6 +334,8 @@ $stmtDatos = $pdo->prepare("
 
         e.nombre AS empresa,
 
+        e.codigo_empresa,
+
         r.nombre AS rol
 
     FROM usuarios u
@@ -404,6 +411,21 @@ $iniciales = mb_strtoupper(
     $inicialNombre . $inicialApellido,
     'UTF-8'
 );
+
+
+// =====================================================
+// USUARIO DE ACCESO (LOGIN COMPUESTO)
+// =====================================================
+//
+// Este es el valor que la persona deberá escribir en el
+// campo "Usuario" de login.php: codigo_empresa-id-username
+//
+// =====================================================
+
+$usuarioAcceso =
+    $usuario['codigo_empresa'] . '-' .
+    $usuario['id'] . '-' .
+    $usuario['username'];
 
 
 // =====================================================
@@ -545,12 +567,6 @@ if ((int) $usuario['cambiar_password'] === 1) {
                 ================================================== -->
 
                 <div class="usuario-detalle">
-
-
-                    <!-- =================================================
-                         CABECERA USUARIO
-                    ================================================== -->
-
 
 
                     <!-- =================================================
@@ -722,6 +738,25 @@ if ((int) $usuario['cambiar_password'] === 1) {
                         </div>
 
 
+                        <!-- USUARIO DE ACCESO -->
+
+                        <div class="usuario-detalle-item">
+
+                            <span>
+                                Usuario de acceso (login)
+                            </span>
+
+                            <strong>
+                                <?= htmlspecialchars(
+                                    $usuarioAcceso,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </strong>
+
+                        </div>
+
+
                         <!-- CONTRASEÑA INICIAL -->
 
                         <div class="usuario-detalle-item">
@@ -774,7 +809,18 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                     <p>
 
-                        La contraseña inicial es
+                        El usuario deberá acceder con el usuario de
+                        login
+
+                        <strong>
+                            <?= htmlspecialchars(
+                                $usuarioAcceso,
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
+                        </strong>
+
+                        y la contraseña
 
                         <strong>
                             <?= htmlspecialchars(
@@ -782,17 +828,15 @@ if ((int) $usuario['cambiar_password'] === 1) {
                                 ENT_QUOTES,
                                 'UTF-8'
                             ) ?>
-                        </strong>
-
-                        y está almacenada de forma segura.
+                        </strong>.
 
                     </p>
 
 
                     <p>
 
-                        El usuario deberá cambiarla
-                        en su primer acceso.
+                        En su primer acceso se le pedirá
+                        cambiarla obligatoriamente.
 
                     </p>
 

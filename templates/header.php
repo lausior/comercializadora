@@ -25,7 +25,7 @@
 
         <!-- Cerrar sesión -->
         <a
-            href="/comercializadora/login.php"
+            href="/comercializadora/logout.php"
             class="logout-button"
         >
             <span>↪</span>

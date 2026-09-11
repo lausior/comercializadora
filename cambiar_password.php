@@ -2,14 +2,33 @@
 
 session_start();
 
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/config/permisos.php';
 
 
 // =====================================================
-// SI YA HAY SESIÓN, DIRECTO AL PANEL
+// DEBE HABER SESIÓN INICIADA
+// =====================================================
+//
+// Ojo: aquí NO se usa requerirPermiso(), porque esa
+// función redirige precisamente A esta página cuando
+// cambiar_password = 1. Usar requerirPermiso() aquí
+// crearía un bucle infinito de redirecciones.
+//
 // =====================================================
 
-if (isset($_SESSION['id_usuario'])) {
+if (!isset($_SESSION['id_usuario'])) {
+
+    header('Location: /comercializadora/login.php');
+    exit;
+
+}
+
+
+// =====================================================
+// SI NO TIENE PENDIENTE EL CAMBIO, NO NECESITA ESTAR AQUÍ
+// =====================================================
+
+if (empty($_SESSION['cambiar_password'])) {
 
     header('Location: /comercializadora/index.php');
     exit;
@@ -17,154 +36,120 @@ if (isset($_SESSION['id_usuario'])) {
 }
 
 
-// =====================================================
-// SOLO ACEPTAR POST
-// =====================================================
+$errorCambio = $_SESSION['cambio_password_error'] ?? '';
+unset($_SESSION['cambio_password_error']);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+?>
+<!DOCTYPE html>
+<html lang="es">
 
-    header('Location: /comercializadora/login.php');
-    exit;
+<head>
 
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Cambiar contraseña - Comparador Eléctrico</title>
 
-// =====================================================
-// RECOGER DATOS DEL FORMULARIO
-// =====================================================
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/style.css">
 
-$usuarioCompuesto = trim($_POST['usuario'] ?? '');
-$password         = $_POST['password'] ?? '';
+</head>
 
+<body>
 
-// =====================================================
-// FUNCIÓN PARA VOLVER AL LOGIN CON UN ERROR
-// =====================================================
+    <main class="login-page">
 
-function volverConError(string $mensaje): void
-{
-    $_SESSION['login_error'] = $mensaje;
+        <section class="login-card">
 
-    header('Location: /comercializadora/login.php');
-    exit;
-}
+            <div class="login-header">
 
+                <div class="login-logo">
+                    ⚡
+                </div>
 
-// =====================================================
-// VALIDAR CAMPOS BÁSICOS
-// =====================================================
+                <h1>Cambio de contraseña obligatorio</h1>
 
-if ($usuarioCompuesto === '' || $password === '') {
-    volverConError('Introduce usuario y contraseña.');
-}
+                <p>
+                    Es tu primer acceso (o tu contraseña ha sido
+                    restablecida). Antes de continuar, crea una
+                    contraseña nueva.
+                </p>
 
-
-// =====================================================
-// SEPARAR EL USUARIO COMPUESTO
-// Formato esperado: codigo_empresa-id-username
-// Ejemplo: 1001-15-jperez
-// =====================================================
-
-$partes = explode('-', $usuarioCompuesto);
-
-if (count($partes) !== 3) {
-    volverConError('El usuario introducido no tiene un formato válido.');
-}
-
-[$codigoEmpresa, $idUsuario, $username] = $partes;
-
-$codigoEmpresa = (int) $codigoEmpresa;
-$idUsuario     = (int) $idUsuario;
-$username      = trim($username);
-
-if ($codigoEmpresa <= 0 || $idUsuario <= 0 || $username === '') {
-    volverConError('El usuario introducido no tiene un formato válido.');
-}
+            </div>
 
 
-// =====================================================
-// BUSCAR AL USUARIO EN BASE DE DATOS
-// =====================================================
-//
-// Se comprueban a la vez el id, el username y el código
-// de empresa: si cualquiera de los tres no coincide con
-// el mismo registro, el login se considera inválido.
-//
-// =====================================================
-
-$stmt = $pdo->prepare("
-    SELECT
-        u.id,
-        u.username,
-        u.nombre,
-        u.apellidos,
-        u.password,
-        u.cambiar_password,
-        u.id_empresa,
-        u.id_rol,
-        e.codigo_empresa,
-        e.nombre AS empresa,
-        r.nombre AS rol
-    FROM usuarios u
-    INNER JOIN empresas e ON e.id = u.id_empresa
-    INNER JOIN roles r ON r.id = u.id_rol
-    WHERE u.id = :id
-        AND u.username = :username
-        AND e.codigo_empresa = :codigo_empresa
-    LIMIT 1
-");
-
-$stmt->execute([
-    ':id'             => $idUsuario,
-    ':username'       => $username,
-    ':codigo_empresa' => $codigoEmpresa,
-]);
-
-$usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            <div class="form-error-general" id="form-error-general" role="alert"
+                style="<?= $errorCambio !== '' ? 'display: block;' : 'display: none;' ?>">
+                <?= htmlspecialchars($errorCambio) ?></div>
 
 
-// =====================================================
-// COMPROBAR USUARIO Y CONTRASEÑA
-// =====================================================
-//
-// El mismo mensaje de error tanto si el usuario no
-// existe como si la contraseña es incorrecta, para no
-// dar pistas de cuál de los dos ha fallado.
-//
-// =====================================================
+            <form action="procesar_cambio_password.php" method="POST" class="login-form" novalidate>
 
-if (!$usuario || !password_verify($password, $usuario['password'])) {
-    volverConError('Usuario o contraseña incorrectos.');
-}
+                <div class="form-group">
+
+                    <label for="password_nueva">
+                        Contraseña nueva
+                    </label>
+
+                    <div class="password-wrapper">
+
+                        <input type="password" id="password_nueva" name="password_nueva"
+                            placeholder="Crea tu contraseña" autocomplete="new-password" required minlength="8">
+
+                        <button type="button" class="password-toggle" data-target="password_nueva"
+                            aria-label="Mostrar contraseña">
+                            👁
+                        </button>
+
+                    </div>
+
+                    <ul class="password-requisitos" id="passwordRequisitos">
+
+                        <li data-req="longitud">Mínimo 8 caracteres</li>
+                        <li data-req="mayuscula">Mayúsculas</li>
+                        <li data-req="minuscula">Minúsculas</li>
+                        <li data-req="numero">Números</li>
+                        <li data-req="especial">Caracteres especiales</li>
+
+                    </ul>
+
+                </div>
 
 
-// =====================================================
-// INICIAR SESIÓN
-// =====================================================
+                <div class="form-group">
 
-session_regenerate_id(true);
+                    <label for="password_confirmar">
+                        Repite la contraseña nueva
+                    </label>
 
-$_SESSION['id_usuario']       = $usuario['id'];
-$_SESSION['username']         = $usuario['username'];
-$_SESSION['nombre']           = $usuario['nombre'];
-$_SESSION['apellidos']        = $usuario['apellidos'];
-$_SESSION['id_empresa']       = $usuario['id_empresa'];
-$_SESSION['empresa']          = $usuario['empresa'];
-$_SESSION['id_rol']           = $usuario['id_rol'];
-$_SESSION['rol']              = $usuario['rol'];
-$_SESSION['cambiar_password'] = (int) $usuario['cambiar_password'];
+                    <div class="password-wrapper">
+
+                        <input type="password" id="password_confirmar" name="password_confirmar"
+                            placeholder="Repite la contraseña nueva" autocomplete="new-password" required minlength="8">
+
+                        <button type="button" class="password-toggle" data-target="password_confirmar"
+                            aria-label="Mostrar contraseña">
+                            👁
+                        </button>
+
+                    </div>
+
+                </div>
 
 
-// =====================================================
-// REDIRIGIR SEGÚN SI DEBE CAMBIAR LA CONTRASEÑA
-// =====================================================
+                <button type="submit" class="login-button">
+                    Guardar nueva contraseña
+                </button>
 
-if ($_SESSION['cambiar_password'] === 1) {
+            </form>
 
-    header('Location: /comercializadora/cambiar_password.php');
-    exit;
+        </section>
 
-}
+    </main>
 
-header('Location: /comercializadora/index.php');
-exit;
+
+    <script src="js/cambiar_password.js"></script>
+
+</body>
+
+</html>

@@ -3,7 +3,7 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('usuarios');
+requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 
@@ -23,12 +23,12 @@ if ($id <= 0) {
         <h2>Error</h2>
 
         <p>
-            El usuario seleccionado no es válido.
+            La empresa seleccionada no es válida.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="empresas.php">
+                Volver a empresas
             </a>
         </p>
     ');
@@ -37,51 +37,40 @@ if ($id <= 0) {
 
 
 // =====================================================
-// BUSCAR EL USUARIO
+// BUSCAR LA EMPRESA
 // =====================================================
 
-$stmtUsuario = $pdo->prepare("
+$stmtEmpresa = $pdo->prepare("
     SELECT
-        u.id,
-        u.username,
-        u.nombre,
-        u.apellidos,
-        u.email,
-        u.telefono,
-        e.nombre AS empresa,
-        r.nombre AS rol
-    FROM usuarios u
-
-    INNER JOIN empresas e
-        ON u.id_empresa = e.id
-
-    INNER JOIN roles r
-        ON u.id_rol = r.id
-
-    WHERE u.id = ?
+        id,
+        codigo_empresa,
+        nombre,
+        cif
+    FROM empresas
+    WHERE id = ?
 ");
 
-$stmtUsuario->execute([$id]);
+$stmtEmpresa->execute([$id]);
 
-$usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+$empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
 
 
 // =====================================================
-// COMPROBAR QUE EL USUARIO EXISTA
+// COMPROBAR QUE LA EMPRESA EXISTA
 // =====================================================
 
-if (!$usuario) {
+if (!$empresa) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            El usuario que intentas eliminar no existe.
+            La empresa que intentas eliminar no existe.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="empresas.php">
+                Volver a empresas
             </a>
         </p>
     ');
@@ -90,21 +79,13 @@ if (!$usuario) {
 
 
 // =====================================================
-// GUARDAR DATOS PARA MOSTRAR DESPUÉS
-// =====================================================
-
-$nombreCompleto =
-    $usuario['nombre'] . ' ' . $usuario['apellidos'];
-
-
-// =====================================================
-// ELIMINAR USUARIO
+// ELIMINAR EMPRESA
 // =====================================================
 
 try {
 
     $stmtEliminar = $pdo->prepare("
-        DELETE FROM usuarios
+        DELETE FROM empresas
         WHERE id = ?
     ");
 
@@ -117,12 +98,14 @@ try {
         <h2>Error</h2>
 
         <p>
-            No se ha podido eliminar el usuario.
+            No se ha podido eliminar la empresa porque tiene
+            usuarios asociados. Reasigna o elimina antes esos
+            usuarios.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="empresas.php">
+                Volver a empresas
             </a>
         </p>
     ');
@@ -130,22 +113,18 @@ try {
 }
 
 
-// =====================================================
-// COMPROBAR QUE REALMENTE SE HA ELIMINADO
-// =====================================================
-
 if ($stmtEliminar->rowCount() !== 1) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            No se ha podido eliminar el usuario.
+            No se ha podido eliminar la empresa.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="empresas.php">
+                Volver a empresas
             </a>
         </p>
     ');
@@ -164,7 +143,7 @@ if ($stmtEliminar->rowCount() !== 1) {
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Usuario eliminado - Comparador Eléctrico</title>
+    <title>Empresa eliminada - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../../css/style.css">
 
@@ -207,11 +186,11 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div>
 
                     <h1>
-                        Usuarios
+                        Empresas
                     </h1>
 
                     <p>
-                        Usuario eliminado correctamente
+                        Empresa eliminada correctamente
                     </p>
 
                 </div>
@@ -220,7 +199,7 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        9 septiembre 2026
+                        11 septiembre 2026
                     </div>
 
                 </div>
@@ -236,7 +215,7 @@ if ($stmtEliminar->rowCount() !== 1) {
 
 
                 <h2>
-                    Usuario eliminado
+                    Empresa eliminada
                 </h2>
 
 
@@ -245,34 +224,23 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        El usuario
+                        La empresa
 
                         <strong>
-                            <?= htmlspecialchars($nombreCompleto) ?>
+                            <?= htmlspecialchars($empresa['nombre']) ?>
                         </strong>
 
-                        ha sido eliminado correctamente.
+                        ha sido eliminada correctamente.
 
                     </p>
 
 
                     <p>
 
-                        ID de usuario:
+                        ID de empresa:
 
                         <strong>
-                            <?= htmlspecialchars($usuario['id']) ?>
-                        </strong>
-
-                    </p>
-
-
-                    <p>
-
-                        Username:
-
-                        <strong>
-                            @<?= htmlspecialchars($usuario['username']) ?>
+                            <?= htmlspecialchars($empresa['id']) ?>
                         </strong>
 
                     </p>
@@ -280,10 +248,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        Email:
+                        Código de empresa:
 
                         <strong>
-                            <?= htmlspecialchars($usuario['email']) ?>
+                            <?= htmlspecialchars($empresa['codigo_empresa']) ?>
                         </strong>
 
                     </p>
@@ -291,21 +259,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        Empresa:
+                        CIF:
 
                         <strong>
-                            <?= htmlspecialchars($usuario['empresa']) ?>
-                        </strong>
-
-                    </p>
-
-
-                    <p>
-
-                        Rol:
-
-                        <strong>
-                            <?= htmlspecialchars($usuario['rol']) ?>
+                            <?= htmlspecialchars($empresa['cif']) ?>
                         </strong>
 
                     </p>
@@ -321,12 +278,12 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div class="form-actions">
 
 
-                    <a href="crear_usuario.php" class="config-save-button">
-                        + Añadir usuario
+                    <a href="crear_empresa.php" class="config-save-button">
+                        + Añadir empresa
                     </a>
 
 
-                    <a href="usuarios.php" class="config-cancel-button">
+                    <a href="empresas.php" class="config-cancel-button">
                         Volver
                     </a>
 

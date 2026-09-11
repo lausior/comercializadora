@@ -49,7 +49,6 @@ function volverConErrorCambio(string $mensaje): void
 // RECOGER DATOS
 // =====================================================
 
-$passwordActual    = $_POST['password_actual'] ?? '';
 $passwordNueva      = $_POST['password_nueva'] ?? '';
 $passwordConfirmar  = $_POST['password_confirmar'] ?? '';
 
@@ -58,25 +57,43 @@ $passwordConfirmar  = $_POST['password_confirmar'] ?? '';
 // VALIDACIONES BÁSICAS
 // =====================================================
 
-if ($passwordActual === '' || $passwordNueva === '' || $passwordConfirmar === '') {
-    volverConErrorCambio('Rellena los tres campos.');
+if ($passwordNueva === '' || $passwordConfirmar === '') {
+    volverConErrorCambio('Rellena los dos campos.');
 }
 
 if (strlen($passwordNueva) < 8) {
     volverConErrorCambio('La contraseña nueva debe tener al menos 8 caracteres.');
 }
 
+if (!preg_match('/[A-Z]/', $passwordNueva)) {
+    volverConErrorCambio('La contraseña nueva debe incluir al menos una mayúscula.');
+}
+
+if (!preg_match('/[a-z]/', $passwordNueva)) {
+    volverConErrorCambio('La contraseña nueva debe incluir al menos una minúscula.');
+}
+
+if (!preg_match('/[0-9]/', $passwordNueva)) {
+    volverConErrorCambio('La contraseña nueva debe incluir al menos un número.');
+}
+
+if (!preg_match('/[^A-Za-z0-9]/', $passwordNueva)) {
+    volverConErrorCambio('La contraseña nueva debe incluir al menos un carácter especial (ej. # ! % *).');
+}
+
 if ($passwordNueva !== $passwordConfirmar) {
     volverConErrorCambio('Las dos contraseñas nuevas no coinciden.');
 }
 
-if ($passwordNueva === $passwordActual) {
-    volverConErrorCambio('La contraseña nueva debe ser distinta de la actual.');
-}
-
 
 // =====================================================
-// COMPROBAR LA CONTRASEÑA ACTUAL
+// COMPROBAR QUE SEA DISTINTA DE LA ACTUAL
+// =====================================================
+//
+// No se le pide al usuario que escriba la contraseña
+// actual: se compara la nueva directamente contra el
+// hash que ya hay guardado en la base de datos.
+//
 // =====================================================
 
 $stmt = $pdo->prepare("
@@ -90,8 +107,12 @@ $stmt->execute([$_SESSION['id_usuario']]);
 
 $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$usuario || !password_verify($passwordActual, $usuario['password'])) {
-    volverConErrorCambio('La contraseña actual no es correcta.');
+if (!$usuario) {
+    volverConErrorCambio('No se ha podido verificar tu usuario.');
+}
+
+if (password_verify($passwordNueva, $usuario['password'])) {
+    volverConErrorCambio('La contraseña nueva debe ser distinta de la actual.');
 }
 
 

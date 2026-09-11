@@ -1,5 +1,10 @@
 <?php
 
+session_start();
+
+require_once '../../config/permisos.php';
+requerirPermiso('usuarios');
+
 require_once '../../config/database.php';
 
 

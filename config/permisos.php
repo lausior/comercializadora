@@ -16,9 +16,9 @@
 // -------------------------------------------------------
 
 define('ROL_SRG', 'SRG');
-define('ROL_NG', 'NG Asesores');
-define('ROL_EMPRESA', 'Empresa');
-define('ROL_USUARIO', 'Usuario');
+define('ROL_NG', 'NG_ASESORES');
+define('ROL_EMPRESA', 'EMPRESA');
+define('ROL_USUARIO', 'USUARIO');
 
 
 // -------------------------------------------------------
