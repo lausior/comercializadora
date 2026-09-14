@@ -21,6 +21,8 @@ $stmtUsuarios = $pdo->query("
         u.email,
         u.telefono,
         u.cambiar_password,
+        u.id_empresa,
+        u.creado_por,
         e.nombre AS empresa,
         r.nombre AS rol
     FROM usuarios u
@@ -35,6 +37,28 @@ $stmtUsuarios = $pdo->query("
 ");
 
 $usuarios = $stmtUsuarios->fetchAll(PDO::FETCH_ASSOC);
+
+
+// =====================================================
+// FILTRAR SEGÚN QUÉ USUARIOS PUEDE VER EL ROL ACTUAL
+// =====================================================
+//
+// SRG los ve a todos. NG y EMPRESA solo ven a los que
+// ellos mismos han dado de alta (ver puedeVerUsuario()
+// en permisos.php). Y en este LISTADO, además, nadie se
+// ve a sí mismo — sigue siendo gestionable si se entra a
+// su edición por la URL directamente, solo se oculta aquí.
+//
+// =====================================================
+
+$usuarios = array_values(array_filter(
+    $usuarios,
+    fn(array $usuario): bool =>
+        (int) $usuario['id'] !== (int) ($_SESSION['id_usuario'] ?? 0)
+        && puedeVerUsuario(
+            $usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null
+        )
+));
 
 
 // =====================================================
@@ -308,14 +332,95 @@ foreach ($usuarios as $usuario) {
                         </div>
 
 
-                        <button type="button" class="panel-action" id="btnLimpiarFiltros">
-                            Limpiar filtros
+                        <button type="button" class="filtros-toggle-button" id="btnToggleFiltros"
+                            aria-expanded="false" aria-controls="panelFiltrosUsuarios">
+                            <span>Filtros</span>
+                            <span class="chevron">▾</span>
                         </button>
 
                     </div>
 
                 </div>
 
+
+                <!-- =================================================
+                     PANEL DE FILTROS (DESPLEGABLE)
+                ================================================== -->
+
+                <div class="filtros-panel" id="panelFiltrosUsuarios" style="display:none;">
+
+                    <div class="filtros-panel-campos">
+
+                        <div class="filter-group">
+                            <label for="filtroUsuario">Usuario</label>
+                            <input type="text" id="filtroUsuario" class="column-filter" data-field="usuario"
+                                placeholder="Buscar usuario...">
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filtroEmail">Email</label>
+                            <input type="text" id="filtroEmail" class="column-filter" data-field="email"
+                                placeholder="Buscar email...">
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filtroRol">Rol</label>
+                            <select id="filtroRol" class="column-filter" data-field="rol">
+
+                                <option value="">Todos</option>
+                                <option value="Administrador">Administrador</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Operador">Operador</option>
+                                <option value="Consulta">Consulta</option>
+
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filtroEmpresa">Empresa</label>
+                            <select id="filtroEmpresa" class="column-filter" data-field="empresa">
+
+                                <option value="">Todas</option>
+
+                                <?php
+
+                                // Solo las empresas que aparecen en
+                                // $usuarios (ya filtrado por rol), para
+                                // no listar en el desplegable empresas
+                                // que este usuario no puede ver.
+
+                                $empresasFiltro = [];
+
+                                foreach ($usuarios as $usuarioFiltro) {
+                                    $empresasFiltro[$usuarioFiltro['empresa']] = true;
+                                }
+
+                                $empresasFiltro = array_keys($empresasFiltro);
+
+                                sort($empresasFiltro);
+
+                                foreach ($empresasFiltro as $empresaFiltro):
+
+                                    ?>
+
+                                    <option value="<?= htmlspecialchars($empresaFiltro) ?>">
+                                        <?= htmlspecialchars($empresaFiltro) ?>
+                                    </option>
+
+                                <?php endforeach; ?>
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="filtros-panel-acciones">
+                        <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                            Limpiar filtros
+                        </button>
+                    </div>
+
+                </div>
 
 
                 <!-- =================================================
@@ -335,9 +440,6 @@ foreach ($usuarios as $usuario) {
 
                             <tr>
 
-
-                                <!-- USUARIO -->
-
                                 <th>
 
                                     <div class="table-header-content">
@@ -346,7 +448,7 @@ foreach ($usuarios as $usuario) {
                                             Usuario
                                         </span>
 
-                                        <button type="button" class="sort-button" data-column="0"
+                                        <button type="button" class="sort-button" id="botonOrdenNombre"
                                             title="Ordenar por usuario">
                                             ↕
                                         </button>
@@ -354,267 +456,6 @@ foreach ($usuarios as $usuario) {
                                     </div>
 
                                 </th>
-
-
-
-                                <!-- EMAIL -->
-
-                                <th>
-
-                                    <div class="table-header-content">
-
-                                        <span>
-                                            Email
-                                        </span>
-
-                                        <button type="button" class="sort-button" data-column="1"
-                                            title="Ordenar por email">
-                                            ↕
-                                        </button>
-
-                                    </div>
-
-                                </th>
-
-
-
-                                <!-- ROL -->
-
-                                <th>
-
-                                    <div class="table-header-content">
-
-                                        <span>
-                                            Rol
-                                        </span>
-
-                                        <button type="button" class="sort-button" data-column="2"
-                                            title="Ordenar por rol">
-                                            ↕
-                                        </button>
-
-                                    </div>
-
-                                </th>
-
-
-
-                                <!-- EMPRESA -->
-
-                                <th>
-
-                                    <div class="table-header-content">
-
-                                        <span>
-                                            Empresa
-                                        </span>
-
-                                        <button type="button" class="sort-button" data-column="3"
-                                            title="Ordenar por empresa">
-                                            ↕
-                                        </button>
-
-                                    </div>
-
-                                </th>
-
-
-
-                                <!-- ÚLTIMO ACCESO -->
-
-                                <th>
-
-                                    <div class="table-header-content">
-
-                                        <span>
-                                            Último acceso
-                                        </span>
-
-                                        <button type="button" class="sort-button" data-column="4"
-                                            title="Ordenar por último acceso">
-                                            ↕
-                                        </button>
-
-                                    </div>
-
-                                </th>
-
-
-
-                                <!-- ESTADO -->
-
-                                <th>
-
-                                    <div class="table-header-content">
-
-                                        <span>
-                                            Estado
-                                        </span>
-
-                                        <button type="button" class="sort-button" data-column="5"
-                                            title="Ordenar por estado">
-                                            ↕
-                                        </button>
-
-                                    </div>
-
-                                </th>
-
-
-
-                                <!-- ACCIONES -->
-
-                                <th>
-
-                                    <span>
-                                        Acciones
-                                    </span>
-
-                                </th>
-
-                            </tr>
-
-
-
-                            <!-- =================================================
-                                 FILTROS
-                            ================================================== -->
-
-                            <tr class="usuarios-filter-row-table">
-
-
-                                <!-- USUARIO -->
-
-                                <th>
-
-                                    <input type="text" class="column-filter" data-column="0"
-                                        placeholder="Buscar usuario...">
-
-                                </th>
-
-
-
-                                <!-- EMAIL -->
-
-                                <th>
-
-                                    <input type="text" class="column-filter" data-column="1"
-                                        placeholder="Buscar email...">
-
-                                </th>
-
-
-
-                                <!-- ROL -->
-
-                                <th>
-
-                                    <select class="column-filter" data-column="2">
-
-                                        <option value="">
-                                            Todos
-                                        </option>
-
-                                        <option value="Administrador">
-                                            Administrador
-                                        </option>
-
-                                        <option value="Supervisor">
-                                            Supervisor
-                                        </option>
-
-                                        <option value="Operador">
-                                            Operador
-                                        </option>
-
-                                        <option value="Consulta">
-                                            Consulta
-                                        </option>
-
-                                    </select>
-
-                                </th>
-
-
-
-                                <!-- EMPRESA -->
-
-                                <th>
-
-                                    <select class="column-filter" data-column="3">
-
-                                        <option value="">
-                                            Todas
-                                        </option>
-
-                                        <?php
-
-                                        $stmtEmpresas = $pdo->query("
-                                            SELECT id, nombre
-                                            FROM empresas
-                                            ORDER BY nombre
-                                        ");
-
-                                        $empresasFiltro = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-                                        foreach ($empresasFiltro as $empresaFiltro):
-
-                                            ?>
-
-                                            <option value="<?= htmlspecialchars($empresaFiltro['nombre']) ?>">
-                                                <?= htmlspecialchars($empresaFiltro['nombre']) ?>
-                                            </option>
-
-                                        <?php endforeach; ?>
-
-                                    </select>
-
-                                </th>
-
-
-
-                                <!-- ÚLTIMO ACCESO -->
-
-                                <th>
-
-                                    <input type="text" class="column-filter" data-column="4"
-                                        placeholder="Buscar fecha...">
-
-                                </th>
-
-
-
-                                <!-- ESTADO -->
-
-                                <th>
-
-                                    <select class="column-filter" data-column="5">
-
-                                        <option value="">
-                                            Todos
-                                        </option>
-
-                                        <option value="Activo">
-                                            Activo
-                                        </option>
-
-                                        <option value="Inactivo">
-                                            Inactivo
-                                        </option>
-
-                                        <option value="Bloqueado">
-                                            Bloqueado
-                                        </option>
-
-                                    </select>
-
-                                </th>
-
-
-
-                                <!-- ACCIONES -->
-
-                                <th></th>
 
                             </tr>
 
@@ -636,7 +477,7 @@ foreach ($usuarios as $usuario) {
 
                                 <tr>
 
-                                    <td colspan="7" style="text-align:center; padding:40px;">
+                                    <td style="text-align:center; padding:40px;">
 
                                         No hay usuarios registrados.
 
@@ -718,8 +559,16 @@ foreach ($usuarios as $usuario) {
                                     ?>
 
 
-                                    <tr>
-
+                                    <tr class="fila-clicable"
+                                        data-id="<?= (int) $usuario['id'] ?>"
+                                        data-nombre="<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-iniciales="<?= htmlspecialchars($iniciales, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-usuario="<?= htmlspecialchars($usuario['username'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-email="<?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-telefono="<?= htmlspecialchars($usuario['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-rol="<?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-empresa="<?= htmlspecialchars($usuario['empresa'], ENT_QUOTES, 'UTF-8') ?>"
+                                    >
 
                                         <!-- =================================================
                                              USUARIO
@@ -758,105 +607,6 @@ foreach ($usuarios as $usuario) {
 
 
                                             </div>
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             EMAIL
-                                        ================================================== -->
-
-                                        <td>
-
-                                            <?= htmlspecialchars($usuario['email']) ?>
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             ROL
-                                        ================================================== -->
-
-                                        <td>
-
-                                            <span class="role-badge <?= htmlspecialchars($roleClass) ?>">
-
-                                                <?= htmlspecialchars($usuario['rol']) ?>
-
-                                            </span>
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             EMPRESA
-                                        ================================================== -->
-
-                                        <td>
-
-                                            <?= htmlspecialchars($usuario['empresa']) ?>
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             ÚLTIMO ACCESO
-                                        ================================================== -->
-
-                                        <td>
-
-                                            —
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             ESTADO
-                                        ================================================== -->
-
-                                        <td>
-
-                                            <span class="status-badge status-active">
-
-                                                Activo
-
-                                            </span>
-
-                                        </td>
-
-
-
-                                        <!-- =================================================
-                                             ACCIONES
-                                        ================================================== -->
-
-                                        <td>
-
-                                            <div class="user-actions">
-
-                                                <div class="user-actions">
-
-                                                    <button type="button" class="table-action-button" onclick="abrirModalEliminar(
-        <?= (int) $usuario['id'] ?>,
-        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
-    )">
-                                                        Eliminar
-                                                    </button>
-
-
-
-                                                <button type="button" class="table-action-button"
-                                                    onclick="window.location.href='editar_usuario.php?id=<?= (int) $usuario['id'] ?>'">
-                                                    Editar
-                                                </button>
-
-                                            </div>
-
 
                                         </td>
 
@@ -1005,8 +755,6 @@ foreach ($usuarios as $usuario) {
     <?php include '../../templates/footer.php'; ?>
 
 
-    <script src="../../js/usuarios.js"></script>
-
     <!-- =====================================================
      MODAL CONFIRMAR ELIMINACIÓN
 ====================================================== -->
@@ -1052,6 +800,75 @@ foreach ($usuarios as $usuario) {
             >
                 Eliminar usuario
             </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     TARJETA DE DETALLE
+====================================================== -->
+
+<div id="modalDetalleUsuario" class="modal-overlay" style="display: none;">
+
+    <div class="modal-detalle">
+
+        <div class="modal-detalle-header">
+
+            <div class="modal-detalle-avatar" id="detalleUsuarioAvatar"></div>
+
+            <div class="modal-detalle-titulo">
+                <h2 id="detalleUsuarioNombre"></h2>
+                <span id="detalleUsuarioUsername"></span>
+            </div>
+
+            <button type="button" class="modal-detalle-close" onclick="cerrarModalDetalleUsuario()"
+                aria-label="Cerrar">
+                ✕
+            </button>
+
+        </div>
+
+        <div class="usuario-detalle-grid">
+
+            <div class="usuario-detalle-item">
+                <span>Email</span>
+                <strong id="detalleUsuarioEmail"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Teléfono</span>
+                <strong id="detalleUsuarioTelefono"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Rol</span>
+                <strong id="detalleUsuarioRol"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Empresa</span>
+                <strong id="detalleUsuarioEmpresa"></strong>
+            </div>
+
+        </div>
+
+        <div class="modal-detalle-acciones">
+
+        <button type="button" class="table-action-button danger" id="btnDetalleEliminarUsuario">
+                Eliminar
+            </button>
+
+         <a href="#" class="config-save-button" id="btnDetalleEditarUsuario">
+                Editar
+            </a>
+
+            
+
+           
 
         </div>
 

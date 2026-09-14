@@ -119,7 +119,7 @@ if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // =====================================================
 
 $stmt = $pdo->prepare("
-    SELECT id
+    SELECT id, creado_por
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -127,13 +127,40 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$id]);
 
-if (!$stmt->fetch()) {
+$empresaExistente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$empresaExistente) {
 
     die('
         <h2>Error</h2>
 
         <p>
             La empresa que intentas editar no existe.
+        </p>
+
+        <p>
+            <a href="empresas.php">
+                Volver a empresas
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE EDITAR ESTA EMPRESA
+// =====================================================
+
+if (!puedeVerEmpresa(
+    $empresaExistente['creado_por'] !== null ? (int) $empresaExistente['creado_por'] : null
+)) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No tienes permiso para editar esta empresa.
         </p>
 
         <p>

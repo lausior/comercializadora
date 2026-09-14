@@ -239,7 +239,7 @@ requerirPermiso('partes');
                         class="planner-select"
                     >
 
-                        <option>Todos los estados</option>
+                        <option>Todos</option>
                         <option>Pendiente</option>
                         <option>En curso</option>
                         <option>Completado</option>
@@ -261,7 +261,7 @@ requerirPermiso('partes');
                         class="planner-select"
                     >
 
-                        <option>Todos los tipos</option>
+                        <option>Todos</option>
                         <option>Instalación</option>
                         <option>Mantenimiento</option>
                         <option>Revisión</option>
@@ -305,7 +305,7 @@ requerirPermiso('partes');
                         class="planner-select"
                     >
 
-                        <option>Todas las prioridades</option>
+                        <option>Todas</option>
                         <option>Alta</option>
                         <option>Media</option>
                         <option>Baja</option>

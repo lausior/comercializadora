@@ -106,7 +106,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // =====================================================
 
 $stmtUsuario = $pdo->prepare("
-    SELECT id
+    SELECT id, id_empresa, creado_por
     FROM usuarios
     WHERE id = ?
 ");
@@ -128,6 +128,63 @@ if (!$usuarioExiste) {
         <p>
             <a href="usuarios.php">
                 Volver a usuarios
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE EDITAR ESTE USUARIO
+// =====================================================
+
+if (!puedeVerUsuario($usuarioExiste['creado_por'] !== null ? (int) $usuarioExiste['creado_por'] : null)) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No tienes permiso para editar este usuario.
+        </p>
+
+        <p>
+            <a href="usuarios.php">
+                Volver a usuarios
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// NG Y EMPRESA NO PUEDEN CAMBIAR A UN USUARIO DE EMPRESA
+// =====================================================
+//
+// La comprobación anterior ya garantiza que el usuario
+// era de su propia empresa; esta impide que, aun así,
+// lo manden a OTRA empresa manipulando el formulario
+// (el desplegable normal ya no se lo deja elegir, pero
+// esto es lo que de verdad lo impide).
+//
+// =====================================================
+
+if (
+    rolActual() !== ROL_SRG &&
+    $idEmpresa !== (int) $usuarioExiste['id_empresa']
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes cambiar la empresa de este usuario.
+        </p>
+
+        <p>
+            <a href="javascript:history.back()">
+                Volver al formulario
             </a>
         </p>
     ');
@@ -265,6 +322,53 @@ if (!$rol) {
 
         <p>
             El rol seleccionado no existe.
+        </p>
+
+        <p>
+            <a href="javascript:history.back()">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE ASIGNAR ESE ROL
+// =====================================================
+
+if (
+    rolActual() === ROL_EMPRESA &&
+    !in_array($rol['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes asignar ese rol.
+        </p>
+
+        <p>
+            <a href="javascript:history.back()">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+if (
+    rolActual() === ROL_NG &&
+    $rol['nombre'] === ROL_SRG
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes asignar ese rol.
         </p>
 
         <p>

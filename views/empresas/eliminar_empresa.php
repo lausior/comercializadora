@@ -45,7 +45,8 @@ $stmtEmpresa = $pdo->prepare("
         id,
         codigo_empresa,
         nombre,
-        cif
+        cif,
+        creado_por
     FROM empresas
     WHERE id = ?
 ");
@@ -66,6 +67,31 @@ if (!$empresa) {
 
         <p>
             La empresa que intentas eliminar no existe.
+        </p>
+
+        <p>
+            <a href="empresas.php">
+                Volver a empresas
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE ELIMINAR ESTA EMPRESA
+// =====================================================
+
+if (!puedeVerEmpresa(
+    $empresa['creado_por'] !== null ? (int) $empresa['creado_por'] : null
+)) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No tienes permiso para eliminar esta empresa.
         </p>
 
         <p>

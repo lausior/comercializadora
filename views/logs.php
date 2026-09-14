@@ -161,21 +161,6 @@ requerirPermiso('logs');
 
             <div class="filter-group">
 
-                <label for="descripcion">
-                    Descripción
-                </label>
-
-                <input
-                    type="text"
-                    id="descripcion"
-                    placeholder="Buscar descripción..."
-                >
-
-            </div>
-
-
-            <div class="filter-group">
-
                 <label for="ip">
                     IP
                 </label>

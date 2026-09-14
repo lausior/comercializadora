@@ -11,18 +11,47 @@ require_once '../../config/database.php';
 // =====================================================
 // OBTENER EMPRESAS
 // =====================================================
+//
+// EMPRESA solo puede crear usuarios para su propia
+// empresa. SRG y NG pueden elegir cualquiera (NG la
+// necesita para dar de alta al primer usuario de una
+// empresa nueva).
+//
+// =====================================================
 
-$stmtEmpresas = $pdo->query("
-    SELECT id, nombre
-    FROM empresas
-    ORDER BY nombre
-");
+if (rolActual() === ROL_EMPRESA) {
 
-$empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+    $stmtEmpresas = $pdo->prepare("
+        SELECT id, nombre
+        FROM empresas
+        WHERE id = ?
+    ");
+
+    $stmtEmpresas->execute([$_SESSION['id_empresa']]);
+
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+} else {
+
+    $stmtEmpresas = $pdo->query("
+        SELECT id, nombre
+        FROM empresas
+        ORDER BY nombre
+    ");
+
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+}
 
 
 // =====================================================
 // OBTENER ROLES
+// =====================================================
+//
+// Nadie puede crear un usuario con un rol más privilegiado
+// que el suyo propio: EMPRESA solo puede dar de alta
+// EMPRESA o USUARIO; NG no puede crear otro SRG.
+//
 // =====================================================
 
 $stmtRoles = $pdo->query("
@@ -32,6 +61,22 @@ $stmtRoles = $pdo->query("
 ");
 
 $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
+
+if (rolActual() === ROL_EMPRESA) {
+
+    $roles = array_values(array_filter(
+        $roles,
+        fn(array $r): bool => in_array($r['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
+    ));
+
+} elseif (rolActual() === ROL_NG) {
+
+    $roles = array_values(array_filter(
+        $roles,
+        fn(array $r): bool => $r['nombre'] !== ROL_SRG
+    ));
+
+}
 
 ?>
 

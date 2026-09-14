@@ -18,6 +18,7 @@ $estaBloqueado = $usuarioBloqueado !== '';
 
     <title>Iniciar sesión - Comparador Eléctrico</title>
 
+    <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/login.css">
 </head>
 

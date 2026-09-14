@@ -9,21 +9,21 @@ require_once __DIR__ . '/config/database.php';
 // DEBE HABER SESIÓN Y TENER EL CAMBIO PENDIENTE
 // =====================================================
 
-if (!isset($_SESSION['id_usuario'])) {
+if (!isset($_SESSION['id_usuario'])) { //Si no hay una sesión iniciada, envía a login
 
     header('Location: /comercializadora/login.php');
     exit;
 
 }
 
-if (empty($_SESSION['cambiar_password'])) {
+if (empty($_SESSION['cambiar_password'])) { //Si cambiar_password está vacío, es 0 o false, envía a index
 
     header('Location: /comercializadora/index.php');
     exit;
 
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { //Comprobamos que el fromulario se haya enviado por POST
 
     header('Location: /comercializadora/cambiar_password.php');
     exit;
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 
 // =====================================================
-// FUNCIÓN PARA VOLVER CON ERROR
+// FUNCIÓN PARA DEVOLVER ERRORES
 // =====================================================
 
 function volverConErrorCambio(string $mensaje): void
@@ -46,7 +46,7 @@ function volverConErrorCambio(string $mensaje): void
 
 
 // =====================================================
-// RECOGER DATOS
+// RECOGER DATOS DEL FORMULARIO
 // =====================================================
 
 $passwordNueva      = $_POST['password_nueva'] ?? '';
@@ -89,13 +89,10 @@ if ($passwordNueva !== $passwordConfirmar) {
 // =====================================================
 // COMPROBAR QUE SEA DISTINTA DE LA ACTUAL
 // =====================================================
-//
-// No se le pide al usuario que escriba la contraseña
-// actual: se compara la nueva directamente contra el
-// hash que ya hay guardado en la base de datos.
-//
+// No se le pide al usuario que escriba la contraseña actual: se compara la nueva directamente contra el hash que ya hay guardado en la base de datos.
 // =====================================================
 
+//Busca la contraseña almacenada con el id del usuario
 $stmt = $pdo->prepare("
     SELECT password
     FROM usuarios
@@ -140,7 +137,7 @@ $stmt->execute([
 // ACTUALIZAR LA SESIÓN Y CONTINUAR AL PANEL
 // =====================================================
 
-$_SESSION['cambiar_password'] = 0;
+$_SESSION['cambiar_password'] = 0; //actualiza el valor de cambiar_password
 
 header('Location: /comercializadora/index.php');
 exit;

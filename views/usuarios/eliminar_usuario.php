@@ -48,6 +48,8 @@ $stmtUsuario = $pdo->prepare("
         u.apellidos,
         u.email,
         u.telefono,
+        u.id_empresa,
+        u.creado_por,
         e.nombre AS empresa,
         r.nombre AS rol
     FROM usuarios u
@@ -77,6 +79,29 @@ if (!$usuario) {
 
         <p>
             El usuario que intentas eliminar no existe.
+        </p>
+
+        <p>
+            <a href="usuarios.php">
+                Volver a usuarios
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE ELIMINAR ESTE USUARIO
+// =====================================================
+
+if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No tienes permiso para eliminar este usuario.
         </p>
 
         <p>

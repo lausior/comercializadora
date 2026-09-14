@@ -122,6 +122,82 @@ function requerirPermiso(string $seccion): void
 
 
 /**
+ * =====================================================
+ * VISIBILIDAD DE DATOS POR ROL
+ * =====================================================
+ *
+ * No es lo mismo "puede entrar a la sección Empresas"
+ * (tienePermiso) que "puede ver/gestionar ESTA empresa en
+ * concreto" (puedeVerEmpresa). Estas dos funciones deciden
+ * lo segundo, y las usan tanto los listados como las
+ * páginas de editar/eliminar. Reglas:
+ *
+ *   SRG      -> puede ver y gestionar todas las empresas
+ *               y usuarios, incluida su propia cuenta.
+ *   NG       -> ve SOLO las empresas y los usuarios que
+ *               ha creado él mismo. No la de SRG.
+ *   EMPRESA  -> ve SOLO los usuarios que ha creado ella
+ *               misma (su equipo).
+ *   USUARIO  -> no tiene acceso a estas secciones.
+ *
+ * Además, en los LISTADOS (empresas.php, usuarios.php)
+ * la propia cuenta/empresa de quien mira nunca aparece,
+ * aunque sí sea gestionable si se llega a su edición
+ * directamente (por ejemplo, SRG editando los datos de
+ * su propia empresa). Ese filtro extra se aplica en el
+ * propio listado, no aquí.
+ * =====================================================
+ */
+
+/**
+ * ¿Puede el usuario actual ver/gestionar esta empresa?
+ * Solo lo usan SRG y NG (son los únicos con acceso a la
+ * sección "empresas"; ver $GLOBALS['PERMISOS_SECCIONES']).
+ */
+function puedeVerEmpresa(?int $creadoPor): bool
+{
+    $rol = rolActual();
+
+    if ($rol === ROL_SRG) {
+        return true;
+    }
+
+    if ($rol === ROL_NG) {
+
+        return $creadoPor !== null
+            && $creadoPor === (int) ($_SESSION['id_usuario'] ?? 0);
+
+    }
+
+    return false;
+}
+
+
+/**
+ * ¿Puede el usuario actual ver/gestionar un usuario
+ * creado por $creadoPor?
+ *
+ * SRG ve a todos. NG y EMPRESA solo ven a los usuarios
+ * que ellos mismos han dado de alta.
+ */
+function puedeVerUsuario(?int $creadoPor): bool
+{
+    $rol = rolActual();
+
+    if ($rol === ROL_SRG) {
+        return true;
+    }
+
+    if ($rol === ROL_NG || $rol === ROL_EMPRESA) {
+        return $creadoPor !== null
+            && $creadoPor === (int) ($_SESSION['id_usuario'] ?? 0);
+    }
+
+    return false;
+}
+
+
+/**
  * Para logs.php: qué roles de usuario puede VER cada rol
  * en el listado (para ocultar filas, no solo el menú).
  *

@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.querySelectorAll('tr')
     );
 
+    // Mismo punto de corte que el @media (max-width: 680px)
+    // del CSS que decide entre vista de escritorio y móvil.
+    const MOBILE_BREAKPOINT = 680;
+
+    function esMovil() {
+        return window.innerWidth <= MOBILE_BREAKPOINT;
+    }
+
 
     /* =========================================================
        04. ORDEN ORIGINAL
@@ -84,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(texto)
             .toLowerCase()
             .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[̀-ͯ]/g, '')
             .trim();
 
     }
@@ -548,12 +556,15 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================================
        12. LIMPIAR FILTROS
        Vacía todos los inputs/selects de filtro y vuelve
-       a la primera página.
+       a la primera página. Hay dos botones (el de la tabla
+       de escritorio y el del panel móvil); los dos vacían
+       el mismo conjunto de inputs, escritorio y móvil
+       incluidos.
     ========================================================= */
 
-    if (btnLimpiar) {
+    document.querySelectorAll('#btnLimpiarFiltros, #btnLimpiarFiltrosMovil').forEach(btn => {
 
-        btnLimpiar.addEventListener(
+        btn.addEventListener(
             'click',
             () => {
 
@@ -573,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         );
 
-    }
+    });
 
 
     /* =========================================================
@@ -798,6 +809,142 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
     );
+
+
+    /* =========================================================
+       14B. PANEL DE FILTROS DESPLEGABLE (SOLO MÓVIL)
+    ========================================================= */
+
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    const panelFiltros = document.getElementById('panelFiltrosClientes');
+
+    if (btnToggleFiltros && panelFiltros) {
+
+        btnToggleFiltros.addEventListener('click', () => {
+
+            const abierto = panelFiltros.style.display !== 'none';
+
+            panelFiltros.style.display = abierto ? 'none' : 'block';
+
+            btnToggleFiltros.setAttribute(
+                'aria-expanded',
+                abierto ? 'false' : 'true'
+            );
+
+        });
+
+    }
+
+
+    /* =========================================================
+       14C. TARJETA DE DETALLE (SOLO MÓVIL)
+       En escritorio, tocar la fila no hace nada — ahí ya se
+       ve todo y están los botones Ver/Editar de siempre.
+       Clientes no tiene backend real, así que Eliminar/Editar
+       dentro de la tarjeta son, igual que en la tabla,
+       botones de demostración sin funcionalidad.
+    ========================================================= */
+
+    const modalDetalle = document.getElementById('modalDetalleCliente');
+
+    const detalleAvatar = document.getElementById('detalleClienteAvatar');
+    const detalleNombre = document.getElementById('detalleClienteNombre');
+    const detalleTipo = document.getElementById('detalleClienteTipo');
+    const detalleIdentificacion = document.getElementById('detalleClienteIdentificacion');
+    const detalleCorreo = document.getElementById('detalleClienteCorreo');
+    const detalleComercializadora = document.getElementById('detalleClienteComercializadora');
+    const detalleTarifa = document.getElementById('detalleClienteTarifa');
+    const detalleEstado = document.getElementById('detalleClienteEstado');
+
+    function abrirModalDetalleCliente(fila) {
+
+        if (detalleAvatar) {
+            detalleAvatar.textContent = fila.dataset.iniciales || '';
+        }
+
+        if (detalleNombre) {
+            detalleNombre.textContent = fila.dataset.nombre || '';
+        }
+
+        if (detalleTipo) {
+            detalleTipo.textContent = fila.dataset.tipo || '';
+        }
+
+        if (detalleIdentificacion) {
+            detalleIdentificacion.textContent = fila.dataset.identificacion || '—';
+        }
+
+        if (detalleCorreo) {
+            detalleCorreo.textContent = fila.dataset.correo || '—';
+        }
+
+        if (detalleComercializadora) {
+            detalleComercializadora.textContent = fila.dataset.comercializadora || '—';
+        }
+
+        if (detalleTarifa) {
+            detalleTarifa.textContent = fila.dataset.tarifa || '—';
+        }
+
+        if (detalleEstado) {
+            detalleEstado.textContent = fila.dataset.estado || '—';
+        }
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    }
+
+    window.cerrarModalDetalleCliente = function () {
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    filas.forEach(fila => {
+
+        fila.addEventListener('click', () => {
+
+            // En escritorio la fila no es clicable: ahí ya
+            // se ve todo en la propia tabla.
+            if (!esMovil()) {
+                return;
+            }
+
+            abrirModalDetalleCliente(fila);
+
+        });
+
+    });
+
+    if (modalDetalle) {
+
+        modalDetalle.addEventListener('click', event => {
+
+            if (event.target === modalDetalle) {
+                window.cerrarModalDetalleCliente();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (
+            event.key === 'Escape' &&
+            modalDetalle &&
+            modalDetalle.style.display !== 'none'
+        ) {
+            window.cerrarModalDetalleCliente();
+        }
+
+    });
 
 
     /* =========================================================

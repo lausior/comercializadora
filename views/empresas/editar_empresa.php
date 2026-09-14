@@ -34,7 +34,8 @@ $stmtEmpresa = $pdo->prepare("
         cif,
         direccion,
         telefono,
-        email
+        email,
+        creado_por
     FROM empresas
     WHERE id = ?
 ");
@@ -51,6 +52,26 @@ $empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
 if (!$empresa) {
 
     header('Location: empresas.php');
+    exit;
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE PUEDE VER/EDITAR ESTA EMPRESA
+// =====================================================
+//
+// Oculto en el listado no es suficiente: sin esto, NG
+// podría editar la empresa de SRG tecleando su id en
+// la URL directamente.
+//
+// =====================================================
+
+if (!puedeVerEmpresa(
+    $empresa['creado_por'] !== null ? (int) $empresa['creado_por'] : null
+)) {
+
+    header('Location: empresas.php?error=sin_permiso');
     exit;
 
 }

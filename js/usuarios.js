@@ -292,11 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const contador = document.getElementById('usuariosContador');
     const mostrando = document.getElementById('usuariosMostrando');
 
-    const btnLimpiar = document.getElementById('btnLimpiarFiltros');
-
     const selectorPorPagina =
         document.getElementById('selectorPorPagina');
 
+    // Los filtros de escritorio (fila de la tabla) y los del
+    // panel móvil comparten clase y data-column, así que un
+    // único selector los recoge a todos.
     const filtros =
         document.querySelectorAll('.column-filter');
 
@@ -340,6 +341,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const USUARIOS_TOTALES = filas.length;
 
+    // Mismo punto de corte que el @media (max-width: 680px)
+    // del CSS que decide entre vista de escritorio y móvil.
+    const MOBILE_BREAKPOINT = 680;
+
+    function esMovil() {
+        return window.innerWidth <= MOBILE_BREAKPOINT;
+    }
+
 
     /* =========================================================
        04. ORDEN ORIGINAL
@@ -361,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(texto)
             .toLowerCase()
             .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[̀-ͯ]/g, '')
             .trim();
 
     }
@@ -894,11 +903,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        14. LIMPIAR FILTROS
+       Hay dos botones (el de la tabla de escritorio y el del
+       panel móvil); los dos vacían el mismo conjunto de
+       inputs, escritorio y móvil incluidos.
     ========================================================= */
 
-    if (btnLimpiar) {
+    document.querySelectorAll('#btnLimpiarFiltros, #btnLimpiarFiltrosMovil').forEach(btn => {
 
-        btnLimpiar.addEventListener(
+        btn.addEventListener(
             'click',
             () => {
 
@@ -918,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         );
 
-    }
+    });
 
 
     /* =========================================================
@@ -1134,6 +1146,160 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
     );
+
+
+    /* =========================================================
+       16B. PANEL DE FILTROS DESPLEGABLE (SOLO MÓVIL)
+    ========================================================= */
+
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    const panelFiltros = document.getElementById('panelFiltrosUsuarios');
+
+    if (btnToggleFiltros && panelFiltros) {
+
+        btnToggleFiltros.addEventListener('click', () => {
+
+            const abierto = panelFiltros.style.display !== 'none';
+
+            panelFiltros.style.display = abierto ? 'none' : 'block';
+
+            btnToggleFiltros.setAttribute(
+                'aria-expanded',
+                abierto ? 'false' : 'true'
+            );
+
+        });
+
+    }
+
+
+    /* =========================================================
+       16C. TARJETA DE DETALLE (SOLO MÓVIL)
+       En escritorio, tocar la fila no hace nada — ahí ya se
+       ve todo y están los botones Editar/Eliminar de siempre.
+    ========================================================= */
+
+    const modalDetalle = document.getElementById('modalDetalleUsuario');
+
+    const detalleAvatar = document.getElementById('detalleUsuarioAvatar');
+    const detalleNombre = document.getElementById('detalleUsuarioNombre');
+    const detalleUsername = document.getElementById('detalleUsuarioUsername');
+    const detalleEmail = document.getElementById('detalleUsuarioEmail');
+    const detalleTelefono = document.getElementById('detalleUsuarioTelefono');
+    const detalleRol = document.getElementById('detalleUsuarioRol');
+    const detalleEmpresa = document.getElementById('detalleUsuarioEmpresa');
+    const btnDetalleEditar = document.getElementById('btnDetalleEditarUsuario');
+    const btnDetalleEliminar = document.getElementById('btnDetalleEliminarUsuario');
+
+    let usuarioDetalleActual = null;
+
+    function abrirModalDetalleUsuario(fila) {
+
+        usuarioDetalleActual = fila.dataset;
+
+        if (detalleAvatar) {
+            detalleAvatar.textContent = fila.dataset.iniciales || '';
+        }
+
+        if (detalleNombre) {
+            detalleNombre.textContent = fila.dataset.nombre || '';
+        }
+
+        if (detalleUsername) {
+            detalleUsername.textContent = '@' + (fila.dataset.usuario || '');
+        }
+
+        if (detalleEmail) {
+            detalleEmail.textContent = fila.dataset.email || '—';
+        }
+
+        if (detalleTelefono) {
+            detalleTelefono.textContent = fila.dataset.telefono || '—';
+        }
+
+        if (detalleRol) {
+            detalleRol.textContent = fila.dataset.rol || '—';
+        }
+
+        if (detalleEmpresa) {
+            detalleEmpresa.textContent = fila.dataset.empresa || '—';
+        }
+
+        if (btnDetalleEditar) {
+            btnDetalleEditar.href = 'editar_usuario.php?id=' + encodeURIComponent(fila.dataset.id);
+        }
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    }
+
+    window.cerrarModalDetalleUsuario = function () {
+
+        usuarioDetalleActual = null;
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    filas.forEach(fila => {
+
+        fila.addEventListener('click', () => {
+
+            // En escritorio la fila no es clicable: ahí ya
+            // se ve todo en la propia tabla.
+            if (!esMovil()) {
+                return;
+            }
+
+            abrirModalDetalleUsuario(fila);
+
+        });
+
+    });
+
+    if (btnDetalleEliminar) {
+
+        btnDetalleEliminar.addEventListener('click', () => {
+
+            if (!usuarioDetalleActual) {
+                return;
+            }
+
+            const id = usuarioDetalleActual.id;
+            const nombre = usuarioDetalleActual.nombre;
+
+            window.cerrarModalDetalleUsuario();
+            window.abrirModalEliminar(id, nombre);
+
+        });
+
+    }
+
+    if (modalDetalle) {
+
+        modalDetalle.addEventListener('click', event => {
+
+            if (event.target === modalDetalle) {
+                window.cerrarModalDetalleUsuario();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && usuarioDetalleActual) {
+            window.cerrarModalDetalleUsuario();
+        }
+
+    });
 
 
     /* =========================================================

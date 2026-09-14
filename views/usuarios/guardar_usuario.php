@@ -223,6 +223,82 @@ if (!$rol) {
 
 
 // =====================================================
+// COMPROBAR QUE PUEDE CREAR UN USUARIO PARA ESA EMPRESA
+// Y CON ESE ROL
+// =====================================================
+//
+// Por si alguien manipula el formulario a mano: una
+// EMPRESA no puede crear usuarios para otra empresa, ni
+// dar de alta a nadie con un rol más privilegiado que el
+// suyo (EMPRESA/USUARIO); NG no puede crear otro SRG.
+//
+// =====================================================
+
+if (
+    rolActual() === ROL_EMPRESA &&
+    $id_empresa !== (int) ($_SESSION['id_empresa'] ?? 0)
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes crear usuarios para otra empresa.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+if (
+    rolActual() === ROL_EMPRESA &&
+    !in_array($rol['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes asignar ese rol.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+if (
+    rolActual() === ROL_NG &&
+    $rol['nombre'] === ROL_SRG
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            No puedes asignar ese rol.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
 // GENERAR CONTRASEÑA INICIAL
 // =====================================================
 
@@ -260,7 +336,8 @@ $stmt = $pdo->prepare("
         password,
         cambiar_password,
         id_empresa,
-        id_rol
+        id_rol,
+        creado_por
     )
     VALUES (
         :username,
@@ -271,7 +348,8 @@ $stmt = $pdo->prepare("
         :password,
         1,
         :id_empresa,
-        :id_rol
+        :id_rol,
+        :creado_por
     )
 ");
 
@@ -294,7 +372,9 @@ $stmt->execute([
 
     ':id_empresa' => $id_empresa,
 
-    ':id_rol'     => $id_rol
+    ':id_rol'     => $id_rol,
+
+    ':creado_por' => $_SESSION['id_usuario'],
 
 ]);
 

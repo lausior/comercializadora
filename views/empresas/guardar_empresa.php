@@ -144,7 +144,8 @@ $stmt = $pdo->prepare("
         cif,
         direccion,
         telefono,
-        email
+        email,
+        creado_por
     )
     VALUES (
         :codigo_empresa,
@@ -152,7 +153,8 @@ $stmt = $pdo->prepare("
         :cif,
         :direccion,
         :telefono,
-        :email
+        :email,
+        :creado_por
     )
 ");
 
@@ -163,6 +165,7 @@ $stmt->execute([
     ':direccion'      => $direccion !== '' ? $direccion : null,
     ':telefono'       => $telefono !== '' ? $telefono : null,
     ':email'          => $email !== '' ? $email : null,
+    ':creado_por'     => $_SESSION['id_usuario'],
 ]);
 
 $idEmpresa = $pdo->lastInsertId();

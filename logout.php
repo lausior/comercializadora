@@ -2,11 +2,12 @@
 
 session_start();
 
-$_SESSION = [];
+$_SESSION = []; //Vacía todas las variables de sesión
 
-if (ini_get('session.use_cookies')) {
-    $parametrosCookie = session_get_cookie_params();
-    setcookie(
+
+if (ini_get('session.use_cookies')) { //comprueba si PHP está utilizando una cookie para identificar la sesión
+    $parametrosCookie = session_get_cookie_params(); //obtiene los parámetros de la cookie
+    setcookie( //hace que la cookie de sesión quede caducada, eliminándola del navegador
         session_name(),
         '',
         time() - 42000,
@@ -17,7 +18,7 @@ if (ini_get('session.use_cookies')) {
     );
 }
 
-session_destroy();
+session_destroy(); //destruye la sesión
 
 header('Location: /comercializadora/login.php');
 exit;

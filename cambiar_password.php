@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+session_start(); //Inicia o recupera la sesión PHP del usuario
 
 require_once __DIR__ . '/config/permisos.php';
 
@@ -16,7 +16,7 @@ require_once __DIR__ . '/config/permisos.php';
 //
 // =====================================================
 
-if (!isset($_SESSION['id_usuario'])) {
+if (!isset($_SESSION['id_usuario'])) { //comprueba si existe el id en la sesión, si no existe lo envía a login
 
     header('Location: /comercializadora/login.php');
     exit;
@@ -28,7 +28,7 @@ if (!isset($_SESSION['id_usuario'])) {
 // SI NO TIENE PENDIENTE EL CAMBIO, NO NECESITA ESTAR AQUÍ
 // =====================================================
 
-if (empty($_SESSION['cambiar_password'])) {
+if (empty($_SESSION['cambiar_password'])) { //si cambiar_contraseña está vacío, es 0 o false, envia a index.php
 
     header('Location: /comercializadora/index.php');
     exit;
@@ -36,9 +36,11 @@ if (empty($_SESSION['cambiar_password'])) {
 }
 
 
-$errorCambio = $_SESSION['cambio_password_error'] ?? '';
-unset($_SESSION['cambio_password_error']);
+$errorCambio = $_SESSION['cambio_password_error'] ?? ''; //si existe cambio_password_error en la sesión, guarda su valor en $errorCambio
+unset($_SESSION['cambio_password_error']); //elimina el mensaje de error de la sesión una vez guardado
 
+
+// Si todo es correcto se muestra el formulario para cambiar la contraseña
 ?>
 <!DOCTYPE html>
 <html lang="es">

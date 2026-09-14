@@ -454,8 +454,6 @@ requerirPermiso('inicio');
 
 <?php include 'templates/footer.php'; ?>
 
-<script src="js/sidebar.js"></script>
-
 </body>
 
 </html>

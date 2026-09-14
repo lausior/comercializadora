@@ -35,7 +35,8 @@ $stmtUsuario = $pdo->prepare("
         email,
         telefono,
         id_empresa,
-        id_rol
+        id_rol,
+        creado_por
     FROM usuarios
     WHERE id = ?
 ");
@@ -58,16 +59,55 @@ if (!$usuario) {
 
 
 // =====================================================
+// COMPROBAR QUE PUEDE VER/EDITAR ESTE USUARIO
+// =====================================================
+//
+// Oculto en el listado no es suficiente: sin esto, una
+// EMPRESA podría editar un usuario de otra empresa (o de
+// NG/SRG) tecleando su id en la URL directamente.
+//
+// =====================================================
+
+if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+
+    header('Location: usuarios.php?error=sin_permiso');
+    exit;
+
+}
+
+
+// =====================================================
 // OBTENER EMPRESAS
 // =====================================================
 
-$stmtEmpresas = $pdo->query("
-    SELECT id, nombre
-    FROM empresas
-    ORDER BY nombre
-");
+// SRG puede reasignar el usuario a cualquier empresa.
+// El resto de roles solo puede editar usuarios de su
+// propia empresa (ya comprobado arriba), así que el
+// desplegable solo le ofrece esa misma empresa.
 
-$empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+if (rolActual() === ROL_SRG) {
+
+    $stmtEmpresas = $pdo->query("
+        SELECT id, nombre
+        FROM empresas
+        ORDER BY nombre
+    ");
+
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+} else {
+
+    $stmtEmpresas = $pdo->prepare("
+        SELECT id, nombre
+        FROM empresas
+        WHERE id = ?
+    ");
+
+    $stmtEmpresas->execute([$usuario['id_empresa']]);
+
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+}
 
 
 // =====================================================
@@ -81,6 +121,25 @@ $stmtRoles = $pdo->query("
 ");
 
 $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
+
+// Igual que en crear_usuario.php: nadie puede asignar un
+// rol más privilegiado que el suyo propio.
+
+if (rolActual() === ROL_EMPRESA) {
+
+    $roles = array_values(array_filter(
+        $roles,
+        fn(array $r): bool => in_array($r['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
+    ));
+
+} elseif (rolActual() === ROL_NG) {
+
+    $roles = array_values(array_filter(
+        $roles,
+        fn(array $r): bool => $r['nombre'] !== ROL_SRG
+    ));
+
+}
 
 ?>
 

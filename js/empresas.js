@@ -283,10 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const contador = document.getElementById('empresasContador');
     const mostrando = document.getElementById('empresasMostrando');
 
-    const btnLimpiar = document.getElementById('btnLimpiarFiltros');
-
     const selectorPorPagina = document.getElementById('selectorPorPagina');
 
+    // Los filtros por columna de escritorio y los del panel
+    // móvil usan la misma clase y el mismo data-column, así
+    // que un único selector los recoge a todos: solo el que
+    // esté visible en cada momento tendrá valor.
     const filtros = document.querySelectorAll('.column-filter');
 
     const botonesOrden = document.querySelectorAll('.usuarios-table .sort-button');
@@ -315,6 +317,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let paginaActual = 1;
 
     const EMPRESAS_TOTALES = filas.length;
+
+    // Mismo punto de corte que el @media (max-width: 680px)
+    // del CSS que decide entre vista de escritorio y móvil.
+    const MOBILE_BREAKPOINT = 680;
+
+    function esMovil() {
+        return window.innerWidth <= MOBILE_BREAKPOINT;
+    }
 
 
     /* =========================================================
@@ -618,11 +628,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        14. LIMPIAR FILTROS
+       Hay dos botones "Limpiar filtros" (el de la tabla de
+       escritorio y el del panel móvil); los dos vacían el
+       mismo conjunto de inputs, escritorio y móvil incluidos.
     ========================================================= */
 
-    if (btnLimpiar) {
+    document.querySelectorAll('#btnLimpiarFiltros, #btnLimpiarFiltrosMovil').forEach(btn => {
 
-        btnLimpiar.addEventListener('click', () => {
+        btn.addEventListener('click', () => {
 
             filtros.forEach(filtro => {
                 filtro.value = '';
@@ -633,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         });
 
-    }
+    });
 
 
     /* =========================================================
@@ -729,6 +742,161 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarPagina();
 
         });
+
+    });
+
+
+    /* =========================================================
+       16B. PANEL DE FILTROS DESPLEGABLE (SOLO MÓVIL)
+    ========================================================= */
+
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    const panelFiltros = document.getElementById('panelFiltrosEmpresas');
+
+    if (btnToggleFiltros && panelFiltros) {
+
+        btnToggleFiltros.addEventListener('click', () => {
+
+            const abierto = panelFiltros.style.display !== 'none';
+
+            panelFiltros.style.display = abierto ? 'none' : 'block';
+
+            btnToggleFiltros.setAttribute(
+                'aria-expanded',
+                abierto ? 'false' : 'true'
+            );
+
+        });
+
+    }
+
+
+    /* =========================================================
+       16C. TARJETA DE DETALLE (SOLO MÓVIL)
+       =========================================================
+       En escritorio, tocar la fila no hace nada — ahí ya se
+       ve todo y están los botones Editar/Eliminar de siempre.
+    ========================================================= */
+
+    const modalDetalle = document.getElementById('modalDetalleEmpresa');
+
+    const detalleAvatar = document.getElementById('detalleEmpresaAvatar');
+    const detalleNombre = document.getElementById('detalleEmpresaNombre');
+    const detalleCodigo = document.getElementById('detalleEmpresaCodigo');
+    const detalleCif = document.getElementById('detalleEmpresaCif');
+    const detalleDireccion = document.getElementById('detalleEmpresaDireccion');
+    const detalleTelefono = document.getElementById('detalleEmpresaTelefono');
+    const detalleEmail = document.getElementById('detalleEmpresaEmail');
+    const btnDetalleEditar = document.getElementById('btnDetalleEditarEmpresa');
+    const btnDetalleEliminar = document.getElementById('btnDetalleEliminarEmpresa');
+
+    let empresaDetalleActual = null;
+
+    function abrirModalDetalleEmpresa(fila) {
+
+        empresaDetalleActual = fila.dataset;
+
+        if (detalleAvatar) {
+            detalleAvatar.textContent = fila.dataset.iniciales || '';
+        }
+
+        if (detalleNombre) {
+            detalleNombre.textContent = fila.dataset.nombre || '';
+        }
+
+        if (detalleCodigo) {
+            detalleCodigo.textContent = 'Código ' + (fila.dataset.codigo || '');
+        }
+
+        if (detalleCif) {
+            detalleCif.textContent = fila.dataset.cif || '—';
+        }
+
+        if (detalleDireccion) {
+            detalleDireccion.textContent = fila.dataset.direccion || '—';
+        }
+
+        if (detalleTelefono) {
+            detalleTelefono.textContent = fila.dataset.telefono || '—';
+        }
+
+        if (detalleEmail) {
+            detalleEmail.textContent = fila.dataset.email || '—';
+        }
+
+        if (btnDetalleEditar) {
+            btnDetalleEditar.href = 'editar_empresa.php?id=' + encodeURIComponent(fila.dataset.id);
+        }
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    }
+
+    window.cerrarModalDetalleEmpresa = function () {
+
+        empresaDetalleActual = null;
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    filas.forEach(fila => {
+
+        fila.addEventListener('click', () => {
+
+            // En escritorio la fila no es clicable: ahí ya
+            // se ve todo en la propia tabla.
+            if (!esMovil()) {
+                return;
+            }
+
+            abrirModalDetalleEmpresa(fila);
+
+        });
+
+    });
+
+    if (btnDetalleEliminar) {
+
+        btnDetalleEliminar.addEventListener('click', () => {
+
+            if (!empresaDetalleActual) {
+                return;
+            }
+
+            const id = empresaDetalleActual.id;
+            const nombre = empresaDetalleActual.nombre;
+
+            window.cerrarModalDetalleEmpresa();
+            window.abrirModalEliminarEmpresa(id, nombre);
+
+        });
+
+    }
+
+    if (modalDetalle) {
+
+        modalDetalle.addEventListener('click', event => {
+
+            if (event.target === modalDetalle) {
+                window.cerrarModalDetalleEmpresa();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && empresaDetalleActual) {
+            window.cerrarModalDetalleEmpresa();
+        }
 
     });
 
