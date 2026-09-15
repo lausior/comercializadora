@@ -67,9 +67,11 @@ if (!$empresa) {
 //
 // =====================================================
 
-if (!puedeVerEmpresa(
-    $empresa['creado_por'] !== null ? (int) $empresa['creado_por'] : null
-)) {
+if (
+    !puedeVerEmpresa(
+        $empresa['creado_por'] !== null ? (int) $empresa['creado_por'] : null
+    )
+) {
 
     header('Location: empresas.php?error=sin_permiso');
     exit;
@@ -186,14 +188,8 @@ if (!puedeVerEmpresa(
                             Código de empresa
                         </label>
 
-                        <input
-                            type="text"
-                            id="codigo_empresa"
-                            name="codigo_empresa"
-                            maxlength="6"
-                            value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>"
-                            required
-                        >
+                        <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
+                            value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>" required>
 
                         <span class="field-error" id="error-codigo_empresa"></span>
 
@@ -210,13 +206,8 @@ if (!puedeVerEmpresa(
                             Nombre
                         </label>
 
-                        <input
-                            type="text"
-                            id="nombre"
-                            name="nombre"
-                            value="<?= htmlspecialchars($empresa['nombre']) ?>"
-                            required
-                        >
+                        <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($empresa['nombre']) ?>"
+                            required>
 
                         <span class="field-error" id="error-nombre"></span>
 
@@ -233,13 +224,8 @@ if (!puedeVerEmpresa(
                             CIF
                         </label>
 
-                        <input
-                            type="text"
-                            id="cif"
-                            name="cif"
-                            value="<?= htmlspecialchars($empresa['cif']) ?>"
-                            required
-                        >
+                        <input type="text" id="cif" name="cif" value="<?= htmlspecialchars($empresa['cif']) ?>"
+                            required>
 
                         <span class="field-error" id="error-cif"></span>
 
@@ -256,12 +242,8 @@ if (!puedeVerEmpresa(
                             Dirección
                         </label>
 
-                        <input
-                            type="text"
-                            id="direccion"
-                            name="direccion"
-                            value="<?= htmlspecialchars($empresa['direccion'] ?? '') ?>"
-                        >
+                        <input type="text" id="direccion" name="direccion"
+                            value="<?= htmlspecialchars($empresa['direccion'] ?? '') ?>">
 
                         <span class="field-error" id="error-direccion"></span>
 
@@ -278,12 +260,8 @@ if (!puedeVerEmpresa(
                             Teléfono
                         </label>
 
-                        <input
-                            type="tel"
-                            id="telefono"
-                            name="telefono"
-                            value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>"
-                        >
+                        <input type="tel" id="telefono" name="telefono"
+                            value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>">
 
                         <span class="field-error" id="error-telefono"></span>
 
@@ -300,12 +278,8 @@ if (!puedeVerEmpresa(
                             Email
                         </label>
 
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value="<?= htmlspecialchars($empresa['email'] ?? '') ?>"
-                        >
+                        <input type="email" id="email" name="email"
+                            value="<?= htmlspecialchars($empresa['email'] ?? '') ?>">
 
                         <span class="field-error" id="error-email"></span>
 
@@ -318,13 +292,15 @@ if (!puedeVerEmpresa(
 
                     <div class="form-actions">
 
+                        <button type="submit" class="config-save-button">
+                            Guardar cambios
+                        </button>
+
                         <a href="empresas.php" class="config-cancel-button">
                             Cancelar
                         </a>
 
-                        <button type="submit" class="config-save-button">
-                            Guardar cambios
-                        </button>
+
 
                     </div>
 

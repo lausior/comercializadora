@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -192,6 +193,12 @@ $stmtDatos = $pdo->prepare("
 $stmtDatos->execute([$idEmpresa]);
 
 $empresa = $stmtDatos->fetch(PDO::FETCH_ASSOC);
+
+registrarLog(
+    LOG_EXITO,
+    'Empresa creada',
+    'Se ha creado la empresa "' . $empresa['nombre'] . '".'
+);
 
 ?>
 

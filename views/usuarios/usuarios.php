@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
+require_once '../../includes/filtro_multiselect.php';
 
 
 // =====================================================
@@ -144,6 +145,10 @@ foreach ($usuarios as $usuario) {
                     <div class="page-date">
                         9 septiembre 2026
                     </div>
+
+                    <button type="button" class="config-secondary-button" id="btnExportarPDF">
+                        📄 Exportar PDF
+                    </button>
 
                     <a href="crear_usuario.php" class="config-save-button">
                         + Añadir usuario
@@ -305,7 +310,7 @@ foreach ($usuarios as $usuario) {
                     </div>
 
 
-                    <div class="panel-header-actions" style="display:flex; gap:10px; align-items:center;">
+                    <div class="panel-header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
 
                         <div class="usuarios-por-pagina">
 
@@ -332,7 +337,13 @@ foreach ($usuarios as $usuario) {
                         </div>
 
 
-                        <button type="button" class="filtros-toggle-button" id="btnToggleFiltros"
+                        <!-- Solo en escritorio: limpia los filtros de columna de la tabla -->
+                        <button type="button" class="panel-action vista-escritorio" id="btnLimpiarFiltros">
+                            Limpiar filtros
+                        </button>
+
+                        <!-- Solo en móvil: despliega el panel de filtros apilados -->
+                        <button type="button" class="filtros-toggle-button vista-movil" id="btnToggleFiltros"
                             aria-expanded="false" aria-controls="panelFiltrosUsuarios">
                             <span>Filtros</span>
                             <span class="chevron">▾</span>
@@ -344,78 +355,74 @@ foreach ($usuarios as $usuario) {
 
 
                 <!-- =================================================
-                     PANEL DE FILTROS (DESPLEGABLE)
+                     PANEL DE FILTROS DESPLEGABLE (SOLO MÓVIL)
+                     =================================================
+                     Filtra las mismas columnas que la fila de
+                     filtros de la tabla de escritorio (mismo
+                     data-column), solo que apiladas en vertical
+                     y ocultas hasta que se pulsa "Filtros".
                 ================================================== -->
 
-                <div class="filtros-panel" id="panelFiltrosUsuarios" style="display:none;">
+                <div class="filtros-panel vista-movil" id="panelFiltrosUsuarios" style="display:none;">
 
                     <div class="filtros-panel-campos">
 
                         <div class="filter-group">
-                            <label for="filtroUsuario">Usuario</label>
-                            <input type="text" id="filtroUsuario" class="column-filter" data-field="usuario"
+                            <label for="filtroUsuarioMovil">Usuario</label>
+                            <input type="text" id="filtroUsuarioMovil" class="column-filter" data-column="0"
                                 placeholder="Buscar usuario...">
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroEmail">Email</label>
-                            <input type="text" id="filtroEmail" class="column-filter" data-field="email"
+                            <label for="filtroEmailMovil">Email</label>
+                            <input type="text" id="filtroEmailMovil" class="column-filter" data-column="1"
                                 placeholder="Buscar email...">
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroRol">Rol</label>
-                            <select id="filtroRol" class="column-filter" data-field="rol">
+                            <label for="filtroTelefonoMovil">Teléfono</label>
+                            <input type="text" id="filtroTelefonoMovil" class="column-filter" data-column="2"
+                                placeholder="Buscar teléfono...">
+                        </div>
 
-                                <option value="">Todos</option>
-                                <option value="Administrador">Administrador</option>
-                                <option value="Supervisor">Supervisor</option>
-                                <option value="Operador">Operador</option>
-                                <option value="Consulta">Consulta</option>
+                        <?php
 
-                            </select>
+                        // Solo los roles y empresas que realmente
+                        // aparecen en $usuarios (ya filtrado por
+                        // permisos), para no listar en los
+                        // desplegables valores que este usuario no
+                        // puede ver.
+
+                        $rolesFiltro = [];
+                        $empresasFiltro = [];
+
+                        foreach ($usuarios as $usuarioFiltro) {
+                            $rolesFiltro[$usuarioFiltro['rol']] = true;
+                            $empresasFiltro[$usuarioFiltro['empresa']] = true;
+                        }
+
+                        $rolesFiltro = array_keys($rolesFiltro);
+                        $empresasFiltro = array_keys($empresasFiltro);
+
+                        sort($rolesFiltro);
+                        sort($empresasFiltro);
+
+                        ?>
+
+                        <div class="filter-group">
+                            <label>Rol</label>
+                            <?php filtroMultiSelect('filtroRolMovil', 3, 'Todos', $rolesFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroEmpresa">Empresa</label>
-                            <select id="filtroEmpresa" class="column-filter" data-field="empresa">
-
-                                <option value="">Todas</option>
-
-                                <?php
-
-                                // Solo las empresas que aparecen en
-                                // $usuarios (ya filtrado por rol), para
-                                // no listar en el desplegable empresas
-                                // que este usuario no puede ver.
-
-                                $empresasFiltro = [];
-
-                                foreach ($usuarios as $usuarioFiltro) {
-                                    $empresasFiltro[$usuarioFiltro['empresa']] = true;
-                                }
-
-                                $empresasFiltro = array_keys($empresasFiltro);
-
-                                sort($empresasFiltro);
-
-                                foreach ($empresasFiltro as $empresaFiltro):
-
-                                    ?>
-
-                                    <option value="<?= htmlspecialchars($empresaFiltro) ?>">
-                                        <?= htmlspecialchars($empresaFiltro) ?>
-                                    </option>
-
-                                <?php endforeach; ?>
-
-                            </select>
+                            <label>Empresa</label>
+                            <?php filtroMultiSelect('filtroEmpresaMovil', 4, 'Todas', $empresasFiltro); ?>
                         </div>
 
                     </div>
 
                     <div class="filtros-panel-acciones">
-                        <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                        <button type="button" class="panel-action" id="btnLimpiarFiltrosMovil">
                             Limpiar filtros
                         </button>
                     </div>
@@ -438,24 +445,107 @@ foreach ($usuarios as $usuario) {
 
                         <thead>
 
+                            <!-- =================================================
+                                 CABECERAS (las columnas 2ª en adelante y la
+                                 fila de filtros solo se ven en escritorio;
+                                 en móvil el CSS las oculta y deja solo
+                                 "Usuario")
+                            ================================================== -->
+
                             <tr>
 
                                 <th>
-
                                     <div class="table-header-content">
+                                        <span>Usuario</span>
 
-                                        <span>
-                                            Usuario
-                                        </span>
-
-                                        <button type="button" class="sort-button" id="botonOrdenNombre"
+                                        <button type="button" class="sort-button" data-column="0"
                                             title="Ordenar por usuario">
                                             ↕
                                         </button>
-
                                     </div>
-
                                 </th>
+
+                                <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Email</span>
+
+                                        <button type="button" class="sort-button" data-column="1"
+                                            title="Ordenar por email">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Teléfono</span>
+
+                                        <button type="button" class="sort-button" data-column="2"
+                                            title="Ordenar por teléfono">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Rol</span>
+
+                                        <button type="button" class="sort-button" data-column="3"
+                                            title="Ordenar por rol">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Empresa</span>
+
+                                        <button type="button" class="sort-button" data-column="4"
+                                            title="Ordenar por empresa">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
+                                    <span>Acciones</span>
+                                </th>
+
+                            </tr>
+
+
+                            <!-- =================================================
+                                 FILTROS POR COLUMNA (SOLO ESCRITORIO)
+                            ================================================== -->
+
+                            <tr class="usuarios-filter-row-table vista-escritorio">
+
+                                <th>
+                                    <input type="text" class="column-filter" data-column="0"
+                                        placeholder="Buscar usuario...">
+                                </th>
+
+                                <th>
+                                    <input type="text" class="column-filter" data-column="1"
+                                        placeholder="Buscar email...">
+                                </th>
+
+                                <th>
+                                    <input type="text" class="column-filter" data-column="2"
+                                        placeholder="Buscar teléfono...">
+                                </th>
+
+                                <th>
+                                    <?php filtroMultiSelect('filtroRolEscritorio', 3, 'Todos', $rolesFiltro); ?>
+                                </th>
+
+                                <th>
+                                    <?php filtroMultiSelect('filtroEmpresaEscritorio', 4, 'Todas', $empresasFiltro); ?>
+                                </th>
+
+                                <th></th>
 
                             </tr>
 
@@ -477,7 +567,7 @@ foreach ($usuarios as $usuario) {
 
                                 <tr>
 
-                                    <td style="text-align:center; padding:40px;">
+                                    <td colspan="6" style="text-align:center; padding:40px;">
 
                                         No hay usuarios registrados.
 
@@ -497,7 +587,7 @@ foreach ($usuarios as $usuario) {
                                     // =================================================
                                     // INICIALES
                                     // =================================================
-                            
+
                                     $iniciales =
                                         mb_substr($usuario['nombre'], 0, 1) .
                                         mb_substr($usuario['apellidos'], 0, 1);
@@ -508,7 +598,7 @@ foreach ($usuarios as $usuario) {
                                     // =================================================
                                     // NOMBRE COMPLETO
                                     // =================================================
-                            
+
                                     $nombreCompleto =
                                         $usuario['nombre'] .
                                         ' ' .
@@ -518,7 +608,7 @@ foreach ($usuarios as $usuario) {
                                     // =================================================
                                     // CLASE DEL ROL
                                     // =================================================
-                            
+
                                     switch (strtolower($usuario['rol'])) {
 
                                         case 'administrador':
@@ -559,7 +649,11 @@ foreach ($usuarios as $usuario) {
                                     ?>
 
 
-                                    <tr class="fila-clicable"
+                                    <!-- fila-detalle: en móvil, pulsar la fila abre la
+                                         tarjeta con toda la información (ver usuarios.js);
+                                         en escritorio no hace nada, ahí ya se ve todo. -->
+
+                                    <tr class="fila-detalle"
                                         data-id="<?= (int) $usuario['id'] ?>"
                                         data-nombre="<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>"
                                         data-iniciales="<?= htmlspecialchars($iniciales, ENT_QUOTES, 'UTF-8') ?>"
@@ -605,6 +699,38 @@ foreach ($usuarios as $usuario) {
 
                                                 </div>
 
+
+                                            </div>
+
+                                        </td>
+
+                                        <td class="vista-escritorio"><?= htmlspecialchars($usuario['email']) ?></td>
+
+                                        <td class="vista-escritorio"><?= htmlspecialchars($usuario['telefono'] ?? '—') ?></td>
+
+                                        <td class="vista-escritorio">
+                                            <span class="role-badge <?= $roleClass ?>">
+                                                <?= htmlspecialchars($usuario['rol']) ?>
+                                            </span>
+                                        </td>
+
+                                        <td class="vista-escritorio"><?= htmlspecialchars($usuario['empresa']) ?></td>
+
+                                        <td class="vista-escritorio">
+
+                                            <div class="user-actions">
+
+                                                <button type="button" class="table-action-button"
+                                                    onclick="event.stopPropagation(); window.location.href='editar_usuario.php?id=<?= (int) $usuario['id'] ?>'">
+                                                    Editar
+                                                </button>
+
+                                                <button type="button" class="table-action-button danger" onclick="event.stopPropagation(); window.abrirModalEliminar(
+        <?= (int) $usuario['id'] ?>,
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                    Eliminar
+                                                </button>
 
                                             </div>
 
@@ -877,6 +1003,8 @@ foreach ($usuarios as $usuario) {
 </div>
 
 
+<script src="../../js/exportar-pdf.js"></script>
+<script src="../../js/multi-select-filter.js"></script>
 <script src="../../js/usuarios.js"></script>
 
 </body>

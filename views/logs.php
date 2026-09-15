@@ -5,6 +5,77 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('logs');
 
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/filtro_multiselect.php';
+
+
+// =====================================================
+// CARGAR LOS LOGS VISIBLES PARA EL ROL ACTUAL
+// =====================================================
+//
+// rolesVisiblesEnLogs() (config/permisos.php) decide qué
+// ROLES puede ver cada uno en el listado: SRG ve todo, NG
+// ve todo menos lo hecho por SRG, EMPRESA ve todo menos lo
+// hecho por SRG y NG. No es un filtro por creado_por (no
+// aplica aquí, un log no tiene "dueño"), es un filtro por
+// el rol de quien generó cada evento.
+//
+// =====================================================
+
+$rolesVisibles = rolesVisiblesEnLogs();
+
+$logs = [];
+
+if (!empty($rolesVisibles)) {
+
+    $marcadores = implode(',', array_fill(0, count($rolesVisibles), '?'));
+
+    $stmt = $pdo->prepare("
+        SELECT
+            fecha_hora,
+            tipo,
+            usuario,
+            rol,
+            evento,
+            descripcion,
+            ip
+        FROM logs
+        WHERE rol IN ($marcadores)
+        ORDER BY fecha_hora DESC
+    ");
+
+    $stmt->execute($rolesVisibles);
+
+    $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+}
+
+
+// =====================================================
+// CLASE CSS DEL BADGE SEGÚN EL TIPO DE EVENTO
+// =====================================================
+
+function claseBadgeLog(string $tipo): string
+{
+    return match ($tipo) {
+        'Éxito'       => 'log-success',
+        'Información' => 'log-info',
+        'Advertencia' => 'log-warning',
+        'Error'       => 'log-error',
+        default       => 'log-info',
+    };
+}
+
+
+// =====================================================
+// USUARIOS DISTINTOS PARA EL DESPLEGABLE DE FILTRO
+// =====================================================
+
+$usuariosFiltro = array_values(array_unique(array_column($logs, 'usuario')));
+sort($usuariosFiltro);
+
+$tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -58,12 +129,8 @@ requerirPermiso('logs');
 
             <div class="logs-actions">
 
-                <button class="logs-btn">
+                <button class="logs-btn" onclick="location.reload()">
                     🔄 Actualizar
-                </button>
-
-                <button class="logs-btn primary">
-                    ⬇ Exportar
                 </button>
 
             </div>
@@ -80,52 +147,22 @@ requerirPermiso('logs');
 
             <div class="filter-group">
 
-                <label for="tipo">
+                <label>
                     Tipo de evento
                 </label>
 
-                <select id="tipo">
-
-                    <option>Todos</option>
-                    <option>Información</option>
-                    <option>Éxito</option>
-                    <option>Advertencia</option>
-                    <option>Error</option>
-
-                </select>
+                <?php filtroMultiSelect('tipo', 1, 'Todos', $tiposFiltro); ?>
 
             </div>
 
 
             <div class="filter-group">
 
-                <label for="usuario">
+                <label>
                     Usuario
                 </label>
 
-                <select id="usuario">
-
-                    <option>
-                        Todos los usuarios
-                    </option>
-
-                    <option>
-                        admin
-                    </option>
-
-                    <option>
-                        juan
-                    </option>
-
-                    <option>
-                        maria
-                    </option>
-
-                    <option>
-                        soporte
-                    </option>
-
-                </select>
+                <?php filtroMultiSelect('usuario', 2, 'Todos los usuarios', $usuariosFiltro); ?>
 
             </div>
 
@@ -173,10 +210,6 @@ requerirPermiso('logs');
 
             </div>
 
-
-            <button class="logs-btn primary">
-                🔎 Filtrar
-            </button>
 
 
         </div>
@@ -257,402 +290,41 @@ requerirPermiso('logs');
 
                 <tbody>
 
+                    <?php foreach ($logs as $log): ?>
 
-                    <tr>
+                        <tr>
 
-                        <td class="log-date">
-                            03/09/2026 10:42:15
-                        </td>
+                            <td class="log-date">
+                                <?= htmlspecialchars(date('d/m/Y H:i:s', strtotime($log['fecha_hora']))) ?>
+                            </td>
 
-                        <td>
+                            <td>
 
-                            <span class="log-badge log-success">
-                                Éxito
-                            </span>
+                                <span class="log-badge <?= claseBadgeLog($log['tipo']) ?>">
+                                    <?= htmlspecialchars($log['tipo']) ?>
+                                </span>
 
-                        </td>
+                            </td>
 
-                        <td class="log-user">
-                            admin
-                        </td>
+                            <td class="log-user">
+                                <?= htmlspecialchars($log['usuario']) ?>
+                            </td>
 
-                        <td class="log-action">
-                            Inicio de sesión
-                        </td>
+                            <td class="log-action">
+                                <?= htmlspecialchars($log['evento']) ?>
+                            </td>
 
-                        <td>
-                            Inicio de sesión realizado correctamente.
-                        </td>
+                            <td>
+                                <?= htmlspecialchars($log['descripcion']) ?>
+                            </td>
 
-                        <td>
-                            192.168.1.10
-                        </td>
+                            <td>
+                                <?= htmlspecialchars($log['ip']) ?>
+                            </td>
 
-                    </tr>
+                        </tr>
 
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 10:35:48
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-info">
-                                Información
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            maria
-                        </td>
-
-                        <td class="log-action">
-                            Consulta
-                        </td>
-
-                        <td>
-                            Se ha realizado una comparación de tarifas.
-                        </td>
-
-                        <td>
-                            192.168.1.24
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 10:21:03
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-warning">
-                                Advertencia
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            juan
-                        </td>
-
-                        <td class="log-action">
-                            Cambio de configuración
-                        </td>
-
-                        <td>
-                            Se ha modificado la configuración del comparador.
-                        </td>
-
-                        <td>
-                            192.168.1.15
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 09:58:27
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-error">
-                                Error
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            juan
-                        </td>
-
-                        <td class="log-action">
-                            Acceso fallido
-                        </td>
-
-                        <td>
-                            Contraseña incorrecta.
-                        </td>
-
-                        <td>
-                            192.168.1.15
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 09:45:12
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-success">
-                                Éxito
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            soporte
-                        </td>
-
-                        <td class="log-action">
-                            Cliente creado
-                        </td>
-
-                        <td>
-                            Se ha creado el cliente "Electricidad García S.L."
-                        </td>
-
-                        <td>
-                            192.168.1.30
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 09:32:41
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-info">
-                                Información
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            admin
-                        </td>
-
-                        <td class="log-action">
-                            Inicio de sesión
-                        </td>
-
-                        <td>
-                            Inicio de sesión realizado correctamente.
-                        </td>
-
-                        <td>
-                            192.168.1.10
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 09:15:22
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-success">
-                                Éxito
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            maria
-                        </td>
-
-                        <td class="log-action">
-                            Tarifa actualizada
-                        </td>
-
-                        <td>
-                            Se ha actualizado la tarifa "PVPC".
-                        </td>
-
-                        <td>
-                            192.168.1.24
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            03/09/2026 08:57:09
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-warning">
-                                Advertencia
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            admin
-                        </td>
-
-                        <td class="log-action">
-                            Intento de acceso
-                        </td>
-
-                        <td>
-                            Se detectó un intento de acceso desde un dispositivo nuevo.
-                        </td>
-
-                        <td>
-                            192.168.1.50
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            02/09/2026 18:43:55
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-success">
-                                Éxito
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            juan
-                        </td>
-
-                        <td class="log-action">
-                            Cierre de sesión
-                        </td>
-
-                        <td>
-                            Sesión cerrada correctamente.
-                        </td>
-
-                        <td>
-                            192.168.1.15
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            02/09/2026 17:25:31
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-info">
-                                Información
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            admin
-                        </td>
-
-                        <td class="log-action">
-                            Usuario creado
-                        </td>
-
-                        <td>
-                            Se ha creado el usuario "soporte".
-                        </td>
-
-                        <td>
-                            192.168.1.10
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            02/09/2026 16:48:17
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-error">
-                                Error
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            soporte
-                        </td>
-
-                        <td class="log-action">
-                            Error de conexión
-                        </td>
-
-                        <td>
-                            No se pudo conectar con el servidor de base de datos.
-                        </td>
-
-                        <td>
-                            192.168.1.30
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="log-date">
-                            02/09/2026 15:12:44
-                        </td>
-
-                        <td>
-
-                            <span class="log-badge log-success">
-                                Éxito
-                            </span>
-
-                        </td>
-
-                        <td class="log-user">
-                            admin
-                        </td>
-
-                        <td class="log-action">
-                            Configuración modificada
-                        </td>
-
-                        <td>
-                            Se ha cambiado el intervalo de actualización de tarifas.
-                        </td>
-
-                        <td>
-                            192.168.1.10
-                        </td>
-
-                    </tr>
-
+                    <?php endforeach; ?>
 
                 </tbody>
 
@@ -683,7 +355,7 @@ requerirPermiso('logs');
             </div>
 
             <span>
-                Mostrando 1-5 de 12 registros
+                Mostrando 0 de 0 registros
             </span>
 
 
@@ -733,9 +405,9 @@ requerirPermiso('logs');
 
 <?php include '../templates/footer.php'; ?>
 
+<script src="../js/multi-select-filter.js"></script>
 <script src="../js/logs.js"></script>
 
 </body>
 
 </html>
-

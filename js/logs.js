@@ -42,13 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function aplicarFiltros() {
 
-        const tipoSeleccionado = filtroTipo
-            ? filtroTipo.value.toLowerCase().trim()
-            : 'todos';
+        // Tipo y Usuario admiten marcar varias opciones a la
+        // vez (ver js/multi-select-filter.js); si no hay
+        // ninguna marcada, el filtro no se aplica.
+        const tiposSeleccionados = filtroTipo
+            ? window.obtenerSeleccionMultiFiltro(filtroTipo).map(v => v.toLowerCase().trim())
+            : [];
 
-        const usuarioSeleccionado = filtroUsuario
-            ? filtroUsuario.value.toLowerCase().trim()
-            : 'todos';
+        const usuariosSeleccionados = filtroUsuario
+            ? window.obtenerSeleccionMultiFiltro(filtroUsuario).map(v => v.toLowerCase().trim())
+            : [];
 
         const fechaSeleccionada = filtroFecha
             ? filtroFecha.value
@@ -127,13 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             const coincideTipo =
-                tipoSeleccionado === 'todos' ||
-                tipo === tipoSeleccionado;
+                tiposSeleccionados.length === 0 ||
+                tiposSeleccionados.includes(tipo);
 
 
             const coincideUsuario =
-                usuarioSeleccionado === 'todos los usuarios' ||
-                usuario === usuarioSeleccionado;
+                usuariosSeleccionados.length === 0 ||
+                usuariosSeleccionados.includes(usuario);
 
 
             const coincideFecha =

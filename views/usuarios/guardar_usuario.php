@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -459,6 +460,12 @@ if (!$usuario) {
     ');
 
 }
+
+registrarLog(
+    LOG_EXITO,
+    'Usuario creado',
+    'Se ha creado el usuario "' . $usuario['username'] . '".'
+);
 
 
 // =====================================================

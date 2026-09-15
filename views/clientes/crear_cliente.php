@@ -3,80 +3,7 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('usuarios');
-
-require_once '../../config/database.php';
-
-
-// =====================================================
-// OBTENER EMPRESAS
-// =====================================================
-//
-// EMPRESA solo puede crear usuarios para su propia
-// empresa. SRG y NG pueden elegir cualquiera (NG la
-// necesita para dar de alta al primer usuario de una
-// empresa nueva).
-//
-// =====================================================
-
-if (rolActual() === ROL_EMPRESA) {
-
-    $stmtEmpresas = $pdo->prepare("
-        SELECT id, nombre
-        FROM empresas
-        WHERE id = ?
-    ");
-
-    $stmtEmpresas->execute([$_SESSION['id_empresa']]);
-
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-} else {
-
-    $stmtEmpresas = $pdo->query("
-        SELECT id, nombre
-        FROM empresas
-        ORDER BY nombre
-    ");
-
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-}
-
-
-// =====================================================
-// OBTENER ROLES
-// =====================================================
-//
-// Nadie puede crear un usuario con un rol más privilegiado
-// que el suyo propio: EMPRESA solo puede dar de alta
-// EMPRESA o USUARIO; NG no puede crear otro SRG.
-//
-// =====================================================
-
-$stmtRoles = $pdo->query("
-    SELECT id, nombre
-    FROM roles
-    ORDER BY id
-");
-
-$roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
-
-if (rolActual() === ROL_EMPRESA) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => in_array($r['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
-    ));
-
-} elseif (rolActual() === ROL_NG) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => $r['nombre'] !== ROL_SRG
-    ));
-
-}
+requerirPermiso('clientes');
 
 ?>
 
@@ -88,7 +15,7 @@ if (rolActual() === ROL_EMPRESA) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Crear usuario - Comparador Eléctrico</title>
+    <title>Crear cliente - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../../css/style.css">
 
@@ -129,10 +56,10 @@ if (rolActual() === ROL_EMPRESA) {
 
                 <div>
 
-                    <h1>Usuarios</h1>
+                    <h1>Clientes</h1>
 
                     <p>
-                        Crear nuevo usuario
+                        Crear nuevo cliente
                     </p>
 
                 </div>
@@ -141,10 +68,10 @@ if (rolActual() === ROL_EMPRESA) {
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        9 septiembre 2026
+                        15 septiembre 2026
                     </div>
 
-                    <a href="usuarios.php" class="config-save-button">
+                    <a href="clientes.php" class="config-save-button">
                         ← Volver
                     </a>
 
@@ -159,9 +86,9 @@ if (rolActual() === ROL_EMPRESA) {
 
             <div class="config-card">
 
-                <h2>Datos del usuario</h2>
+                <h2>Datos del cliente</h2>
 
-                <form action="guardar_usuario.php" method="POST" novalidate>
+                <form action="guardar_cliente.php" method="POST" novalidate>
 
 
                     <!-- =========================
@@ -189,154 +116,131 @@ if (rolActual() === ROL_EMPRESA) {
 
 
                     <!-- =========================
-                         APELLIDOS
+                         TIPO
                     ========================== -->
 
                     <div class="form-group">
 
-                        <label for="apellidos">
-                            Apellidos
+                        <label for="tipo">
+                            Tipo
                         </label>
 
-                        <input type="text" id="apellidos" name="apellidos" required>
+                        <select id="tipo" name="tipo" required>
 
-                        <span class="field-error" id="error-apellidos"></span>
-
-                    </div>
-
-
-                    <!-- =========================
-                         USERNAME
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="username">
-                            Username
-                        </label>
-
-                        <input type="text" id="username" name="username" required>
-
-                        <span class="field-error" id="error-username"></span>
-
-                    </div>
-
-
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="email">
-                            Email
-                        </label>
-
-                        <input type="email" id="email" name="email" required>
-
-                        <span class="field-error" id="error-email"></span>
-
-                    </div>
-
-
-                    <!-- =========================
-                         TELEFONO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="telefono">
-                            Teléfono
-                        </label>
-
-                        <input type="tel" id="telefono" name="telefono">
-
-                        <span class="field-error" id="error-telefono"></span>
-
-                    </div>
-
-
-                    <!-- =========================
-                         EMPRESA
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="id_empresa">
-                            Empresa
-                        </label>
-
-                        <select id="id_empresa" name="id_empresa" required>
-
-                            <option value="">
-                                Seleccionar empresa
-                            </option>
-
-
-                            <?php foreach ($empresas as $empresa): ?>
-
-                                <option value="<?= $empresa['id'] ?>">
-                                    <?= htmlspecialchars($empresa['nombre']) ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
+                            <option value="">Seleccionar tipo</option>
+                            <option value="Particular">Particular</option>
+                            <option value="Empresa">Empresa</option>
 
                         </select>
 
-                        <span class="field-error" id="error-id_empresa"></span>
+                        <span class="field-error" id="error-tipo"></span>
 
                     </div>
 
 
                     <!-- =========================
-                         ROL
+                         IDENTIFICACIÓN
                     ========================== -->
 
                     <div class="form-group">
 
-                        <label for="id_rol">
-                            Rol
+                        <label for="identificacion">
+                            Identificación (DNI / CIF)
                         </label>
 
-                        <select id="id_rol" name="id_rol" required>
+                        <input type="text" id="identificacion" name="identificacion" required>
 
-                            <option value="">
-                                Seleccionar rol
-                            </option>
-
-
-                            <?php foreach ($roles as $rol): ?>
-
-                                <option value="<?= $rol['id'] ?>">
-                                    <?= htmlspecialchars($rol['nombre']) ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-
-                        </select>
-
-                        <span class="field-error" id="error-id_rol"></span>
+                        <span class="field-error" id="error-identificacion"></span>
 
                     </div>
 
 
-                    <!-- =================================================
-                         INFORMACIÓN DE CONTRASEÑA
-                    ================================================== -->
+                    <!-- =========================
+                         CORREO
+                    ========================== -->
 
-                    <div class="form-info">
+                    <div class="form-group">
 
-                        <p>
-                            La contraseña inicial será asignada
-                            automáticamente por el sistema.
-                        </p>
+                        <label for="correo">
+                            Correo
+                        </label>
 
-                        <p>
-                            El usuario deberá cambiarla en su
-                            primer acceso.
-                        </p>
+                        <input type="email" id="correo" name="correo" required>
+
+                        <span class="field-error" id="error-correo"></span>
+
+                    </div>
+
+
+                    <!-- =========================
+                         COMERCIALIZADORA
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="comercializadora">
+                            Comercializadora
+                        </label>
+
+                        <select id="comercializadora" name="comercializadora" required>
+
+                            <option value="">Seleccionar comercializadora</option>
+                            <option value="Endesa">Endesa</option>
+                            <option value="Iberdrola">Iberdrola</option>
+                            <option value="Naturgy">Naturgy</option>
+                            <option value="Repsol">Repsol</option>
+                            <option value="TotalEnergies">TotalEnergies</option>
+
+                        </select>
+
+                        <span class="field-error" id="error-comercializadora"></span>
+
+                    </div>
+
+
+                    <!-- =========================
+                         TARIFA
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="tarifa">
+                            Tarifa
+                        </label>
+
+                        <select id="tarifa" name="tarifa" required>
+
+                            <option value="">Seleccionar tarifa</option>
+                            <option value="PVPC">PVPC</option>
+                            <option value="Mercado libre">Mercado libre</option>
+                            <option value="Tarifa fija">Tarifa fija</option>
+
+                        </select>
+
+                        <span class="field-error" id="error-tarifa"></span>
+
+                    </div>
+
+
+                    <!-- =========================
+                         ESTADO
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="estado">
+                            Estado
+                        </label>
+
+                        <select id="estado" name="estado" required>
+
+                            <option value="Activo" selected>Activo</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Inactivo">Inactivo</option>
+
+                        </select>
+
+                        <span class="field-error" id="error-estado"></span>
 
                     </div>
 
@@ -347,12 +251,12 @@ if (rolActual() === ROL_EMPRESA) {
 
                     <div class="form-actions">
 
-                        <a href="usuarios.php" class="config-cancel-button">
+                        <a href="clientes.php" class="config-cancel-button">
                             Cancelar
                         </a>
 
                         <button type="submit" class="config-save-button">
-                            Crear usuario
+                            Crear cliente
                         </button>
 
                     </div>
@@ -375,8 +279,6 @@ if (rolActual() === ROL_EMPRESA) {
 
     <?php include '../../templates/footer.php'; ?>
 
-
-    <script src="../../js/usuarios.js"></script>
 
 </body>
 

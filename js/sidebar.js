@@ -76,8 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
-        aplicarAnchoInicial();
-
+        // El ancho inicial ya lo aplica el script síncrono de
+        // templates/header.php (antes de pintar la página, para
+        // evitar el salto de ancho). Aquí solo hace falta
+        // reaccionar si la ventana cambia de tamaño en caliente.
 
         /*
          * Si la ventana pasa de escritorio a móvil (o al

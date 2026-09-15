@@ -3,9 +3,10 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('usuarios');
+requerirPermiso('clientes');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -23,12 +24,12 @@ if ($id <= 0) {
         <h2>Error</h2>
 
         <p>
-            El usuario seleccionado no es válido.
+            El cliente seleccionado no es válido.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -37,53 +38,41 @@ if ($id <= 0) {
 
 
 // =====================================================
-// BUSCAR EL USUARIO
+// BUSCAR EL CLIENTE
 // =====================================================
 
-$stmtUsuario = $pdo->prepare("
+$stmtCliente = $pdo->prepare("
     SELECT
-        u.id,
-        u.username,
-        u.nombre,
-        u.apellidos,
-        u.email,
-        u.telefono,
-        u.id_empresa,
-        u.creado_por,
-        e.nombre AS empresa,
-        r.nombre AS rol
-    FROM usuarios u
-
-    INNER JOIN empresas e
-        ON u.id_empresa = e.id
-
-    INNER JOIN roles r
-        ON u.id_rol = r.id
-
-    WHERE u.id = ?
+        id,
+        nombre,
+        identificacion,
+        correo,
+        creado_por
+    FROM clientes
+    WHERE id = ?
 ");
 
-$stmtUsuario->execute([$id]);
+$stmtCliente->execute([$id]);
 
-$usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+$cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
 
 // =====================================================
-// COMPROBAR QUE EL USUARIO EXISTA
+// COMPROBAR QUE EL CLIENTE EXISTA
 // =====================================================
 
-if (!$usuario) {
+if (!$cliente) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            El usuario que intentas eliminar no existe.
+            El cliente que intentas eliminar no existe.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -92,21 +81,21 @@ if (!$usuario) {
 
 
 // =====================================================
-// COMPROBAR QUE PUEDE ELIMINAR ESTE USUARIO
+// COMPROBAR QUE PUEDE ELIMINAR ESTE CLIENTE
 // =====================================================
 
-if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+if (!puedeVerCliente($cliente['creado_por'] !== null ? (int) $cliente['creado_por'] : null)) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            No tienes permiso para eliminar este usuario.
+            No tienes permiso para eliminar este cliente.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -115,21 +104,13 @@ if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_po
 
 
 // =====================================================
-// GUARDAR DATOS PARA MOSTRAR DESPUÉS
-// =====================================================
-
-$nombreCompleto =
-    $usuario['nombre'] . ' ' . $usuario['apellidos'];
-
-
-// =====================================================
-// ELIMINAR USUARIO
+// ELIMINAR CLIENTE
 // =====================================================
 
 try {
 
     $stmtEliminar = $pdo->prepare("
-        DELETE FROM usuarios
+        DELETE FROM clientes
         WHERE id = ?
     ");
 
@@ -142,12 +123,12 @@ try {
         <h2>Error</h2>
 
         <p>
-            No se ha podido eliminar el usuario.
+            No se ha podido eliminar el cliente.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -165,17 +146,23 @@ if ($stmtEliminar->rowCount() !== 1) {
         <h2>Error</h2>
 
         <p>
-            No se ha podido eliminar el usuario.
+            No se ha podido eliminar el cliente.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
 
 }
+
+registrarLog(
+    LOG_ADVERTENCIA,
+    'Cliente eliminado',
+    'Se ha eliminado el cliente "' . $cliente['nombre'] . '".'
+);
 
 ?>
 
@@ -189,7 +176,7 @@ if ($stmtEliminar->rowCount() !== 1) {
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Usuario eliminado - Comparador Eléctrico</title>
+    <title>Cliente eliminado - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../../css/style.css">
 
@@ -232,11 +219,11 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div>
 
                     <h1>
-                        Usuarios
+                        Clientes
                     </h1>
 
                     <p>
-                        Usuario eliminado correctamente
+                        Cliente eliminado correctamente
                     </p>
 
                 </div>
@@ -245,7 +232,7 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        9 septiembre 2026
+                        15 septiembre 2026
                     </div>
 
                 </div>
@@ -261,7 +248,7 @@ if ($stmtEliminar->rowCount() !== 1) {
 
 
                 <h2>
-                    Usuario eliminado
+                    Cliente eliminado
                 </h2>
 
 
@@ -270,10 +257,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        El usuario
+                        El cliente
 
                         <strong>
-                            <?= htmlspecialchars($nombreCompleto) ?>
+                            <?= htmlspecialchars($cliente['nombre']) ?>
                         </strong>
 
                         ha sido eliminado correctamente.
@@ -283,10 +270,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        ID de usuario:
+                        ID de cliente:
 
                         <strong>
-                            <?= htmlspecialchars($usuario['id']) ?>
+                            <?= htmlspecialchars($cliente['id']) ?>
                         </strong>
 
                     </p>
@@ -294,10 +281,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        Username:
+                        Identificación:
 
                         <strong>
-                            @<?= htmlspecialchars($usuario['username']) ?>
+                            <?= htmlspecialchars($cliente['identificacion']) ?>
                         </strong>
 
                     </p>
@@ -305,32 +292,10 @@ if ($stmtEliminar->rowCount() !== 1) {
 
                     <p>
 
-                        Email:
+                        Correo:
 
                         <strong>
-                            <?= htmlspecialchars($usuario['email']) ?>
-                        </strong>
-
-                    </p>
-
-
-                    <p>
-
-                        Empresa:
-
-                        <strong>
-                            <?= htmlspecialchars($usuario['empresa']) ?>
-                        </strong>
-
-                    </p>
-
-
-                    <p>
-
-                        Rol:
-
-                        <strong>
-                            <?= htmlspecialchars($usuario['rol']) ?>
+                            <?= htmlspecialchars($cliente['correo']) ?>
                         </strong>
 
                     </p>
@@ -346,12 +311,12 @@ if ($stmtEliminar->rowCount() !== 1) {
                 <div class="form-actions">
 
 
-                    <a href="crear_usuario.php" class="config-save-button">
-                        + Añadir usuario
+                    <a href="crear_cliente.php" class="config-save-button">
+                        + Nuevo cliente
                     </a>
 
 
-                    <a href="usuarios.php" class="config-cancel-button">
+                    <a href="clientes.php" class="config-cancel-button">
                         Volver
                     </a>
 

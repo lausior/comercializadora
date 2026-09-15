@@ -3,9 +3,10 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('usuarios');
+requerirPermiso('clientes');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -14,7 +15,7 @@ require_once '../../config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
-    header('Location: usuarios.php');
+    header('Location: clientes.php');
     exit;
 
 }
@@ -28,49 +29,45 @@ $id = isset($_POST['id'])
     ? (int) $_POST['id']
     : 0;
 
-$username = trim($_POST['username'] ?? '');
-
-$nombre = trim($_POST['nombre'] ?? '');
-
-$apellidos = trim($_POST['apellidos'] ?? '');
-
-$email = trim($_POST['email'] ?? '');
-
-$telefono = trim($_POST['telefono'] ?? '');
-
-$idEmpresa = isset($_POST['id_empresa'])
-    ? (int) $_POST['id_empresa']
-    : 0;
-
-$idRol = isset($_POST['id_rol'])
-    ? (int) $_POST['id_rol']
-    : 0;
+$nombre           = trim($_POST['nombre'] ?? '');
+$tipo             = trim($_POST['tipo'] ?? '');
+$identificacion   = trim($_POST['identificacion'] ?? '');
+$correo           = trim($_POST['correo'] ?? '');
+$comercializadora = trim($_POST['comercializadora'] ?? '');
+$tarifa           = trim($_POST['tarifa'] ?? '');
+$estado           = trim($_POST['estado'] ?? '');
 
 
 // =====================================================
 // COMPROBAR CAMPOS OBLIGATORIOS
 // =====================================================
 
+$tiposValidos             = ['Particular', 'Empresa'];
+$comercializadorasValidas = ['Endesa', 'Iberdrola', 'Naturgy', 'Repsol', 'TotalEnergies'];
+$tarifasValidas           = ['PVPC', 'Mercado libre', 'Tarifa fija'];
+$estadosValidos           = ['Activo', 'Pendiente', 'Inactivo'];
+
 if (
     $id <= 0 ||
-    $username === '' ||
     $nombre === '' ||
-    $apellidos === '' ||
-    $email === '' ||
-    $idEmpresa <= 0 ||
-    $idRol <= 0
+    !in_array($tipo, $tiposValidos, true) ||
+    $identificacion === '' ||
+    $correo === '' ||
+    !in_array($comercializadora, $comercializadorasValidas, true) ||
+    !in_array($tarifa, $tarifasValidas, true) ||
+    !in_array($estado, $estadosValidos, true)
 ) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            Todos los campos obligatorios deben estar completos.
+            Todos los campos obligatorios deben estar completos y ser válidos.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -79,10 +76,10 @@ if (
 
 
 // =====================================================
-// COMPROBAR FORMATO DEL EMAIL
+// COMPROBAR FORMATO DEL CORREO
 // =====================================================
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
 
     die('
         <h2>Error</h2>
@@ -92,8 +89,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -102,32 +99,32 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 
 // =====================================================
-// COMPROBAR QUE EL USUARIO EXISTA
+// COMPROBAR QUE EL CLIENTE EXISTA
 // =====================================================
 
-$stmtUsuario = $pdo->prepare("
-    SELECT id, id_empresa, creado_por
-    FROM usuarios
+$stmtCliente = $pdo->prepare("
+    SELECT id, creado_por
+    FROM clientes
     WHERE id = ?
 ");
 
-$stmtUsuario->execute([$id]);
+$stmtCliente->execute([$id]);
 
-$usuarioExiste = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+$clienteExiste = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
 
-if (!$usuarioExiste) {
+if (!$clienteExiste) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            El usuario que intentas modificar no existe.
+            El cliente que intentas modificar no existe.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -136,21 +133,21 @@ if (!$usuarioExiste) {
 
 
 // =====================================================
-// COMPROBAR QUE PUEDE EDITAR ESTE USUARIO
+// COMPROBAR QUE PUEDE EDITAR ESTE CLIENTE
 // =====================================================
 
-if (!puedeVerUsuario($usuarioExiste['creado_por'] !== null ? (int) $usuarioExiste['creado_por'] : null)) {
+if (!puedeVerCliente($clienteExiste['creado_por'] !== null ? (int) $clienteExiste['creado_por'] : null)) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            No tienes permiso para editar este usuario.
+            No tienes permiso para editar este cliente.
         </p>
 
         <p>
-            <a href="usuarios.php">
-                Volver a usuarios
+            <a href="clientes.php">
+                Volver a clientes
             </a>
         </p>
     ');
@@ -159,62 +156,28 @@ if (!puedeVerUsuario($usuarioExiste['creado_por'] !== null ? (int) $usuarioExist
 
 
 // =====================================================
-// NG Y EMPRESA NO PUEDEN CAMBIAR A UN USUARIO DE EMPRESA
-// =====================================================
-//
-// La comprobación anterior ya garantiza que el usuario
-// era de su propia empresa; esta impide que, aun así,
-// lo manden a OTRA empresa manipulando el formulario
-// (el desplegable normal ya no se lo deja elegir, pero
-// esto es lo que de verdad lo impide).
-//
+// COMPROBAR IDENTIFICACIÓN DUPLICADA
 // =====================================================
 
-if (
-    rolActual() !== ROL_SRG &&
-    $idEmpresa !== (int) $usuarioExiste['id_empresa']
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes cambiar la empresa de este usuario.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// COMPROBAR USERNAME DUPLICADO
-// =====================================================
-
-$stmtUsername = $pdo->prepare("
+$stmtIdentificacion = $pdo->prepare("
     SELECT id
-    FROM usuarios
-    WHERE username = ?
+    FROM clientes
+    WHERE identificacion = ?
     AND id != ?
 ");
 
-$stmtUsername->execute([
-    $username,
+$stmtIdentificacion->execute([
+    $identificacion,
     $id
 ]);
 
-if ($stmtUsername->fetch()) {
+if ($stmtIdentificacion->fetch()) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            El username ya está siendo utilizado por otro usuario.
+            Ya existe otro cliente con esa identificación.
         </p>
 
         <p>
@@ -228,194 +191,30 @@ if ($stmtUsername->fetch()) {
 
 
 // =====================================================
-// COMPROBAR EMAIL DUPLICADO
-// =====================================================
-
-$stmtEmail = $pdo->prepare("
-    SELECT id
-    FROM usuarios
-    WHERE email = ?
-    AND id != ?
-");
-
-$stmtEmail->execute([
-    $email,
-    $id
-]);
-
-if ($stmtEmail->fetch()) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El email ya está siendo utilizado por otro usuario.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// COMPROBAR QUE LA EMPRESA EXISTA
-// =====================================================
-
-$stmtEmpresa = $pdo->prepare("
-    SELECT
-        id,
-        nombre
-    FROM empresas
-    WHERE id = ?
-");
-
-$stmtEmpresa->execute([$idEmpresa]);
-
-$empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
-
-
-if (!$empresa) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            La empresa seleccionada no existe.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// COMPROBAR QUE EL ROL EXISTA
-// =====================================================
-
-$stmtRol = $pdo->prepare("
-    SELECT
-        id,
-        nombre
-    FROM roles
-    WHERE id = ?
-");
-
-$stmtRol->execute([$idRol]);
-
-$rol = $stmtRol->fetch(PDO::FETCH_ASSOC);
-
-
-if (!$rol) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El rol seleccionado no existe.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// COMPROBAR QUE PUEDE ASIGNAR ESE ROL
-// =====================================================
-
-if (
-    rolActual() === ROL_EMPRESA &&
-    !in_array($rol['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes asignar ese rol.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-if (
-    rolActual() === ROL_NG &&
-    $rol['nombre'] === ROL_SRG
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes asignar ese rol.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// ACTUALIZAR USUARIO
-// =====================================================
-//
-// IMPORTANTE:
-//
-// NO actualizamos:
-//     password
-//     cambiar_password
-//
-// Por tanto, la contraseña actual permanece intacta.
-//
+// ACTUALIZAR CLIENTE
 // =====================================================
 
 $stmtActualizar = $pdo->prepare("
-    UPDATE usuarios
+    UPDATE clientes
     SET
-        username = ?,
         nombre = ?,
-        apellidos = ?,
-        email = ?,
-        telefono = ?,
-        id_empresa = ?,
-        id_rol = ?
+        tipo = ?,
+        identificacion = ?,
+        correo = ?,
+        comercializadora = ?,
+        tarifa = ?,
+        estado = ?
     WHERE id = ?
 ");
 
 $stmtActualizar->execute([
-    $username,
     $nombre,
-    $apellidos,
-    $email,
-    $telefono !== '' ? $telefono : null,
-    $idEmpresa,
-    $idRol,
+    $tipo,
+    $identificacion,
+    $correo,
+    $comercializadora,
+    $tarifa,
+    $estado,
     $id
 ]);
 
@@ -423,108 +222,30 @@ $stmtActualizar->execute([
 // =====================================================
 // RECUPERAR LOS DATOS ACTUALIZADOS
 // =====================================================
-//
-// Consultamos nuevamente la base de datos para mostrar
-// exactamente la información que se ha guardado.
-//
-// =====================================================
 
 $stmtDatos = $pdo->prepare("
     SELECT
-        u.id,
-        u.username,
-        u.nombre,
-        u.apellidos,
-        u.email,
-        u.telefono,
-        u.cambiar_password,
-        e.nombre AS empresa,
-        r.nombre AS rol
-    FROM usuarios u
-
-    INNER JOIN empresas e
-        ON u.id_empresa = e.id
-
-    INNER JOIN roles r
-        ON u.id_rol = r.id
-
-    WHERE u.id = ?
+        id,
+        nombre,
+        tipo,
+        identificacion,
+        correo,
+        comercializadora,
+        tarifa,
+        estado
+    FROM clientes
+    WHERE id = ?
 ");
 
 $stmtDatos->execute([$id]);
 
-$usuario = $stmtDatos->fetch(PDO::FETCH_ASSOC);
+$cliente = $stmtDatos->fetch(PDO::FETCH_ASSOC);
 
-
-// =====================================================
-// COMPROBAR QUE SE HAN RECUPERADO LOS DATOS
-// =====================================================
-
-if (!$usuario) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El usuario se actualizó, pero no se pudieron
-            recuperar sus datos.
-        </p>
-
-        <p>
-            <a href="usuarios.php">
-                Volver a usuarios
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// DATOS PARA MOSTRAR
-// =====================================================
-
-$nombreCompleto =
-    $usuario['nombre'] . ' ' . $usuario['apellidos'];
-
-
-// =====================================================
-// CALCULAR INICIALES
-// =====================================================
-
-$inicialNombre = mb_substr(
-    $usuario['nombre'],
-    0,
-    1,
-    'UTF-8'
+registrarLog(
+    LOG_EXITO,
+    'Cliente modificado',
+    'Se ha modificado el cliente "' . $cliente['nombre'] . '".'
 );
-
-$inicialApellido = mb_substr(
-    $usuario['apellidos'],
-    0,
-    1,
-    'UTF-8'
-);
-
-$iniciales = mb_strtoupper(
-    $inicialNombre . $inicialApellido,
-    'UTF-8'
-);
-
-
-// =====================================================
-// ESTADO DE CAMBIO DE CONTRASEÑA
-// =====================================================
-
-if ((int) $usuario['cambiar_password'] === 1) {
-
-    $estadoPassword = 'Pendiente de cambio';
-
-} else {
-
-    $estadoPassword = 'Contraseña establecida';
-
-}
 
 ?>
 
@@ -534,18 +255,11 @@ if ((int) $usuario['cambiar_password'] === 1) {
 <head>
 
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>Cliente actualizado - Comparador Eléctrico</title>
 
-    <title>Usuario actualizado - Comparador Eléctrico</title>
-
-    <link
-        rel="stylesheet"
-        href="../../css/style.css"
-    >
+    <link rel="stylesheet" href="../../css/style.css">
 
 </head>
 
@@ -585,10 +299,10 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                 <div>
 
-                    <h1>Usuarios</h1>
+                    <h1>Clientes</h1>
 
                     <p>
-                        Usuario actualizado correctamente
+                        Cliente actualizado correctamente
                     </p>
 
                 </div>
@@ -597,7 +311,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        9 septiembre 2026
+                        15 septiembre 2026
                     </div>
 
                 </div>
@@ -613,7 +327,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
 
                 <h2>
-                    Usuario actualizado
+                    Cliente actualizado
                 </h2>
 
 
@@ -621,14 +335,10 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                     <p>
 
-                        El usuario
+                        El cliente
 
                         <strong>
-                            <?= htmlspecialchars(
-                                $usuario['username'],
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ) ?>
+                            <?= htmlspecialchars($cliente['nombre']) ?>
                         </strong>
 
                         se ha actualizado correctamente.
@@ -639,200 +349,54 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
 
                 <!-- =================================================
-                     INFORMACIÓN DEL USUARIO
+                     INFORMACIÓN DEL CLIENTE
                 ================================================== -->
 
                 <div class="usuario-detalle">
 
-
-
-
-                    <!-- =================================================
-                         DATOS
-                    ================================================== -->
-
                     <div class="usuario-detalle-grid">
 
-
-                        <!-- ID -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                ID de usuario
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['id'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>ID de cliente</span>
+                            <strong><?= htmlspecialchars($cliente['id']) ?></strong>
                         </div>
 
-
-                        <!-- NOMBRE -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Nombre
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['nombre'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Nombre</span>
+                            <strong><?= htmlspecialchars($cliente['nombre']) ?></strong>
                         </div>
 
-
-                        <!-- APELLIDOS -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Apellidos
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['apellidos'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Tipo</span>
+                            <strong><?= htmlspecialchars($cliente['tipo']) ?></strong>
                         </div>
 
-
-                        <!-- USERNAME -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Username
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['username'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Identificación</span>
+                            <strong><?= htmlspecialchars($cliente['identificacion']) ?></strong>
                         </div>
 
-
-                        <!-- EMAIL -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Email
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['email'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Correo</span>
+                            <strong><?= htmlspecialchars($cliente['correo']) ?></strong>
                         </div>
 
-
-                        <!-- TELEFONO -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Teléfono
-                            </span>
-
-                            <strong>
-
-                                <?php if (!empty($usuario['telefono'])): ?>
-
-                                    <?= htmlspecialchars(
-                                        $usuario['telefono'],
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>
-
-                                <?php else: ?>
-
-                                    No indicado
-
-                                <?php endif; ?>
-
-                            </strong>
-
+                            <span>Comercializadora</span>
+                            <strong><?= htmlspecialchars($cliente['comercializadora']) ?></strong>
                         </div>
 
-
-                        <!-- EMPRESA -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Empresa
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['empresa'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Tarifa</span>
+                            <strong><?= htmlspecialchars($cliente['tarifa']) ?></strong>
                         </div>
 
-
-                        <!-- ROL -->
-
                         <div class="usuario-detalle-item">
-
-                            <span>
-                                Rol
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['rol'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
+                            <span>Estado</span>
+                            <strong><?= htmlspecialchars($cliente['estado']) ?></strong>
                         </div>
-
-
-                        <!-- CONTRASEÑA -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Contraseña
-                            </span>
-
-                            <strong>
-                                Se ha mantenido sin cambios
-                            </strong>
-
-                        </div>
-
 
                     </div>
-
 
                 </div>
 
@@ -844,19 +408,13 @@ if ((int) $usuario['cambiar_password'] === 1) {
                 <div class="form-actions">
 
 
-                    <a
-                        href="crear_usuario.php"
-                        class="config-save-button"
-                    >
-                        + Añadir usuario
+                    <a href="crear_cliente.php" class="config-save-button">
+                        + Nuevo cliente
                     </a>
 
 
-                    <a
-                        href="usuarios.php"
-                        class="config-cancel-button"
-                    >
-                        Volver a usuarios
+                    <a href="clientes.php" class="config-cancel-button">
+                        Volver a clientes
                     </a>
 
 

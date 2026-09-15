@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -478,6 +479,12 @@ if (!$usuario) {
     ');
 
 }
+
+registrarLog(
+    LOG_EXITO,
+    'Usuario modificado',
+    'Se ha modificado el usuario "' . $usuario['username'] . '".'
+);
 
 
 // =====================================================

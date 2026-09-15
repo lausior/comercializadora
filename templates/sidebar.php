@@ -71,7 +71,7 @@ require_once __DIR__ . '/../config/permisos.php';
         <!-- CLIENTES -->
 
         <?php if (tienePermiso('clientes')): ?>
-        <a href="/comercializadora/views/clientes.php" class="menu-item" title="Clientes">
+        <a href="/comercializadora/views/clientes/clientes.php" class="menu-item" title="Clientes">
             <span class="menu-icon"><i class="bi bi-people"></i></span>
             <span class="menu-label">Clientes</span>
         </a>

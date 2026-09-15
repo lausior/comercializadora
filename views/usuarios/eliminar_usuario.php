@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -176,6 +177,12 @@ if ($stmtEliminar->rowCount() !== 1) {
     ');
 
 }
+
+registrarLog(
+    LOG_ADVERTENCIA,
+    'Usuario eliminado',
+    'Se ha eliminado el usuario "' . $usuario['username'] . '".'
+);
 
 ?>
 

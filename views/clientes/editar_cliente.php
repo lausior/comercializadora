@@ -3,141 +3,79 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('usuarios');
+requerirPermiso('clientes');
 
 require_once '../../config/database.php';
 
 
 // =====================================================
-// COMPROBAR ID DEL USUARIO
+// COMPROBAR ID DEL CLIENTE
 // =====================================================
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
-    header('Location: usuarios.php');
+    header('Location: clientes.php');
     exit;
 
 }
 
-$idUsuario = (int) $_GET['id'];
+$idCliente = (int) $_GET['id'];
 
 
 // =====================================================
-// OBTENER USUARIO
+// OBTENER CLIENTE
 // =====================================================
 
-$stmtUsuario = $pdo->prepare("
+$stmtCliente = $pdo->prepare("
     SELECT
         id,
-        username,
         nombre,
-        apellidos,
-        email,
-        telefono,
-        id_empresa,
-        id_rol,
+        tipo,
+        identificacion,
+        correo,
+        comercializadora,
+        tarifa,
+        estado,
         creado_por
-    FROM usuarios
+    FROM clientes
     WHERE id = ?
 ");
 
-$stmtUsuario->execute([$idUsuario]);
+$stmtCliente->execute([$idCliente]);
 
-$usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+$cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
 
 // =====================================================
 // COMPROBAR QUE EXISTE
 // =====================================================
 
-if (!$usuario) {
+if (!$cliente) {
 
-    header('Location: usuarios.php');
+    header('Location: clientes.php');
     exit;
 
 }
 
 
 // =====================================================
-// COMPROBAR QUE PUEDE VER/EDITAR ESTE USUARIO
+// COMPROBAR QUE PUEDE VER/EDITAR ESTE CLIENTE
 // =====================================================
 //
-// Oculto en el listado no es suficiente: sin esto, una
-// EMPRESA podría editar un usuario de otra empresa (o de
-// NG/SRG) tecleando su id en la URL directamente.
+// Oculto en el listado no es suficiente: sin esto,
+// alguien podría editar un cliente ajeno tecleando su
+// id en la URL directamente.
 //
 // =====================================================
 
-if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+if (
+    !puedeVerCliente(
+        $cliente['creado_por'] !== null ? (int) $cliente['creado_por'] : null
+    )
+) {
 
-    header('Location: usuarios.php?error=sin_permiso');
+    header('Location: clientes.php?error=sin_permiso');
     exit;
-
-}
-
-
-// =====================================================
-// OBTENER EMPRESAS
-// =====================================================
-
-// SRG puede reasignar el usuario a cualquier empresa.
-// El resto de roles solo puede editar usuarios de su
-// propia empresa (ya comprobado arriba), así que el
-// desplegable solo le ofrece esa misma empresa.
-
-if (rolActual() === ROL_SRG) {
-
-    $stmtEmpresas = $pdo->query("
-        SELECT id, nombre
-        FROM empresas
-        ORDER BY nombre
-    ");
-
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-} else {
-
-    $stmtEmpresas = $pdo->prepare("
-        SELECT id, nombre
-        FROM empresas
-        WHERE id = ?
-    ");
-
-    $stmtEmpresas->execute([$usuario['id_empresa']]);
-
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-}
-
-
-// =====================================================
-// OBTENER ROLES
-// =====================================================
-
-$stmtRoles = $pdo->query("
-    SELECT id, nombre
-    FROM roles
-    ORDER BY id
-");
-
-$roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
-
-// Igual que en crear_usuario.php: nadie puede asignar un
-// rol más privilegiado que el suyo propio.
-
-if (rolActual() === ROL_EMPRESA) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => in_array($r['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
-    ));
-
-} elseif (rolActual() === ROL_NG) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => $r['nombre'] !== ROL_SRG
-    ));
 
 }
 
@@ -149,20 +87,11 @@ if (rolActual() === ROL_EMPRESA) {
 <head>
 
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>Editar cliente - Comparador Eléctrico</title>
 
-    <title>
-        Editar usuario - Comparador Eléctrico
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="../../css/style.css"
-    >
+    <link rel="stylesheet" href="../../css/style.css">
 
 </head>
 
@@ -201,12 +130,10 @@ if (rolActual() === ROL_EMPRESA) {
 
                 <div>
 
-                    <h1>
-                        Usuarios
-                    </h1>
+                    <h1>Clientes</h1>
 
                     <p>
-                        Editar usuario
+                        Editar cliente
                     </p>
 
                 </div>
@@ -215,14 +142,10 @@ if (rolActual() === ROL_EMPRESA) {
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        9 septiembre 2026
+                        15 septiembre 2026
                     </div>
 
-
-                    <a
-                        href="usuarios.php"
-                        class="config-save-button"
-                    >
+                    <a href="clientes.php" class="config-save-button">
                         ← Volver
                     </a>
 
@@ -231,34 +154,22 @@ if (rolActual() === ROL_EMPRESA) {
             </div>
 
 
-
             <!-- =================================================
                  FORMULARIO
             ================================================== -->
 
             <div class="config-card">
 
-                <h2>
-                    Datos del usuario
-                </h2>
+                <h2>Datos del cliente</h2>
 
-
-                <form
-                    action="actualizar_usuario.php"
-                    method="POST"
-                    novalidate
-                >
+                <form action="actualizar_cliente.php" method="POST" novalidate>
 
 
                     <!-- =================================================
-                         ID DEL USUARIO
+                         ID DEL CLIENTE
                     ================================================== -->
 
-                    <input
-                        type="hidden"
-                        name="id"
-                        value="<?= (int) $usuario['id'] ?>"
-                    >
+                    <input type="hidden" name="id" value="<?= (int) $cliente['id'] ?>">
 
 
                     <!-- =========================
@@ -266,7 +177,6 @@ if (rolActual() === ROL_EMPRESA) {
                     ========================== -->
 
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
-
 
 
                     <!-- =========================
@@ -279,219 +189,157 @@ if (rolActual() === ROL_EMPRESA) {
                             Nombre
                         </label>
 
-                        <input
-                            type="text"
-                            id="nombre"
-                            name="nombre"
-                            value="<?= htmlspecialchars($usuario['nombre']) ?>"
-                            required
-                        >
+                        <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($cliente['nombre']) ?>"
+                            required>
 
                         <span class="field-error" id="error-nombre"></span>
 
                     </div>
 
 
-
                     <!-- =========================
-                         APELLIDOS
+                         TIPO
                     ========================== -->
 
                     <div class="form-group">
 
-                        <label for="apellidos">
-                            Apellidos
+                        <label for="tipo">
+                            Tipo
                         </label>
 
-                        <input
-                            type="text"
-                            id="apellidos"
-                            name="apellidos"
-                            value="<?= htmlspecialchars($usuario['apellidos']) ?>"
-                            required
-                        >
+                        <select id="tipo" name="tipo" required>
 
-                        <span class="field-error" id="error-apellidos"></span>
+                            <?php foreach (['Particular', 'Empresa'] as $tipoOpcion): ?>
 
-                    </div>
-
-
-
-                    <!-- =========================
-                         USERNAME
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="username">
-                            Username
-                        </label>
-
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value="<?= htmlspecialchars($usuario['username']) ?>"
-                            required
-                        >
-
-                        <span class="field-error" id="error-username"></span>
-
-                    </div>
-
-
-
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="email">
-                            Email
-                        </label>
-
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value="<?= htmlspecialchars($usuario['email']) ?>"
-                            required
-                        >
-
-                        <span class="field-error" id="error-email"></span>
-
-                    </div>
-
-
-
-                    <!-- =========================
-                         TELEFONO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="telefono">
-                            Teléfono
-                        </label>
-
-                        <input
-                            type="tel"
-                            id="telefono"
-                            name="telefono"
-                            value="<?= htmlspecialchars($usuario['telefono'] ?? '') ?>"
-                        >
-
-                        <span class="field-error" id="error-telefono"></span>
-
-                    </div>
-
-
-
-                    <!-- =========================
-                         EMPRESA
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="id_empresa">
-                            Empresa
-                        </label>
-
-
-                        <select
-                            id="id_empresa"
-                            name="id_empresa"
-                            required
-                        >
-
-                            <option value="">
-                                Seleccionar empresa
-                            </option>
-
-
-                            <?php foreach ($empresas as $empresa): ?>
-
-                                <option
-                                    value="<?= (int) $empresa['id'] ?>"
-                                    <?= $empresa['id'] == $usuario['id_empresa'] ? 'selected' : '' ?>
-                                >
-
-                                    <?= htmlspecialchars($empresa['nombre']) ?>
-
+                                <option value="<?= $tipoOpcion ?>" <?= $cliente['tipo'] === $tipoOpcion ? 'selected' : '' ?>>
+                                    <?= $tipoOpcion ?>
                                 </option>
 
                             <?php endforeach; ?>
 
                         </select>
 
-                        <span class="field-error" id="error-id_empresa"></span>
+                        <span class="field-error" id="error-tipo"></span>
 
                     </div>
 
 
-
                     <!-- =========================
-                         ROL
+                         IDENTIFICACIÓN
                     ========================== -->
 
                     <div class="form-group">
 
-                        <label for="id_rol">
-                            Rol
+                        <label for="identificacion">
+                            Identificación (DNI / CIF)
                         </label>
 
+                        <input type="text" id="identificacion" name="identificacion"
+                            value="<?= htmlspecialchars($cliente['identificacion']) ?>" required>
 
-                        <select
-                            id="id_rol"
-                            name="id_rol"
-                            required
-                        >
+                        <span class="field-error" id="error-identificacion"></span>
 
-                            <option value="">
-                                Seleccionar rol
-                            </option>
+                    </div>
 
 
-                            <?php foreach ($roles as $rol): ?>
+                    <!-- =========================
+                         CORREO
+                    ========================== -->
 
-                                <option
-                                    value="<?= (int) $rol['id'] ?>"
-                                    <?= $rol['id'] == $usuario['id_rol'] ? 'selected' : '' ?>
-                                >
+                    <div class="form-group">
 
-                                    <?= htmlspecialchars($rol['nombre']) ?>
+                        <label for="correo">
+                            Correo
+                        </label>
 
+                        <input type="email" id="correo" name="correo"
+                            value="<?= htmlspecialchars($cliente['correo']) ?>" required>
+
+                        <span class="field-error" id="error-correo"></span>
+
+                    </div>
+
+
+                    <!-- =========================
+                         COMERCIALIZADORA
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="comercializadora">
+                            Comercializadora
+                        </label>
+
+                        <select id="comercializadora" name="comercializadora" required>
+
+                            <?php foreach (['Endesa', 'Iberdrola', 'Naturgy', 'Repsol', 'TotalEnergies'] as $comercializadoraOpcion): ?>
+
+                                <option value="<?= $comercializadoraOpcion ?>"
+                                    <?= $cliente['comercializadora'] === $comercializadoraOpcion ? 'selected' : '' ?>>
+                                    <?= $comercializadoraOpcion ?>
                                 </option>
 
                             <?php endforeach; ?>
 
                         </select>
 
-                        <span class="field-error" id="error-id_rol"></span>
+                        <span class="field-error" id="error-comercializadora"></span>
 
                     </div>
 
 
+                    <!-- =========================
+                         TARIFA
+                    ========================== -->
 
-                    <!-- =================================================
-                         INFORMACIÓN DE CONTRASEÑA
-                    ================================================== -->
+                    <div class="form-group">
 
-                    <div class="form-info">
+                        <label for="tarifa">
+                            Tarifa
+                        </label>
 
-                        <p>
-                            La contraseña actual del usuario
-                            no se modificará.
-                        </p>
+                        <select id="tarifa" name="tarifa" required>
 
-                        <p>
-                            Para cambiar la contraseña se utilizará
-                            posteriormente una opción independiente.
-                        </p>
+                            <?php foreach (['PVPC', 'Mercado libre', 'Tarifa fija'] as $tarifaOpcion): ?>
+
+                                <option value="<?= $tarifaOpcion ?>" <?= $cliente['tarifa'] === $tarifaOpcion ? 'selected' : '' ?>>
+                                    <?= $tarifaOpcion ?>
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                        <span class="field-error" id="error-tarifa"></span>
 
                     </div>
 
+
+                    <!-- =========================
+                         ESTADO
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="estado">
+                            Estado
+                        </label>
+
+                        <select id="estado" name="estado" required>
+
+                            <?php foreach (['Activo', 'Pendiente', 'Inactivo'] as $estadoOpcion): ?>
+
+                                <option value="<?= $estadoOpcion ?>" <?= $cliente['estado'] === $estadoOpcion ? 'selected' : '' ?>>
+                                    <?= $estadoOpcion ?>
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                        <span class="field-error" id="error-estado"></span>
+
+                    </div>
 
 
                     <!-- =================================================
@@ -500,21 +348,14 @@ if (rolActual() === ROL_EMPRESA) {
 
                     <div class="form-actions">
 
+                        <button type="submit" class="config-save-button">
+                            Guardar cambios
+                        </button>
 
-                        <a
-                            href="usuarios.php"
-                            class="config-cancel-button"
-                        >
+                        <a href="clientes.php" class="config-cancel-button">
                             Cancelar
                         </a>
 
-
-                        <button
-                            type="submit"
-                            class="config-save-button"
-                        >
-                            Guardar cambios
-                        </button>
 
 
                     </div>
@@ -531,15 +372,12 @@ if (rolActual() === ROL_EMPRESA) {
     </div>
 
 
-
     <!-- =================================================
          FOOTER
     ================================================== -->
 
     <?php include '../../templates/footer.php'; ?>
 
-
-    <script src="../../js/usuarios.js"></script>
 
 </body>
 

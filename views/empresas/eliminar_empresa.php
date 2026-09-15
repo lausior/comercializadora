@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -156,6 +157,12 @@ if ($stmtEliminar->rowCount() !== 1) {
     ');
 
 }
+
+registrarLog(
+    LOG_ADVERTENCIA,
+    'Empresa eliminada',
+    'Se ha eliminado la empresa "' . $empresa['nombre'] . '".'
+);
 
 ?>
 

@@ -101,6 +101,10 @@ $totalEmpresas = count($empresas);
                         11 septiembre 2026
                     </div>
 
+                    <button type="button" class="config-secondary-button" id="btnExportarPDF">
+                        📄 Exportar PDF
+                    </button>
+
                     <a href="crear_empresa.php" class="config-save-button">
                         + Añadir empresa
                     </a>
@@ -482,6 +486,7 @@ $totalEmpresas = count($empresas);
     <?php include '../../templates/footer.php'; ?>
 
 
+    <script src="../../js/exportar-pdf.js"></script>
     <script src="../../js/empresas.js"></script>
 
 

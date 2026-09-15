@@ -50,8 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
        para "todos").
     ========================================================= */
 
-    const CLIENTES_TOTALES = 186;
-
     let CLIENTES_POR_PAGINA = 5;
 
     let paginaActual = 1;
@@ -59,6 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let filas = Array.from(
         tbody.querySelectorAll('tr')
     );
+
+    const CLIENTES_TOTALES = filas.length;
 
     // Mismo punto de corte que el @media (max-width: 680px)
     // del CSS que decide entre vista de escritorio y móvil.
@@ -130,6 +130,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const columna = Number(
                     filtro.dataset.column
                 );
+
+                /*
+                 * Filtros de Comercializadora/Tarifa/Estado:
+                 * se pueden marcar varias opciones a la vez.
+                 * La fila pasa si su valor coincide con
+                 * CUALQUIERA de las marcadas (si no hay
+                 * ninguna marcada, el filtro no se aplica).
+                 */
+                if (filtro.classList.contains('multi-select-filter')) {
+
+                    const seleccionados = window.obtenerSeleccionMultiFiltro(filtro)
+                        .map(normalizar);
+
+                    if (seleccionados.length === 0) {
+                        return;
+                    }
+
+                    const valorCelda = obtenerTextoCelda(
+                        fila,
+                        columna
+                    );
+
+                    if (!seleccionados.includes(valorCelda)) {
+                        coincide = false;
+                    }
+
+                    return;
+
+                }
 
                 const valorFiltro = normalizar(
                     filtro.value
@@ -571,7 +600,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 filtros.forEach(
                     filtro => {
 
-                        filtro.value = '';
+                        if (filtro.classList.contains('multi-select-filter')) {
+                            window.limpiarMultiFiltro(filtro);
+                        } else {
+                            filtro.value = '';
+                        }
 
                     }
                 );
@@ -585,6 +618,23 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
     });
+
+
+    /* =========================================================
+       12B. EXPORTAR PDF
+       Exporta los clientes que cumplen los filtros activos
+       (ver js/exportar-pdf.js).
+    ========================================================= */
+
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
+
+    if (btnExportarPDF) {
+
+        btnExportarPDF.addEventListener('click', () => {
+            exportarListadoPDF('exportar_pdf.php', obtenerFilasFiltradas);
+        });
+
+    }
 
 
     /* =========================================================
@@ -839,10 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================================
        14C. TARJETA DE DETALLE (SOLO MÓVIL)
        En escritorio, tocar la fila no hace nada — ahí ya se
-       ve todo y están los botones Ver/Editar de siempre.
-       Clientes no tiene backend real, así que Eliminar/Editar
-       dentro de la tarjeta son, igual que en la tabla,
-       botones de demostración sin funcionalidad.
+       ve todo y están los botones Editar/Borrar de siempre.
     ========================================================= */
 
     const modalDetalle = document.getElementById('modalDetalleCliente');
@@ -855,8 +902,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleComercializadora = document.getElementById('detalleClienteComercializadora');
     const detalleTarifa = document.getElementById('detalleClienteTarifa');
     const detalleEstado = document.getElementById('detalleClienteEstado');
+    const btnDetalleEditar = document.getElementById('btnDetalleEditarCliente');
+    const btnDetalleEliminar = document.getElementById('btnDetalleEliminarCliente');
+
+    let clienteDetalleActual = null;
 
     function abrirModalDetalleCliente(fila) {
+
+        clienteDetalleActual = fila.dataset;
 
         if (detalleAvatar) {
             detalleAvatar.textContent = fila.dataset.iniciales || '';
@@ -890,6 +943,10 @@ document.addEventListener('DOMContentLoaded', () => {
             detalleEstado.textContent = fila.dataset.estado || '—';
         }
 
+        if (btnDetalleEditar) {
+            btnDetalleEditar.href = 'editar_cliente.php?id=' + encodeURIComponent(fila.dataset.id);
+        }
+
         if (modalDetalle) {
             modalDetalle.style.display = 'flex';
             document.body.classList.add('modal-abierto');
@@ -898,6 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.cerrarModalDetalleCliente = function () {
+
+        clienteDetalleActual = null;
 
         if (modalDetalle) {
             modalDetalle.style.display = 'none';
@@ -921,6 +980,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     });
+
+    if (btnDetalleEliminar) {
+
+        btnDetalleEliminar.addEventListener('click', () => {
+
+            if (!clienteDetalleActual) {
+                return;
+            }
+
+            const id = clienteDetalleActual.id;
+            const nombre = clienteDetalleActual.nombre;
+
+            window.cerrarModalDetalleCliente();
+            window.abrirModalEliminarCliente(id, nombre);
+
+        });
+
+    }
 
     if (modalDetalle) {
 
@@ -948,7 +1025,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
-       15. PAGINACIÓN INICIAL
+       15. MODAL DE ELIMINACIÓN
+    ========================================================= */
+
+    let clienteEliminarId = 0;
+
+    const modalEliminar = document.getElementById('modalEliminarCliente');
+    const nombreClienteEliminar = document.getElementById('nombreClienteEliminar');
+
+    window.abrirModalEliminarCliente = function (id, nombre) {
+
+        clienteEliminarId = Number(id);
+
+        if (nombreClienteEliminar) {
+            nombreClienteEliminar.textContent = nombre;
+        }
+
+        if (modalEliminar) {
+            modalEliminar.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    };
+
+    window.cerrarModalEliminarCliente = function () {
+
+        clienteEliminarId = 0;
+
+        if (modalEliminar) {
+            modalEliminar.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    window.confirmarEliminarCliente = function () {
+
+        if (clienteEliminarId <= 0) {
+            return;
+        }
+
+        window.location.href =
+            'eliminar_cliente.php?id=' + encodeURIComponent(clienteEliminarId);
+
+    };
+
+    if (modalEliminar) {
+
+        modalEliminar.addEventListener('click', event => {
+
+            if (event.target === modalEliminar) {
+                window.cerrarModalEliminarCliente();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && clienteEliminarId > 0) {
+            window.cerrarModalEliminarCliente();
+        }
+
+    });
+
+
+    /* =========================================================
+       16. PAGINACIÓN INICIAL
        Pinta la tabla en cuanto el DOM está listo.
     ========================================================= */
 

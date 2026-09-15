@@ -5,6 +5,244 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('planificador');
 
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/fechas.php';
+require_once __DIR__ . '/../includes/filtro_multiselect.php';
+
+
+// =====================================================
+// MES QUE SE ESTÁ VIENDO
+// =====================================================
+//
+// Viene en la URL como ?mes=YYYY-MM (los enlaces ‹ Hoy ›
+// lo cambian). Si no viene o tiene un formato inválido,
+// se usa el mes actual.
+//
+// =====================================================
+
+$mesParam = $_GET['mes'] ?? date('Y-m');
+
+$inicioMes = DateTime::createFromFormat('Y-m-d', $mesParam . '-01');
+
+if (!$inicioMes) {
+    $inicioMes = new DateTime(date('Y-m-01'));
+}
+
+$inicioMes->setTime(0, 0);
+
+$mesActualUrl = $inicioMes->format('Y-m');
+
+
+// =====================================================
+// OBTENER TAREAS DE LA BASE DE DATOS
+// =====================================================
+
+$stmtTareas = $pdo->query("
+    SELECT id, titulo, area, fecha, hora, responsable, estado, creado_por
+    FROM tareas
+    ORDER BY fecha ASC, hora ASC
+");
+
+$tareas = $stmtTareas->fetchAll(PDO::FETCH_ASSOC);
+
+
+// =====================================================
+// FILTRAR SEGÚN QUÉ TAREAS PUEDE VER EL ROL ACTUAL
+// =====================================================
+//
+// SRG las ve todas. NG y EMPRESA solo ven las que ellos
+// mismos han creado (puedeVerTarea() en permisos.php).
+//
+// =====================================================
+
+$tareas = array_values(array_filter(
+    $tareas,
+    fn(array $tarea): bool =>
+        puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : null)
+));
+
+
+// =====================================================
+// ESTADO EFECTIVO
+// =====================================================
+//
+// Una tarea "Pendiente" cuya fecha ya pasó se muestra como
+// "Vencida", aunque en la BD su estado siga siendo
+// "Pendiente" - así no hace falta ir actualizando estados
+// a mano cada día, se calcula solo al leerla.
+//
+// =====================================================
+
+$hoy = date('Y-m-d');
+
+function estadoEfectivoTarea(array $tarea, string $hoy): string
+{
+    if ($tarea['estado'] === 'Pendiente' && $tarea['fecha'] < $hoy) {
+        return 'Vencida';
+    }
+
+    return $tarea['estado'];
+}
+
+foreach ($tareas as &$tarea) {
+    $tarea['estado_efectivo'] = estadoEfectivoTarea($tarea, $hoy);
+}
+unset($tarea);
+
+
+// =====================================================
+// CLASES CSS SEGÚN ÁREA Y ESTADO
+// =====================================================
+
+function claseAreaTarea(string $area): string
+{
+    return match ($area) {
+        'Tarifas'     => 'blue-task',
+        'Clientes'    => 'green-task',
+        'Incidencias' => 'orange-task',
+        'Comparador'  => 'purple-task',
+        'Sistema'     => 'gray-task',
+        default       => 'gray-task',
+    };
+}
+
+function claseEstadoTarea(string $estadoEfectivo): string
+{
+    return match ($estadoEfectivo) {
+        'Pendiente'  => 'status-pending',
+        'En curso'   => 'status-progress',
+        'Completada' => 'status-complete',
+        'Vencida'    => 'status-overdue',
+        default      => 'status-pending',
+    };
+}
+
+
+// =====================================================
+// AGRUPAR TAREAS POR FECHA (para pintar el calendario)
+// =====================================================
+
+$tareasPorFecha = [];
+
+foreach ($tareas as $tarea) {
+    $tareasPorFecha[$tarea['fecha']][] = $tarea;
+}
+
+
+// =====================================================
+// CONSTRUIR LA CUADRÍCULA DEL MES
+// =====================================================
+//
+// Se completan las semanas con días del mes anterior/
+// siguiente (en gris, sin tareas) para que la cuadrícula
+// siempre tenga semanas completas de lunes a domingo.
+//
+// =====================================================
+
+$diasEnMes = (int) $inicioMes->format('t');
+$diaSemanaInicio = (int) $inicioMes->format('N'); // 1=lunes ... 7=domingo
+$celdasAntes = $diaSemanaInicio - 1;
+
+$primerDiaGrid = (clone $inicioMes)->modify('-' . $celdasAntes . ' days');
+
+$totalCeldas = $celdasAntes + $diasEnMes;
+$totalFilas = (int) ceil($totalCeldas / 7);
+$totalCeldasGrid = $totalFilas * 7;
+
+$diasCalendario = [];
+
+for ($i = 0; $i < $totalCeldasGrid; $i++) {
+    $diasCalendario[] = (clone $primerDiaGrid)->modify('+' . $i . ' days');
+}
+
+$semanas = array_chunk($diasCalendario, 7);
+
+$diasSemanaAbrev = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+
+
+// =====================================================
+// NAVEGACIÓN ENTRE MESES
+// =====================================================
+
+$mesAnterior = (clone $inicioMes)->modify('-1 month')->format('Y-m');
+$mesSiguiente = (clone $inicioMes)->modify('+1 month')->format('Y-m');
+$mesHoy = date('Y-m');
+
+
+// =====================================================
+// TARJETAS RESUMEN (del mes que se está viendo)
+// =====================================================
+
+$tareasDelMes = array_filter(
+    $tareas,
+    fn(array $tarea): bool => substr($tarea['fecha'], 0, 7) === $mesActualUrl
+);
+
+$pendientesMes = 0;
+$enCursoMes = 0;
+$completadasMes = 0;
+$vencidasMes = 0;
+
+foreach ($tareasDelMes as $tarea) {
+
+    switch ($tarea['estado_efectivo']) {
+
+        case 'Pendiente':
+            $pendientesMes++;
+            break;
+
+        case 'En curso':
+            $enCursoMes++;
+            break;
+
+        case 'Completada':
+            $completadasMes++;
+            break;
+
+        case 'Vencida':
+            $vencidasMes++;
+            break;
+
+    }
+
+}
+
+
+// =====================================================
+// PRÓXIMAS TAREAS (de cualquier mes, no solo el visible)
+// =====================================================
+//
+// $tareas ya viene ordenado por fecha/hora ascendente
+// desde el SELECT, así que basta con filtrar.
+//
+// =====================================================
+
+$proximasTareas = array_values(array_filter(
+    $tareas,
+    fn(array $tarea): bool =>
+        $tarea['fecha'] >= $hoy && $tarea['estado'] !== 'Completada'
+));
+
+$proximasTareas = array_slice($proximasTareas, 0, 5);
+
+
+// =====================================================
+// TAREAS RECIENTES (las últimas creadas)
+// =====================================================
+
+$tareasRecientes = $tareas;
+
+usort($tareasRecientes, fn(array $a, array $b): int => (int) $b['id'] <=> (int) $a['id']);
+
+$tareasRecientes = array_slice($tareasRecientes, 0, 8);
+
+
+// =====================================================
+// VALORES DEL FILTRO DE ESTADO
+// =====================================================
+
+$estadosFiltroTarea = ['Pendiente', 'En curso', 'Completada', 'Vencida'];
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -13,7 +251,7 @@ requerirPermiso('planificador');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Panel de gestión</title>
+    <title>Planificador - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../css/style.css">
 </head>
@@ -56,19 +294,19 @@ requerirPermiso('planificador');
                 <div class="page-header-actions">
 
                     <div class="page-date">
-                        3 septiembre 2026
+                        <?= htmlspecialchars(fechaLargaEs(new DateTime($hoy))) ?>
                     </div>
 
-                    <button class="config-save-button">
+                    <a href="crear_tarea.php?fecha=<?= htmlspecialchars($hoy) ?>" class="config-save-button">
                         + Nueva planificación
-                    </button>
+                    </a>
 
                 </div>
 
             </div>
 
 
-            <!-- RESUMEN -->
+            <!-- RESUMEN (del mes que se está viendo) -->
             <section class="dashboard-cards">
 
                 <div class="dashboard-card">
@@ -79,8 +317,8 @@ requerirPermiso('planificador');
 
                     <div class="card-info">
                         <span class="card-label">Tareas pendientes</span>
-                        <strong>12</strong>
-                        <small>Por realizar</small>
+                        <strong><?= $pendientesMes ?></strong>
+                        <small>Este mes</small>
                     </div>
 
                 </div>
@@ -94,8 +332,8 @@ requerirPermiso('planificador');
 
                     <div class="card-info">
                         <span class="card-label">En curso</span>
-                        <strong>5</strong>
-                        <small>Actualmente</small>
+                        <strong><?= $enCursoMes ?></strong>
+                        <small>Este mes</small>
                     </div>
 
                 </div>
@@ -109,7 +347,7 @@ requerirPermiso('planificador');
 
                     <div class="card-info">
                         <span class="card-label">Completadas</span>
-                        <strong>28</strong>
+                        <strong><?= $completadasMes ?></strong>
                         <small>Este mes</small>
                     </div>
 
@@ -124,7 +362,7 @@ requerirPermiso('planificador');
 
                     <div class="card-info">
                         <span class="card-label">Vencidas</span>
-                        <strong>2</strong>
+                        <strong><?= $vencidasMes ?></strong>
                         <small>Requieren atención</small>
                     </div>
 
@@ -138,38 +376,10 @@ requerirPermiso('planificador');
 
                 <div class="planner-filters">
 
-                    <select class="planner-select">
-                        <option>Todos los estados</option>
-                        <option>Pendiente</option>
-                        <option>En curso</option>
-                        <option>Completada</option>
-                        <option>Vencida</option>
-                    </select>
+                    <?php filtroMultiSelect('filtroEstadoTarea', 0, 'Todos los estados', $estadosFiltroTarea); ?>
 
-
-                    <select class="planner-select">
-                        <option>Todos los responsables</option>
-                        <option>Administrador</option>
-                        <option>Juan García</option>
-                        <option>María López</option>
-                    </select>
-
-                </div>
-
-
-                <div class="planner-view-buttons">
-
-                    <button class="planner-view-button">
-                        Día
-                    </button>
-
-                    <button class="planner-view-button active">
-                        Semana
-                    </button>
-
-                    <button class="planner-view-button">
-                        Mes
-                    </button>
+                    <input type="text" id="filtroResponsableTarea" class="planner-select"
+                        placeholder="Buscar responsable...">
 
                 </div>
 
@@ -186,146 +396,110 @@ requerirPermiso('planificador');
                     <div class="panel-header">
 
                         <div>
-                            <h2>Planificación semanal</h2>
-                            <p>31 agosto — 6 septiembre 2026</p>
+                            <h2>
+                                <?= htmlspecialchars(nombreMesEs((int) $inicioMes->format('n'))) ?>
+                                <?= $inicioMes->format('Y') ?>
+                            </h2>
+                            <p>Planificación mensual</p>
                         </div>
 
                         <div class="calendar-navigation">
 
-                            <button class="calendar-button">
+                            <a class="calendar-button" href="?mes=<?= $mesAnterior ?>">
                                 ‹
-                            </button>
+                            </a>
 
-                            <button class="calendar-today">
+                            <a class="calendar-today" href="?mes=<?= $mesHoy ?>">
                                 Hoy
-                            </button>
+                            </a>
 
-                            <button class="calendar-button">
+                            <a class="calendar-button" href="?mes=<?= $mesSiguiente ?>">
                                 ›
-                            </button>
+                            </a>
 
                         </div>
 
                     </div>
 
 
-                    <div class="calendar-week">
+                    <div class="calendar-month">
 
-                        <!-- LUNES -->
-                        <div class="calendar-day">
+                        <?php foreach ($semanas as $indiceSemana => $semana): ?>
 
-                            <div class="calendar-day-header">
-                                <span>LUN</span>
-                                <strong>31</strong>
+                            <div class="calendar-week">
+
+                                <?php foreach ($semana as $indiceDia => $diaFecha): ?>
+
+                                    <?php
+
+                                    $claveFecha = $diaFecha->format('Y-m-d');
+                                    $esDelMes = $diaFecha->format('Y-m') === $mesActualUrl;
+                                    $esHoy = $claveFecha === $hoy;
+                                    $esFinDeSemana = (int) $diaFecha->format('N') >= 6;
+
+                                    $tareasDia = $tareasPorFecha[$claveFecha] ?? [];
+
+                                    $claseDia = 'calendar-day';
+                                    if (!$esDelMes) {
+                                        $claseDia .= ' otro-mes';
+                                    }
+                                    if ($esFinDeSemana) {
+                                        $claseDia .= ' weekend';
+                                    }
+                                    if ($esHoy) {
+                                        $claseDia .= ' today';
+                                    }
+
+                                    ?>
+
+                                    <div class="<?= $claseDia ?>">
+
+                                        <div class="calendar-day-header">
+
+                                            <span>
+                                                <?= $indiceSemana === 0 ? $diasSemanaAbrev[$indiceDia] : '' ?>
+                                            </span>
+
+                                            <strong><?= (int) $diaFecha->format('j') ?></strong>
+
+                                            <a class="calendar-add-task" title="Añadir tarea este día"
+                                                href="crear_tarea.php?fecha=<?= $claveFecha ?>">
+                                                +
+                                            </a>
+
+                                        </div>
+
+                                        <?php foreach (array_slice($tareasDia, 0, 3) as $tareaDia): ?>
+
+                                            <a
+                                                class="calendar-task <?= claseAreaTarea($tareaDia['area']) ?>"
+                                                data-estado="<?= htmlspecialchars($tareaDia['estado_efectivo']) ?>"
+                                                data-responsable="<?= htmlspecialchars(strtolower($tareaDia['responsable'] ?? '')) ?>"
+                                                href="editar_tarea.php?id=<?= (int) $tareaDia['id'] ?>"
+                                            >
+                                                <strong><?= htmlspecialchars($tareaDia['titulo']) ?></strong>
+                                                <small>
+                                                    <?= $tareaDia['hora'] ? substr($tareaDia['hora'], 0, 5) . ' · ' : '' ?><?= htmlspecialchars($tareaDia['area']) ?>
+                                                </small>
+                                            </a>
+
+                                        <?php endforeach; ?>
+
+                                        <?php if (count($tareasDia) > 3): ?>
+
+                                            <div class="calendar-task-mas">
+                                                +<?= count($tareasDia) - 3 ?> más
+                                            </div>
+
+                                        <?php endif; ?>
+
+                                    </div>
+
+                                <?php endforeach; ?>
+
                             </div>
 
-                            <div class="calendar-task blue-task">
-                                <strong>Revisar tarifas</strong>
-                                <small>09:00 · Tarifas</small>
-                            </div>
-
-                            <div class="calendar-task green-task">
-                                <strong>Cliente nuevo</strong>
-                                <small>12:00 · Clientes</small>
-                            </div>
-
-                        </div>
-
-
-                        <!-- MARTES -->
-                        <div class="calendar-day">
-
-                            <div class="calendar-day-header">
-                                <span>MAR</span>
-                                <strong>1</strong>
-                            </div>
-
-                            <div class="calendar-task orange-task">
-                                <strong>Revisar incidencia</strong>
-                                <small>10:30 · Incidencias</small>
-                            </div>
-
-                        </div>
-
-
-                        <!-- MIÉRCOLES -->
-                        <div class="calendar-day today">
-
-                            <div class="calendar-day-header">
-                                <span>MIÉ</span>
-                                <strong>2</strong>
-                            </div>
-
-                            <div class="calendar-task blue-task">
-                                <strong>Actualizar tarifas</strong>
-                                <small>09:30 · Tarifas</small>
-                            </div>
-
-                            <div class="calendar-task purple-task">
-                                <strong>Comparación pendiente</strong>
-                                <small>16:00 · Comparador</small>
-                            </div>
-
-                        </div>
-
-
-                        <!-- JUEVES -->
-                        <div class="calendar-day selected-day">
-
-                            <div class="calendar-day-header">
-                                <span>JUE</span>
-                                <strong>3</strong>
-                            </div>
-
-                            <div class="calendar-task orange-task">
-                                <strong>Revisión de datos</strong>
-                                <small>09:00 · Clientes</small>
-                            </div>
-
-                            <div class="calendar-task green-task">
-                                <strong>Validar planificación</strong>
-                                <small>14:30 · Sistema</small>
-                            </div>
-
-                        </div>
-
-
-                        <!-- VIERNES -->
-                        <div class="calendar-day">
-
-                            <div class="calendar-day-header">
-                                <span>VIE</span>
-                                <strong>4</strong>
-                            </div>
-
-                            <div class="calendar-task blue-task">
-                                <strong>Revisión semanal</strong>
-                                <small>11:00 · Sistema</small>
-                            </div>
-
-                        </div>
-
-
-                        <!-- SÁBADO -->
-                        <div class="calendar-day weekend">
-
-                            <div class="calendar-day-header">
-                                <span>SÁB</span>
-                                <strong>5</strong>
-                            </div>
-
-                        </div>
-
-
-                        <!-- DOMINGO -->
-                        <div class="calendar-day weekend">
-
-                            <div class="calendar-day-header">
-                                <span>DOM</span>
-                                <strong>6</strong>
-                            </div>
-
-                        </div>
+                        <?php endforeach; ?>
 
                     </div>
 
@@ -342,90 +516,41 @@ requerirPermiso('planificador');
                             <p>Tareas programadas</p>
                         </div>
 
-                        <button class="panel-action">
-                            Ver todas
-                        </button>
-
                     </div>
 
 
                     <div class="upcoming-list">
 
+                        <?php if (empty($proximasTareas)): ?>
 
-                        <div class="upcoming-item">
+                            <p class="form-info">No hay tareas próximas.</p>
 
-                            <div class="upcoming-date">
-                                <strong>03</strong>
-                                <span>SEP</span>
-                            </div>
+                        <?php endif; ?>
 
-                            <div class="upcoming-content">
-                                <strong>Revisión de datos</strong>
-                                <span>Cliente · 09:00</span>
-                            </div>
+                        <?php foreach ($proximasTareas as $tareaProxima): ?>
 
-                            <span class="status-badge status-pending">
-                                Pendiente
-                            </span>
+                            <a class="upcoming-item" href="editar_tarea.php?id=<?= (int) $tareaProxima['id'] ?>">
 
-                        </div>
+                                <div class="upcoming-date">
+                                    <strong><?= date('d', strtotime($tareaProxima['fecha'])) ?></strong>
+                                    <span><?= mb_strtoupper(substr(nombreMesEs((int) date('n', strtotime($tareaProxima['fecha']))), 0, 3), 'UTF-8') ?></span>
+                                </div>
 
+                                <div class="upcoming-content">
+                                    <strong><?= htmlspecialchars($tareaProxima['titulo']) ?></strong>
+                                    <span>
+                                        <?= htmlspecialchars($tareaProxima['area']) ?>
+                                        <?= $tareaProxima['hora'] ? ' · ' . substr($tareaProxima['hora'], 0, 5) : '' ?>
+                                    </span>
+                                </div>
 
-                        <div class="upcoming-item">
+                                <span class="status-badge <?= claseEstadoTarea($tareaProxima['estado_efectivo']) ?>">
+                                    <?= htmlspecialchars($tareaProxima['estado_efectivo']) ?>
+                                </span>
 
-                            <div class="upcoming-date">
-                                <strong>03</strong>
-                                <span>SEP</span>
-                            </div>
+                            </a>
 
-                            <div class="upcoming-content">
-                                <strong>Validar planificación</strong>
-                                <span>Sistema · 14:30</span>
-                            </div>
-
-                            <span class="status-badge status-progress">
-                                En curso
-                            </span>
-
-                        </div>
-
-
-                        <div class="upcoming-item">
-
-                            <div class="upcoming-date">
-                                <strong>04</strong>
-                                <span>SEP</span>
-                            </div>
-
-                            <div class="upcoming-content">
-                                <strong>Revisión semanal</strong>
-                                <span>Sistema · 11:00</span>
-                            </div>
-
-                            <span class="status-badge status-pending">
-                                Pendiente
-                            </span>
-
-                        </div>
-
-
-                        <div class="upcoming-item">
-
-                            <div class="upcoming-date">
-                                <strong>07</strong>
-                                <span>SEP</span>
-                            </div>
-
-                            <div class="upcoming-content">
-                                <strong>Actualizar tarifas</strong>
-                                <span>Tarifas · 09:00</span>
-                            </div>
-
-                            <span class="status-badge status-pending">
-                                Pendiente
-                            </span>
-
-                        </div>
+                        <?php endforeach; ?>
 
                     </div>
 
@@ -444,10 +569,6 @@ requerirPermiso('planificador');
                         <p>Últimas tareas gestionadas</p>
                     </div>
 
-                    <button class="panel-action">
-                        Ver historial
-                    </button>
-
                 </div>
 
 
@@ -459,82 +580,61 @@ requerirPermiso('planificador');
                         <span>Responsable</span>
                         <span>Fecha</span>
                         <span>Estado</span>
+                        <span>Acciones</span>
                     </div>
 
+                    <?php if (empty($tareasRecientes)): ?>
 
-                    <div class="planner-table-row">
+                        <div class="planner-table-row">
+                            <span>No hay tareas todavía.</span>
+                        </div>
 
-                        <span>
-                            Actualizar tarifa Endesa
-                        </span>
+                    <?php endif; ?>
 
-                        <span>
-                            Tarifas
-                        </span>
+                    <?php foreach ($tareasRecientes as $tareaReciente): ?>
 
-                        <span>
-                            Juan García
-                        </span>
+                        <div class="planner-table-row" data-estado="<?= htmlspecialchars($tareaReciente['estado_efectivo']) ?>"
+                            data-responsable="<?= htmlspecialchars(strtolower($tareaReciente['responsable'] ?? '')) ?>">
 
-                        <span>
-                            02/09/2026
-                        </span>
+                            <span>
+                                <?= htmlspecialchars($tareaReciente['titulo']) ?>
+                            </span>
 
-                        <span class="status-badge status-complete">
-                            Completada
-                        </span>
+                            <span>
+                                <?= htmlspecialchars($tareaReciente['area']) ?>
+                            </span>
 
-                    </div>
+                            <span>
+                                <?= htmlspecialchars($tareaReciente['responsable'] ?: '—') ?>
+                            </span>
 
+                            <span>
+                                <?= date('d/m/Y', strtotime($tareaReciente['fecha'])) ?>
+                            </span>
 
-                    <div class="planner-table-row">
+                            <span class="status-badge <?= claseEstadoTarea($tareaReciente['estado_efectivo']) ?>">
+                                <?= htmlspecialchars($tareaReciente['estado_efectivo']) ?>
+                            </span>
 
-                        <span>
-                            Revisar datos de cliente
-                        </span>
+                            <span class="planner-table-actions">
 
-                        <span>
-                            Clientes
-                        </span>
+                                <button type="button" class="table-action-button"
+                                    onclick="window.location.href='editar_tarea.php?id=<?= (int) $tareaReciente['id'] ?>'">
+                                    Editar
+                                </button>
 
-                        <span>
-                            María López
-                        </span>
+                                <button type="button" class="table-action-button danger" onclick="abrirModalEliminarTarea(
+                                    <?= (int) $tareaReciente['id'] ?>,
+                                    '<?= htmlspecialchars($tareaReciente['titulo'], ENT_QUOTES, 'UTF-8') ?>'
+                                )">
+                                    Eliminar
+                                </button>
 
-                        <span>
-                            02/09/2026
-                        </span>
+                            </span>
 
-                        <span class="status-badge status-progress">
-                            En curso
-                        </span>
+                        </div>
 
-                    </div>
-
-
-                    <div class="planner-table-row">
-
-                        <span>
-                            Revisar incidencia #1042
-                        </span>
-
-                        <span>
-                            Incidencias
-                        </span>
-
-                        <span>
-                            Administrador
-                        </span>
-
-                        <span>
-                            01/09/2026
-                        </span>
-
-                        <span class="status-badge status-pending">
-                            Pendiente
-                        </span>
-
-                    </div>
+                    <?php endforeach; ?>
 
                 </div>
 
@@ -547,10 +647,53 @@ requerirPermiso('planificador');
     </div>
 
 
+    <!-- =========================================================
+         MODAL CONFIRMAR ELIMINACIÓN
+    ========================================================= -->
+
+    <div id="modalEliminarTarea" class="modal-overlay" style="display: none;">
+
+        <div class="modal-confirmacion">
+
+            <div class="modal-icon">
+                ⚠
+            </div>
+
+            <h2>Eliminar tarea</h2>
+
+            <p>
+                ¿Estás seguro de que quieres eliminar la tarea
+                <strong id="nombreTareaEliminar"></strong>?
+            </p>
+
+            <p class="modal-warning">
+                Esta acción no se puede deshacer.
+            </p>
+
+            <div class="modal-actions">
+
+                <button type="button" class="modal-button modal-button-cancel" onclick="cerrarModalEliminarTarea()">
+                    Cancelar
+                </button>
+
+                <button type="button" class="modal-button modal-button-delete" onclick="confirmarEliminarTarea()">
+                    Eliminar tarea
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
     <!-- =========================
          FOOTER
     ========================== -->
     <?php include '../templates/footer.php'; ?>
+
+    <script src="../js/multi-select-filter.js"></script>
+    <script src="../js/planificador.js"></script>
 
 </body>
 

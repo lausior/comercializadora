@@ -482,12 +482,12 @@ if (rolActual() === ROL_EMPRESA) {
 
                         <p>
                             La contraseña actual del usuario
-                            no se modificará.
+                            no se modificará al guardar estos cambios.
                         </p>
 
                         <p>
-                            Para cambiar la contraseña se utilizará
-                            posteriormente una opción independiente.
+                            Para restablecerla a la contraseña inicial,
+                            usa el botón "Restablecer contraseña".
                         </p>
 
                     </div>
@@ -498,23 +498,36 @@ if (rolActual() === ROL_EMPRESA) {
                          BOTONES
                     ================================================== -->
 
-                    <div class="form-actions">
-
-
-                        <a
-                            href="usuarios.php"
-                            class="config-cancel-button"
-                        >
-                            Cancelar
-                        </a>
+                    <div class="form-actions form-actions-split">
 
 
                         <button
-                            type="submit"
-                            class="config-save-button"
+                            type="button"
+                            class="config-cancel-button"
+                            onclick="abrirModalResetPassword()"
                         >
-                            Guardar cambios
+                            Restablecer contraseña
                         </button>
+
+
+                        <div class="form-actions-right">
+
+                            
+                            <button
+                                type="submit"
+                                class="config-save-button"
+                            >
+                                Guardar cambios
+                            </button>
+
+                            <a
+                                href="usuarios.php"
+                                class="config-cancel-button"
+                            >
+                                Cancelar
+                            </a>
+
+                        </div>
 
 
                     </div>
@@ -539,7 +552,104 @@ if (rolActual() === ROL_EMPRESA) {
     <?php include '../../templates/footer.php'; ?>
 
 
+    <!-- =====================================================
+         MODAL CONFIRMAR RESTABLECER CONTRASEÑA
+    ====================================================== -->
+
+    <div id="modalResetPassword" class="modal-overlay" style="display: none;">
+
+        <div class="modal-confirmacion">
+
+            <div class="modal-icon">
+                🔑
+            </div>
+
+            <h2>Restablecer contraseña</h2>
+
+            <p>
+                ¿Seguro que quieres restablecer la contraseña de
+                <strong><?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellidos'], ENT_QUOTES, 'UTF-8') ?></strong>
+                a la contraseña inicial?
+            </p>
+
+            <p class="modal-warning">
+                El usuario deberá cambiarla en su próximo acceso.
+            </p>
+
+            <div class="modal-actions">
+
+                <button type="button" class="modal-button modal-button-cancel"
+                    onclick="cerrarModalResetPassword()">
+                    Cancelar
+                </button>
+
+                <button type="button" class="modal-button modal-button-primary"
+                    onclick="confirmarResetPassword()">
+                    Restablecer contraseña
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
     <script src="../../js/usuarios.js"></script>
+
+    <script>
+
+        const modalResetPassword = document.getElementById('modalResetPassword');
+
+        window.abrirModalResetPassword = function () {
+
+            if (modalResetPassword) {
+                modalResetPassword.style.display = 'flex';
+                document.body.classList.add('modal-abierto');
+            }
+
+        };
+
+        window.cerrarModalResetPassword = function () {
+
+            if (modalResetPassword) {
+                modalResetPassword.style.display = 'none';
+                document.body.classList.remove('modal-abierto');
+            }
+
+        };
+
+        window.confirmarResetPassword = function () {
+
+            window.location.href = 'resetear_password.php?id=<?= (int) $usuario['id'] ?>';
+
+        };
+
+        if (modalResetPassword) {
+
+            modalResetPassword.addEventListener('click', event => {
+
+                if (event.target === modalResetPassword) {
+                    window.cerrarModalResetPassword();
+                }
+
+            });
+
+        }
+
+        document.addEventListener('keydown', event => {
+
+            if (
+                event.key === 'Escape' &&
+                modalResetPassword &&
+                modalResetPassword.style.display !== 'none'
+            ) {
+                window.cerrarModalResetPassword();
+            }
+
+        });
+
+    </script>
 
 </body>
 

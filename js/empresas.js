@@ -650,6 +650,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       14B. EXPORTAR PDF
+       Exporta las empresas que cumplen los filtros activos
+       (ver js/exportar-pdf.js).
+    ========================================================= */
+
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
+
+    if (btnExportarPDF) {
+
+        btnExportarPDF.addEventListener('click', () => {
+            exportarListadoPDF('exportar_pdf.php', obtenerFilasFiltradas);
+        });
+
+    }
+
+
+    /* =========================================================
        15. EMPRESAS POR PÁGINA
     ========================================================= */
 

@@ -99,7 +99,7 @@ function requerirPermiso(string $seccion): void
     }
 
     if (!isset($_SESSION['id_usuario'])) {
-        header('Location: /comercializadora/login.php');
+        header('Location: /comercializadora/views/login/login.php');
         exit;
     }
 
@@ -110,7 +110,7 @@ function requerirPermiso(string $seccion): void
         $seccion !== 'cambiar_password' &&
         !empty($_SESSION['cambiar_password'])
     ) {
-        header('Location: /comercializadora/cambiar_password.php');
+        header('Location: /comercializadora/views/login/cambiar_password.php');
         exit;
     }
 
@@ -181,6 +181,54 @@ function puedeVerEmpresa(?int $creadoPor): bool
  * que ellos mismos han dado de alta.
  */
 function puedeVerUsuario(?int $creadoPor): bool
+{
+    $rol = rolActual();
+
+    if ($rol === ROL_SRG) {
+        return true;
+    }
+
+    if ($rol === ROL_NG || $rol === ROL_EMPRESA) {
+        return $creadoPor !== null
+            && $creadoPor === (int) ($_SESSION['id_usuario'] ?? 0);
+    }
+
+    return false;
+}
+
+
+/**
+ * ¿Puede el usuario actual ver/gestionar un cliente
+ * creado por $creadoPor?
+ *
+ * SRG ve a todos. NG y EMPRESA solo ven a los clientes
+ * que ellos mismos han dado de alta.
+ */
+function puedeVerCliente(?int $creadoPor): bool
+{
+    $rol = rolActual();
+
+    if ($rol === ROL_SRG) {
+        return true;
+    }
+
+    if ($rol === ROL_NG || $rol === ROL_EMPRESA) {
+        return $creadoPor !== null
+            && $creadoPor === (int) ($_SESSION['id_usuario'] ?? 0);
+    }
+
+    return false;
+}
+
+
+/**
+ * ¿Puede el usuario actual ver/gestionar una tarea del
+ * planificador creada por $creadoPor?
+ *
+ * SRG ve a todas. NG y EMPRESA solo ven las tareas que
+ * ellos mismos han creado.
+ */
+function puedeVerTarea(?int $creadoPor): bool
 {
     $rol = rolActual();
 

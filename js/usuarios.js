@@ -418,6 +418,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         filtro.dataset.column
                     );
 
+                // Filtros de tipo "Rol"/"Empresa": el usuario
+                // puede marcar varias opciones a la vez, y la
+                // fila pasa si su valor coincide con CUALQUIERA
+                // de las marcadas (si no hay ninguna marcada,
+                // el filtro no se aplica).
+                if (filtro.classList.contains('multi-select-filter')) {
+
+                    const seleccionados =
+                        window.obtenerSeleccionMultiFiltro(filtro)
+                            .map(normalizar);
+
+                    if (seleccionados.length === 0) {
+                        return;
+                    }
+
+                    const valorCelda =
+                        obtenerTextoCelda(
+                            fila,
+                            columna
+                        );
+
+                    if (!seleccionados.includes(valorCelda)) {
+                        coincide = false;
+                    }
+
+                    return;
+
+                }
+
                 const valorFiltro =
                     normalizar(
                         filtro.value
@@ -917,7 +946,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 filtros.forEach(
                     filtro => {
 
-                        filtro.value = '';
+                        if (filtro.classList.contains('multi-select-filter')) {
+                            window.limpiarMultiFiltro(filtro);
+                        } else {
+                            filtro.value = '';
+                        }
 
                     }
                 );
@@ -931,6 +964,23 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
     });
+
+
+    /* =========================================================
+       14B. EXPORTAR PDF
+       Exporta los usuarios que cumplen los filtros activos
+       (ver js/exportar-pdf.js).
+    ========================================================= */
+
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
+
+    if (btnExportarPDF) {
+
+        btnExportarPDF.addEventListener('click', () => {
+            exportarListadoPDF('exportar_pdf.php', obtenerFilasFiltradas);
+        });
+
+    }
 
 
     /* =========================================================

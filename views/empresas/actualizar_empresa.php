@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
 require_once '../../config/database.php';
+require_once '../../includes/logs.php';
 
 
 // =====================================================
@@ -264,6 +265,12 @@ $stmt->execute([
     ':email'          => $email !== '' ? $email : null,
     ':id'             => $id,
 ]);
+
+registrarLog(
+    LOG_EXITO,
+    'Empresa modificada',
+    'Se ha modificado la empresa "' . $nombre . '".'
+);
 
 
 // =====================================================
