@@ -45,8 +45,9 @@ $stmtCliente = $pdo->prepare("
     SELECT
         id,
         nombre,
-        identificacion,
-        correo,
+        apellidos,
+        nif,
+        email,
         creado_por
     FROM clientes
     WHERE id = ?
@@ -161,7 +162,7 @@ if ($stmtEliminar->rowCount() !== 1) {
 registrarLog(
     LOG_ADVERTENCIA,
     'Cliente eliminado',
-    'Se ha eliminado el cliente "' . $cliente['nombre'] . '".'
+    'Se ha eliminado el cliente "' . $cliente['nombre'] . ' ' . $cliente['apellidos'] . '".'
 );
 
 ?>
@@ -260,7 +261,7 @@ registrarLog(
                         El cliente
 
                         <strong>
-                            <?= htmlspecialchars($cliente['nombre']) ?>
+                            <?= htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']) ?>
                         </strong>
 
                         ha sido eliminado correctamente.
@@ -281,10 +282,10 @@ registrarLog(
 
                     <p>
 
-                        Identificación:
+                        DNI/NIE:
 
                         <strong>
-                            <?= htmlspecialchars($cliente['identificacion']) ?>
+                            <?= htmlspecialchars($cliente['nif']) ?>
                         </strong>
 
                     </p>
@@ -292,10 +293,10 @@ registrarLog(
 
                     <p>
 
-                        Correo:
+                        Email:
 
                         <strong>
-                            <?= htmlspecialchars($cliente['correo']) ?>
+                            <?= htmlspecialchars($cliente['email']) ?>
                         </strong>
 
                     </p>

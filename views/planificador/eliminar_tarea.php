@@ -2,11 +2,11 @@
 
 session_start();
 
-require_once __DIR__ . '/../config/permisos.php';
+require_once __DIR__ . '/../../config/permisos.php';
 requerirPermiso('planificador');
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/logs.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/logs.php';
 
 
 // =====================================================

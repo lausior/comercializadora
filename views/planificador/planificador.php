@@ -2,12 +2,12 @@
 
 session_start();
 
-require_once __DIR__ . '/../config/permisos.php';
+require_once __DIR__ . '/../../config/permisos.php';
 requerirPermiso('planificador');
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/fechas.php';
-require_once __DIR__ . '/../includes/filtro_multiselect.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/fechas.php';
+require_once __DIR__ . '/../../includes/filtro_multiselect.php';
 
 
 // =====================================================
@@ -253,7 +253,7 @@ $estadosFiltroTarea = ['Pendiente', 'En curso', 'Completada', 'Vencida'];
 
     <title>Planificador - Comparador Eléctrico</title>
 
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
 </head>
 
 <body>
@@ -261,7 +261,7 @@ $estadosFiltroTarea = ['Pendiente', 'En curso', 'Completada', 'Vencida'];
     <!-- =========================
          HEADER
     ========================== -->
-    <?php include '../templates/header.php'; ?>
+    <?php include '../../templates/header.php'; ?>
 
 
     <!-- =========================
@@ -273,7 +273,7 @@ $estadosFiltroTarea = ['Pendiente', 'En curso', 'Completada', 'Vencida'];
         <!-- =========================
              SIDEBAR
         ========================== -->
-        <?php include '../templates/sidebar.php'; ?>
+        <?php include '../../templates/sidebar.php'; ?>
 
 
 
@@ -690,10 +690,10 @@ $estadosFiltroTarea = ['Pendiente', 'En curso', 'Completada', 'Vencida'];
     <!-- =========================
          FOOTER
     ========================== -->
-    <?php include '../templates/footer.php'; ?>
+    <?php include '../../templates/footer.php'; ?>
 
-    <script src="../js/multi-select-filter.js"></script>
-    <script src="../js/planificador.js"></script>
+    <script src="../../js/multi-select-filter.js"></script>
+    <script src="../../js/planificador.js"></script>
 
 </body>
 

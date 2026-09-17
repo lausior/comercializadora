@@ -10,23 +10,6 @@ require_once __DIR__ . '/../../includes/filtro_multiselect.php';
 
 
 // =====================================================
-// VALORES DE LOS FILTROS DE COMERCIALIZADORA/TARIFA/ESTADO
-// =====================================================
-//
-// Mismas listas que validan guardar_cliente.php /
-// actualizar_cliente.php: son los únicos valores que un
-// cliente puede tener, así que el filtro los muestra todos
-// (aunque en un momento dado no haya ningún cliente con
-// alguno de ellos).
-//
-// =====================================================
-
-$comercializadorasFiltro = ['Endesa', 'Iberdrola', 'Naturgy', 'Repsol', 'TotalEnergies'];
-$tarifasFiltro           = ['PVPC', 'Mercado libre', 'Tarifa fija'];
-$estadosFiltro           = ['Activo', 'Pendiente', 'Inactivo'];
-
-
-// =====================================================
 // OBTENER CLIENTES DE LA BASE DE DATOS
 // =====================================================
 
@@ -34,12 +17,11 @@ $stmtClientes = $pdo->query("
     SELECT
         id,
         nombre,
-        tipo,
-        identificacion,
-        correo,
-        comercializadora,
-        tarifa,
-        estado,
+        apellidos,
+        direccion,
+        telefono,
+        email,
+        nif,
         creado_por
     FROM clientes
     ORDER BY nombre
@@ -70,20 +52,37 @@ $totalClientes = count($clientes);
 
 
 // =====================================================
-// CLASES CSS PARA LAS ETIQUETAS DE TARIFA Y ESTADO
+// VALORES DISTINTOS PARA LOS DESPLEGABLES DE CLIENTE/
+// DIRECCIÓN/TELÉFONO/EMAIL/NIF
+// =====================================================
+//
+// La lista de opciones del desplegable son los valores
+// que realmente aparecen en $clientes (ya filtrado por
+// permisos).
+//
 // =====================================================
 
-$clasesTarifa = [
-    'PVPC'          => 'tarifa-pvpc',
-    'Mercado libre' => 'tarifa-libre',
-    'Tarifa fija'   => 'tarifa-fija',
-];
+$nombresFiltro = array_values(array_unique(array_map(
+    fn(array $cliente): string => $cliente['nombre'] . ' ' . $cliente['apellidos'],
+    $clientes
+)));
+sort($nombresFiltro);
 
-$clasesEstado = [
-    'Activo'    => 'cliente-active',
-    'Pendiente' => 'cliente-pending',
-    'Inactivo'  => 'cliente-inactive',
-];
+$direccionesFiltro = array_values(array_unique(array_filter(
+    array_column($clientes, 'direccion')
+)));
+sort($direccionesFiltro);
+
+$telefonosFiltro = array_values(array_unique(array_filter(
+    array_column($clientes, 'telefono')
+)));
+sort($telefonosFiltro);
+
+$emailsFiltro = array_values(array_unique(array_column($clientes, 'email')));
+sort($emailsFiltro);
+
+$nifsFiltro = array_values(array_unique(array_column($clientes, 'nif')));
+sort($nifsFiltro);
 
 ?>
 <!DOCTYPE html>
@@ -128,10 +127,6 @@ $clasesEstado = [
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        15 septiembre 2026
-                    </div>
-
                     <button type="button" class="config-secondary-button" id="btnExportarPDF">
                         📄 Exportar PDF
                     </button>
@@ -166,20 +161,6 @@ $clasesEstado = [
 
                     <div class="panel-header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
 
-                        <div class="clientes-por-pagina">
-                            <label for="selectorPorPagina">Mostrar:</label>
-                            <select id="selectorPorPagina" class="por-pagina-select">
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                                <option value="todos">Todos</option>
-                            </select>
-                        </div>
-
-                        <!-- Solo en escritorio: limpia los filtros de columna de la tabla -->
-                        <button type="button" class="panel-action vista-escritorio" id="btnLimpiarFiltros">
-                            Limpiar filtros
-                        </button>
-
                         <!-- Solo en móvil: despliega el panel de filtros apilados -->
                         <button type="button" class="filtros-toggle-button vista-movil" id="btnToggleFiltros"
                             aria-expanded="false" aria-controls="panelFiltrosClientes">
@@ -206,36 +187,28 @@ $clasesEstado = [
                     <div class="filtros-panel-campos">
 
                         <div class="filter-group">
-                            <label for="filtroClienteMovil">Cliente</label>
-                            <input type="text" id="filtroClienteMovil" class="column-filter" data-column="0"
-                                placeholder="Buscar cliente...">
+                            <label>Cliente</label>
+                            <?php filtroMultiSelect('filtroClienteMovil', 0, 'Todos', $nombresFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroIdentificacionMovil">Identificación</label>
-                            <input type="text" id="filtroIdentificacionMovil" class="column-filter" data-column="1"
-                                placeholder="DNI / CIF...">
+                            <label>DNI/NIE</label>
+                            <?php filtroMultiSelect('filtroNifMovil', 1, 'Todos', $nifsFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroCorreoMovil">Correo</label>
-                            <input type="text" id="filtroCorreoMovil" class="column-filter" data-column="2"
-                                placeholder="Buscar correo...">
+                            <label>Dirección</label>
+                            <?php filtroMultiSelect('filtroDireccionMovil', 2, 'Todas', $direccionesFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label>Comercializadora</label>
-                            <?php filtroMultiSelect('filtroComercializadoraMovil', 3, 'Todas', $comercializadorasFiltro); ?>
+                            <label>Teléfono</label>
+                            <?php filtroMultiSelect('filtroTelefonoMovil', 3, 'Todos', $telefonosFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label>Tarifa</label>
-                            <?php filtroMultiSelect('filtroTarifaMovil', 4, 'Todas', $tarifasFiltro); ?>
-                        </div>
-
-                        <div class="filter-group">
-                            <label>Estado</label>
-                            <?php filtroMultiSelect('filtroEstadoMovil', 5, 'Todos', $estadosFiltro); ?>
+                            <label>Email</label>
+                            <?php filtroMultiSelect('filtroEmailMovil', 4, 'Todos', $emailsFiltro); ?>
                         </div>
 
                     </div>
@@ -278,10 +251,10 @@ $clasesEstado = [
 
                                 <th class="vista-escritorio">
                                     <div class="table-header-content">
-                                        <span>Identificación</span>
+                                        <span>DNI/NIE</span>
 
                                         <button type="button" class="sort-button" data-column="1"
-                                            title="Ordenar por identificación">
+                                            title="Ordenar por DNI/NIE">
                                             ↕
                                         </button>
                                     </div>
@@ -290,10 +263,10 @@ $clasesEstado = [
 
                                 <th class="vista-escritorio">
                                     <div class="table-header-content">
-                                        <span>Correo</span>
+                                        <span>Dirección</span>
 
                                         <button type="button" class="sort-button" data-column="2"
-                                            title="Ordenar por correo">
+                                            title="Ordenar por dirección">
                                             ↕
                                         </button>
                                     </div>
@@ -302,10 +275,10 @@ $clasesEstado = [
 
                                 <th class="vista-escritorio">
                                     <div class="table-header-content">
-                                        <span>Comercializadora</span>
+                                        <span>Teléfono</span>
 
                                         <button type="button" class="sort-button" data-column="3"
-                                            title="Ordenar por comercializadora">
+                                            title="Ordenar por teléfono">
                                             ↕
                                         </button>
                                     </div>
@@ -314,22 +287,10 @@ $clasesEstado = [
 
                                 <th class="vista-escritorio">
                                     <div class="table-header-content">
-                                        <span>Tarifa</span>
+                                        <span>Email</span>
 
                                         <button type="button" class="sort-button" data-column="4"
-                                            title="Ordenar por tarifa">
-                                            ↕
-                                        </button>
-                                    </div>
-                                </th>
-
-
-                                <th class="vista-escritorio">
-                                    <div class="table-header-content">
-                                        <span>Estado</span>
-
-                                        <button type="button" class="sort-button" data-column="5"
-                                            title="Ordenar por estado">
+                                            title="Ordenar por email">
                                             ↕
                                         </button>
                                     </div>
@@ -352,55 +313,49 @@ $clasesEstado = [
                                 <!-- Cliente -->
                                 <th>
 
-                                    <input type="text" class="column-filter" data-column="0"
-                                        placeholder="Buscar cliente...">
+                                    <?php filtroMultiSelect('filtroClienteEscritorio', 0, 'Todos', $nombresFiltro); ?>
 
                                 </th>
 
 
-                                <!-- Identificación -->
+                                <!-- DNI/NIE -->
                                 <th>
 
-                                    <input type="text" class="column-filter" data-column="1" placeholder="DNI / CIF...">
+                                    <?php filtroMultiSelect('filtroNifEscritorio', 1, 'Todos', $nifsFiltro); ?>
 
                                 </th>
 
 
-                                <!-- Correo -->
+                                <!-- Dirección -->
                                 <th>
 
-                                    <input type="text" class="column-filter" data-column="2"
-                                        placeholder="Buscar correo...">
+                                    <?php filtroMultiSelect('filtroDireccionEscritorio', 2, 'Todas', $direccionesFiltro); ?>
 
                                 </th>
 
 
-                                <!-- Comercializadora -->
+                                <!-- Teléfono -->
                                 <th>
 
-                                    <?php filtroMultiSelect('filtroComercializadoraEscritorio', 3, 'Todas', $comercializadorasFiltro); ?>
+                                    <?php filtroMultiSelect('filtroTelefonoEscritorio', 3, 'Todos', $telefonosFiltro); ?>
 
                                 </th>
 
 
-                                <!-- Tarifa -->
+                                <!-- Email -->
                                 <th>
 
-                                    <?php filtroMultiSelect('filtroTarifaEscritorio', 4, 'Todas', $tarifasFiltro); ?>
-
-                                </th>
-
-
-                                <!-- Estado -->
-                                <th>
-
-                                    <?php filtroMultiSelect('filtroEstadoEscritorio', 5, 'Todos', $estadosFiltro); ?>
+                                    <?php filtroMultiSelect('filtroEmailEscritorio', 4, 'Todos', $emailsFiltro); ?>
 
                                 </th>
 
 
                                 <!-- Acciones -->
-                                <th></th>
+                                <th>
+                                    <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                                        Limpiar filtros
+                                    </button>
+                                </th>
 
                             </tr>
 
@@ -413,7 +368,7 @@ $clasesEstado = [
 
                                 <tr>
 
-                                    <td colspan="7" style="text-align:center; padding:40px;">
+                                    <td colspan="6" style="text-align:center; padding:40px;">
                                         No hay clientes registrados.
                                     </td>
 
@@ -425,23 +380,13 @@ $clasesEstado = [
 
                                     <?php
 
-                                    $inicialesCliente = mb_substr($cliente['nombre'], 0, 1, 'UTF-8');
+                                    $nombreCompleto = $cliente['nombre'] . ' ' . $cliente['apellidos'];
 
-                                    $segundaPalabra = strpos($cliente['nombre'], ' ');
+                                    $iniciales =
+                                        mb_substr($cliente['nombre'], 0, 1, 'UTF-8') .
+                                        mb_substr($cliente['apellidos'], 0, 1, 'UTF-8');
 
-                                    if ($segundaPalabra !== false) {
-                                        $inicialesCliente .= mb_substr(
-                                            $cliente['nombre'],
-                                            $segundaPalabra + 1,
-                                            1,
-                                            'UTF-8'
-                                        );
-                                    }
-
-                                    $inicialesCliente = mb_strtoupper($inicialesCliente, 'UTF-8');
-
-                                    $tarifaClase = $clasesTarifa[$cliente['tarifa']] ?? '';
-                                    $estadoClase = $clasesEstado[$cliente['estado']] ?? '';
+                                    $iniciales = mb_strtoupper($iniciales, 'UTF-8');
 
                                     ?>
 
@@ -451,16 +396,12 @@ $clasesEstado = [
 
                                     <tr class="fila-detalle"
                                         data-id="<?= (int) $cliente['id'] ?>"
-                                        data-nombre="<?= htmlspecialchars($cliente['nombre'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-iniciales="<?= htmlspecialchars($inicialesCliente, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-tipo="<?= htmlspecialchars($cliente['tipo'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-identificacion="<?= htmlspecialchars($cliente['identificacion'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-correo="<?= htmlspecialchars($cliente['correo'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-comercializadora="<?= htmlspecialchars($cliente['comercializadora'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-tarifa="<?= htmlspecialchars($cliente['tarifa'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-tarifaclase="<?= htmlspecialchars($tarifaClase, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-estado="<?= htmlspecialchars($cliente['estado'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-estadoclase="<?= htmlspecialchars($estadoClase, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-nombre="<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-iniciales="<?= htmlspecialchars($iniciales, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-direccion="<?= htmlspecialchars($cliente['direccion'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-telefono="<?= htmlspecialchars($cliente['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-email="<?= htmlspecialchars($cliente['email'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-nif="<?= htmlspecialchars($cliente['nif'], ENT_QUOTES, 'UTF-8') ?>"
                                     >
 
                                         <td>
@@ -468,17 +409,17 @@ $clasesEstado = [
                                             <div class="cliente-cell">
 
                                                 <div class="cliente-avatar">
-                                                    <?= htmlspecialchars($inicialesCliente) ?>
+                                                    <?= htmlspecialchars($iniciales) ?>
                                                 </div>
 
                                                 <div class="cliente-info">
 
                                                     <strong>
-                                                        <?= htmlspecialchars($cliente['nombre']) ?>
+                                                        <?= htmlspecialchars($nombreCompleto) ?>
                                                     </strong>
 
                                                     <span>
-                                                        <?= htmlspecialchars($cliente['tipo']) ?>
+                                                        <?= htmlspecialchars($cliente['id']) ?>
                                                     </span>
 
                                                 </div>
@@ -487,37 +428,29 @@ $clasesEstado = [
 
                                         </td>
 
-                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['identificacion']) ?></td>
+                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['nif']) ?></td>
 
-                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['correo']) ?></td>
+                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['direccion'] ?? '—') ?></td>
 
-                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['comercializadora']) ?></td>
+                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['telefono'] ?? '—') ?></td>
 
-                                        <td class="vista-escritorio">
-                                            <span class="tarifa-badge <?= $tarifaClase ?>">
-                                                <?= htmlspecialchars($cliente['tarifa']) ?>
-                                            </span>
-                                        </td>
-
-                                        <td class="vista-escritorio">
-                                            <span class="status-badge <?= $estadoClase ?>">
-                                                <?= htmlspecialchars($cliente['estado']) ?>
-                                            </span>
-                                        </td>
+                                        <td class="vista-escritorio"><?= htmlspecialchars($cliente['email']) ?></td>
 
                                         <td class="vista-escritorio">
                                             <div class="cliente-actions">
 
-                                                <button type="button" class="table-action-button"
+                                                <button type="button" class="table-action-button icon-action-button list-edit"
+                                                    title="Editar"
                                                     onclick="event.stopPropagation(); window.location.href='editar_cliente.php?id=<?= (int) $cliente['id'] ?>'">
-                                                    Editar
+                                                    <i class="bi bi-pencil"></i>
                                                 </button>
 
-                                                <button type="button" class="table-action-button danger" onclick="event.stopPropagation(); abrirModalEliminarCliente(
+                                                <button type="button" class="table-action-button icon-action-button danger"
+                                                    title="Eliminar" onclick="event.stopPropagation(); abrirModalEliminarCliente(
         <?= (int) $cliente['id'] ?>,
-        '<?= htmlspecialchars($cliente['nombre'], ENT_QUOTES, 'UTF-8') ?>'
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
     )">
-                                                    Borrar
+                                                    <i class="bi bi-trash3"></i>
                                                 </button>
 
                                             </div>
@@ -541,6 +474,15 @@ $clasesEstado = [
             ====================================================== -->
 
                 <div class="clientes-pagination">
+
+                    <div class="clientes-por-pagina">
+                        <label for="selectorPorPagina">Mostrar:</label>
+                        <select id="selectorPorPagina" class="por-pagina-select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="todos">Todos</option>
+                        </select>
+                    </div>
 
                     <span id="clientesMostrando">
                         Mostrando <?= $totalClientes ?> de <?= $totalClientes ?>
@@ -578,6 +520,7 @@ $clasesEstado = [
     <script src="../../js/exportar-pdf.js"></script>
     <script src="../../js/multi-select-filter.js"></script>
     <script src="../../js/clientes.js"></script>
+    <script src="../../js/modal-detalle.js"></script>
 
 
     <!-- =====================================================
@@ -636,7 +579,7 @@ $clasesEstado = [
 
                 <div class="modal-detalle-titulo">
                     <h2 id="detalleClienteNombre"></h2>
-                    <span id="detalleClienteTipo"></span>
+                    <span id="detalleClienteNif"></span>
                 </div>
 
                 <button type="button" class="modal-detalle-close" onclick="cerrarModalDetalleCliente()"
@@ -649,41 +592,36 @@ $clasesEstado = [
             <div class="usuario-detalle-grid">
 
                 <div class="usuario-detalle-item">
-                    <span>Identificación</span>
-                    <strong id="detalleClienteIdentificacion"></strong>
+                    <span>DNI/NIE</span>
+                    <strong id="detalleClienteDniNie"></strong>
                 </div>
 
                 <div class="usuario-detalle-item">
-                    <span>Correo</span>
-                    <strong id="detalleClienteCorreo"></strong>
+                    <span>Dirección</span>
+                    <strong id="detalleClienteDireccion"></strong>
                 </div>
 
                 <div class="usuario-detalle-item">
-                    <span>Comercializadora</span>
-                    <strong id="detalleClienteComercializadora"></strong>
+                    <span>Teléfono</span>
+                    <strong id="detalleClienteTelefono"></strong>
                 </div>
 
                 <div class="usuario-detalle-item">
-                    <span>Tarifa</span>
-                    <strong id="detalleClienteTarifa"></strong>
-                </div>
-
-                <div class="usuario-detalle-item">
-                    <span>Estado</span>
-                    <strong id="detalleClienteEstado"></strong>
+                    <span>Email</span>
+                    <strong id="detalleClienteEmail"></strong>
                 </div>
 
             </div>
 
             <div class="modal-detalle-acciones">
 
-                <button type="button" class="table-action-button danger" id="btnDetalleEliminarCliente">
-                    Eliminar
-                </button>
-
                 <a href="#" class="config-save-button" id="btnDetalleEditarCliente">
                     Editar
                 </a>
+
+                <button type="button" class="table-action-button danger" id="btnDetalleEliminarCliente">
+                    Eliminar
+                </button>
 
             </div>
 

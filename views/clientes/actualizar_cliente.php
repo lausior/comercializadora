@@ -7,6 +7,7 @@ requerirPermiso('clientes');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/validaciones.php';
 
 
 // =====================================================
@@ -29,40 +30,31 @@ $id = isset($_POST['id'])
     ? (int) $_POST['id']
     : 0;
 
-$nombre           = trim($_POST['nombre'] ?? '');
-$tipo             = trim($_POST['tipo'] ?? '');
-$identificacion   = trim($_POST['identificacion'] ?? '');
-$correo           = trim($_POST['correo'] ?? '');
-$comercializadora = trim($_POST['comercializadora'] ?? '');
-$tarifa           = trim($_POST['tarifa'] ?? '');
-$estado           = trim($_POST['estado'] ?? '');
+$nombre    = trim($_POST['nombre'] ?? '');
+$apellidos = trim($_POST['apellidos'] ?? '');
+$direccion = trim($_POST['direccion'] ?? '');
+$telefono  = trim($_POST['telefono'] ?? '');
+$email     = trim($_POST['email'] ?? '');
+$nif       = trim($_POST['nif'] ?? '');
 
 
 // =====================================================
 // COMPROBAR CAMPOS OBLIGATORIOS
 // =====================================================
 
-$tiposValidos             = ['Particular', 'Empresa'];
-$comercializadorasValidas = ['Endesa', 'Iberdrola', 'Naturgy', 'Repsol', 'TotalEnergies'];
-$tarifasValidas           = ['PVPC', 'Mercado libre', 'Tarifa fija'];
-$estadosValidos           = ['Activo', 'Pendiente', 'Inactivo'];
-
 if (
     $id <= 0 ||
     $nombre === '' ||
-    !in_array($tipo, $tiposValidos, true) ||
-    $identificacion === '' ||
-    $correo === '' ||
-    !in_array($comercializadora, $comercializadorasValidas, true) ||
-    !in_array($tarifa, $tarifasValidas, true) ||
-    !in_array($estado, $estadosValidos, true)
+    $apellidos === '' ||
+    $email === '' ||
+    $nif === ''
 ) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            Todos los campos obligatorios deben estar completos y ser válidos.
+            Todos los campos obligatorios deben estar completos.
         </p>
 
         <p>
@@ -75,11 +67,45 @@ if (
 }
 
 
-// =====================================================
-// COMPROBAR FORMATO DEL CORREO
-// =====================================================
+if (!validarNombre($nombre)) {
 
-if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+    if (preg_match("/^[-']/", $nombre)) {
+        die('El nombre debe empezar con una letra.');
+    }
+
+    die('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
+
+}
+
+if (!validarApellidos($apellidos)) {
+
+    if (preg_match("/^[-']/", $apellidos)) {
+        die('Los apellidos deben empezar con una letra.');
+    }
+
+    die('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+
+}
+
+if (!validarDniNie($nif)) {
+
+    die('El DNI/NIE no es válido.');
+
+}
+
+if ($direccion !== '' && !validarDireccion($direccion)) {
+
+    die('La dirección no es válida.');
+
+}
+
+if ($telefono !== '' && !validarTelefono($telefono)) {
+
+    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+
+}
+
+if (!validarEmail($email)) {
 
     die('
         <h2>Error</h2>
@@ -156,28 +182,28 @@ if (!puedeVerCliente($clienteExiste['creado_por'] !== null ? (int) $clienteExist
 
 
 // =====================================================
-// COMPROBAR IDENTIFICACIÓN DUPLICADA
+// COMPROBAR NIF DUPLICADO
 // =====================================================
 
-$stmtIdentificacion = $pdo->prepare("
+$stmtNif = $pdo->prepare("
     SELECT id
     FROM clientes
-    WHERE identificacion = ?
+    WHERE nif = ?
     AND id != ?
 ");
 
-$stmtIdentificacion->execute([
-    $identificacion,
+$stmtNif->execute([
+    $nif,
     $id
 ]);
 
-if ($stmtIdentificacion->fetch()) {
+if ($stmtNif->fetch()) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            Ya existe otro cliente con esa identificación.
+            Ya existe otro cliente con ese DNI/NIE.
         </p>
 
         <p>
@@ -198,23 +224,21 @@ $stmtActualizar = $pdo->prepare("
     UPDATE clientes
     SET
         nombre = ?,
-        tipo = ?,
-        identificacion = ?,
-        correo = ?,
-        comercializadora = ?,
-        tarifa = ?,
-        estado = ?
+        apellidos = ?,
+        direccion = ?,
+        telefono = ?,
+        email = ?,
+        nif = ?
     WHERE id = ?
 ");
 
 $stmtActualizar->execute([
     $nombre,
-    $tipo,
-    $identificacion,
-    $correo,
-    $comercializadora,
-    $tarifa,
-    $estado,
+    $apellidos,
+    $direccion !== '' ? $direccion : null,
+    $telefono !== '' ? $telefono : null,
+    $email,
+    $nif,
     $id
 ]);
 
@@ -227,12 +251,11 @@ $stmtDatos = $pdo->prepare("
     SELECT
         id,
         nombre,
-        tipo,
-        identificacion,
-        correo,
-        comercializadora,
-        tarifa,
-        estado
+        apellidos,
+        direccion,
+        telefono,
+        email,
+        nif
     FROM clientes
     WHERE id = ?
 ");
@@ -244,7 +267,7 @@ $cliente = $stmtDatos->fetch(PDO::FETCH_ASSOC);
 registrarLog(
     LOG_EXITO,
     'Cliente modificado',
-    'Se ha modificado el cliente "' . $cliente['nombre'] . '".'
+    'Se ha modificado el cliente "' . $cliente['nombre'] . ' ' . $cliente['apellidos'] . '".'
 );
 
 ?>
@@ -310,10 +333,6 @@ registrarLog(
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        15 septiembre 2026
-                    </div>
-
                 </div>
 
             </div>
@@ -338,7 +357,7 @@ registrarLog(
                         El cliente
 
                         <strong>
-                            <?= htmlspecialchars($cliente['nombre']) ?>
+                            <?= htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']) ?>
                         </strong>
 
                         se ha actualizado correctamente.
@@ -367,33 +386,28 @@ registrarLog(
                         </div>
 
                         <div class="usuario-detalle-item">
-                            <span>Tipo</span>
-                            <strong><?= htmlspecialchars($cliente['tipo']) ?></strong>
+                            <span>Apellidos</span>
+                            <strong><?= htmlspecialchars($cliente['apellidos']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">
-                            <span>Identificación</span>
-                            <strong><?= htmlspecialchars($cliente['identificacion']) ?></strong>
+                            <span>Dirección</span>
+                            <strong><?= htmlspecialchars($cliente['direccion'] ?? 'No indicada') ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">
-                            <span>Correo</span>
-                            <strong><?= htmlspecialchars($cliente['correo']) ?></strong>
+                            <span>Teléfono</span>
+                            <strong><?= htmlspecialchars($cliente['telefono'] ?? 'No indicado') ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">
-                            <span>Comercializadora</span>
-                            <strong><?= htmlspecialchars($cliente['comercializadora']) ?></strong>
+                            <span>Email</span>
+                            <strong><?= htmlspecialchars($cliente['email']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">
-                            <span>Tarifa</span>
-                            <strong><?= htmlspecialchars($cliente['tarifa']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Estado</span>
-                            <strong><?= htmlspecialchars($cliente['estado']) ?></strong>
+                            <span>DNI/NIE</span>
+                            <strong><?= htmlspecialchars($cliente['nif']) ?></strong>
                         </div>
 
                     </div>

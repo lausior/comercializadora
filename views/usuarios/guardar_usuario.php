@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/validaciones.php';
 
 
 // =====================================================
@@ -25,33 +26,95 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // RECOGER DATOS DEL FORMULARIO
 // =====================================================
 
-$nombre     = trim($_POST['nombre'] ?? '');
-$apellidos  = trim($_POST['apellidos'] ?? '');
-$username   = trim($_POST['username'] ?? '');
-$email      = trim($_POST['email'] ?? '');
-$telefono   = trim($_POST['telefono'] ?? '');
+$nombre = trim($_POST['nombre'] ?? '');
+$apellidos = trim($_POST['apellidos'] ?? '');
+$username = trim($_POST['username'] ?? '');
+$email = trim($_POST['email'] ?? '');
+$telefono = trim($_POST['telefono'] ?? '');
 $id_empresa = (int) ($_POST['id_empresa'] ?? 0);
-$id_rol     = (int) ($_POST['id_rol'] ?? 0);
+$id_rol = (int) ($_POST['id_rol'] ?? 0);
+$estado = trim($_POST['estado'] ?? '');
+$motivoInactivo = trim($_POST['motivo_inactivo'] ?? '');
 
 
 // =====================================================
-// VALIDACIONES
+// ESTADOS VÁLIDOS
 // =====================================================
 
-if (
-    $nombre === '' ||
-    $apellidos === '' ||
-    $username === '' ||
-    $email === '' ||
-    $id_empresa <= 0 ||
-    $id_rol <= 0
-) {
+$estadosValidos = ['Activo', 'Inactivo'];
+
+
+// =====================================================
+// VALIDAR FORMATO DE LOS DATOS
+// =====================================================
+
+if ($nombre !== '' && preg_match("/^[-']/", $nombre)) {
+
+    die('El nombre debe empezar con una letra.');
+
+}
+
+if ($apellidos !== '' && preg_match("/^[-']/", $apellidos)) {
+
+    die('Los apellidos deben empezar con una letra.');
+
+}
+
+if ($nombre !== '' && !validarCaracteresNombre($nombre)) {
+
+    die('El nombre contiene caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+
+}
+
+if ($apellidos !== '' && !validarCaracteresNombre($apellidos)) {
+
+    die('Los apellidos contienen caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+
+}
+
+if (!validarNombre($nombre)) {
+
+    die('El nombre es obligatorio y debe tener entre 2 y 50 caracteres.');
+
+}
+
+if (!validarApellidos($apellidos)) {
+
+    die('Los apellidos son obligatorios y deben tener entre 2 y 100 caracteres.');
+
+}
+
+if (!validarUsername($username)) {
+
+    die('El username solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.');
+
+}
+
+if (!validarEmail($email)) {
+
+    die('El email contiene caracteres no permitidos o no tiene un formato válido.');
+
+}
+
+// El teléfono es opcional; solo se valida cuando se ha introducido.
+if ($telefono !== '' && !validarTelefono($telefono)) {
+
+    die('El teléfono contiene caracteres no permitidos. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+
+}
+
+
+// =====================================================
+// VALIDAR EMPRESA
+// =====================================================
+
+if ($id_empresa <= 0) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            Faltan datos obligatorios.
+            Debes seleccionar una empresa válida.
         </p>
 
         <p>
@@ -65,16 +128,82 @@ if (
 
 
 // =====================================================
-// VALIDAR EMAIL
+// VALIDAR ROL
 // =====================================================
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if ($id_rol <= 0) {
 
     die('
         <h2>Error</h2>
 
         <p>
-            El email no es válido.
+            Debes seleccionar un rol válido.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// VALIDAR ESTADO
+// =====================================================
+
+if (!in_array($estado, $estadosValidos, true)) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            El estado seleccionado no es válido.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+
+// =====================================================
+// VALIDAR MOTIVO DE INACTIVIDAD
+// =====================================================
+
+if ($estado === 'Inactivo' && $motivoInactivo === '') {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            Indica el motivo por el que el usuario se marca como inactivo.
+        </p>
+
+        <p>
+            <a href="crear_usuario.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+if (
+    mb_strlen($motivoInactivo, 'UTF-8') > 500
+) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            El motivo de inactividad no puede superar los 500 caracteres.
         </p>
 
         <p>
@@ -156,9 +285,7 @@ if ($stmt->fetch()) {
 // =====================================================
 
 $stmt = $pdo->prepare("
-    SELECT
-        id,
-        nombre
+    SELECT id
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -166,9 +293,7 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$id_empresa]);
 
-$empresa = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$empresa) {
+if (!$stmt->fetch()) {
 
     die('
         <h2>Error</h2>
@@ -192,9 +317,7 @@ if (!$empresa) {
 // =====================================================
 
 $stmt = $pdo->prepare("
-    SELECT
-        id,
-        nombre
+    SELECT id
     FROM roles
     WHERE id = ?
     LIMIT 1
@@ -202,9 +325,7 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$id_rol]);
 
-$rol = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$rol) {
+if (!$stmt->fetch()) {
 
     die('
         <h2>Error</h2>
@@ -224,107 +345,19 @@ if (!$rol) {
 
 
 // =====================================================
-// COMPROBAR QUE PUEDE CREAR UN USUARIO PARA ESA EMPRESA
-// Y CON ESE ROL
-// =====================================================
-//
-// Por si alguien manipula el formulario a mano: una
-// EMPRESA no puede crear usuarios para otra empresa, ni
-// dar de alta a nadie con un rol más privilegiado que el
-// suyo (EMPRESA/USUARIO); NG no puede crear otro SRG.
-//
+// GENERAR CONTRASEÑA TEMPORAL
 // =====================================================
 
-if (
-    rolActual() === ROL_EMPRESA &&
-    $id_empresa !== (int) ($_SESSION['id_empresa'] ?? 0)
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes crear usuarios para otra empresa.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-if (
-    rolActual() === ROL_EMPRESA &&
-    !in_array($rol['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes asignar ese rol.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-if (
-    rolActual() === ROL_NG &&
-    $rol['nombre'] === ROL_SRG
-) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes asignar ese rol.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
-// GENERAR CONTRASEÑA INICIAL
-// =====================================================
-
-$passwordInicial = '123456';
-
-
-// =====================================================
-// ENCRIPTAR CONTRASEÑA
-// =====================================================
+$passwordTemporal = bin2hex(random_bytes(4));
 
 $passwordHash = password_hash(
-    $passwordInicial,
+    $passwordTemporal,
     PASSWORD_DEFAULT
 );
 
 
 // =====================================================
 // INSERTAR USUARIO
-// =====================================================
-//
-// cambiar_password = 1
-//
-// Esto indica que el usuario deberá cambiar
-// la contraseña en su primer acceso.
-//
 // =====================================================
 
 $stmt = $pdo->prepare("
@@ -338,6 +371,8 @@ $stmt = $pdo->prepare("
         cambiar_password,
         id_empresa,
         id_rol,
+        estado,
+        motivo_inactivo,
         creado_por
     )
     VALUES (
@@ -350,33 +385,29 @@ $stmt = $pdo->prepare("
         1,
         :id_empresa,
         :id_rol,
+        :estado,
+        :motivo_inactivo,
         :creado_por
     )
 ");
 
 
 $stmt->execute([
-
-    ':username'   => $username,
-
-    ':nombre'     => $nombre,
-
-    ':apellidos'  => $apellidos,
-
-    ':email'      => $email,
-
-    ':telefono'   => $telefono !== ''
+    ':username' => $username,
+    ':nombre' => $nombre,
+    ':apellidos' => $apellidos,
+    ':email' => $email,
+    ':telefono' => $telefono !== ''
         ? $telefono
         : null,
-
-    ':password'   => $passwordHash,
-
+    ':password' => $passwordHash,
     ':id_empresa' => $id_empresa,
-
-    ':id_rol'     => $id_rol,
-
+    ':id_rol' => $id_rol,
+    ':estado' => $estado,
+    ':motivo_inactivo' => $estado === 'Inactivo'
+        ? $motivoInactivo
+        : null,
     ':creado_por' => $_SESSION['id_usuario'],
-
 ]);
 
 
@@ -390,33 +421,20 @@ $id_usuario = $pdo->lastInsertId();
 // =====================================================
 // RECUPERAR TODOS LOS DATOS DEL USUARIO
 // =====================================================
-//
-// Volvemos a consultar la base de datos para mostrar
-// exactamente los datos que se han guardado.
-//
-// =====================================================
 
 $stmtDatos = $pdo->prepare("
     SELECT
-
         u.id,
-
         u.username,
-
         u.nombre,
-
         u.apellidos,
-
         u.email,
-
         u.telefono,
-
         u.cambiar_password,
-
+        u.estado,
+        u.motivo_inactivo,
         e.nombre AS empresa,
-
         e.codigo_empresa,
-
         r.nombre AS rol
 
     FROM usuarios u
@@ -448,8 +466,7 @@ if (!$usuario) {
         <h2>Error</h2>
 
         <p>
-            El usuario se ha creado, pero no se han podido
-            recuperar sus datos.
+            El usuario se ha creado, pero no se han podido recuperar sus datos.
         </p>
 
         <p>
@@ -460,6 +477,7 @@ if (!$usuario) {
     ');
 
 }
+
 
 registrarLog(
     LOG_EXITO,
@@ -505,7 +523,9 @@ $iniciales = mb_strtoupper(
 // =====================================================
 //
 // Este es el valor que la persona deberá escribir en el
-// campo "Usuario" de login.php: codigo_empresa-id-username
+// campo "Usuario" de login.php:
+//
+// codigo_empresa-id-username
 //
 // =====================================================
 
@@ -514,464 +534,4 @@ $usuarioAcceso =
     $usuario['id'] . '-' .
     $usuario['username'];
 
-
-// =====================================================
-// ESTADO DE CONTRASEÑA
-// =====================================================
-
-if ((int) $usuario['cambiar_password'] === 1) {
-
-    $estadoPassword = 'Pendiente de cambio';
-
-} else {
-
-    $estadoPassword = 'Contraseña establecida';
-
-}
-
 ?>
-
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Usuario creado - Comparador Eléctrico
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="../../css/style.css"
-    >
-
-</head>
-
-
-<body>
-
-
-    <!-- =================================================
-         HEADER
-    ================================================== -->
-
-    <?php include '../../templates/header.php'; ?>
-
-
-    <div class="app-container">
-
-
-        <!-- =================================================
-             SIDEBAR
-        ================================================== -->
-
-        <?php include '../../templates/sidebar.php'; ?>
-
-
-        <!-- =================================================
-             CONTENIDO PRINCIPAL
-        ================================================== -->
-
-        <main class="main-content">
-
-
-            <!-- =================================================
-                 CABECERA
-            ================================================== -->
-
-            <div class="page-header">
-
-                <div>
-
-                    <h1>
-                        Usuarios
-                    </h1>
-
-                    <p>
-                        Usuario creado correctamente
-                    </p>
-
-                </div>
-
-
-                <div class="page-header-actions">
-
-                    <div class="page-date">
-                        9 septiembre 2026
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 TARJETA
-            ================================================== -->
-
-            <div class="config-card">
-
-
-                <h2>
-                    Usuario creado correctamente
-                </h2>
-
-
-                <!-- =================================================
-                     MENSAJE
-                ================================================== -->
-
-                <div class="form-info">
-
-                    <p>
-
-                        El usuario
-
-                        <strong>
-                            <?= htmlspecialchars(
-                                $usuario['username'],
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ) ?>
-                        </strong>
-
-                        se ha creado correctamente.
-
-                    </p>
-
-                </div>
-
-
-                <!-- =================================================
-                     INFORMACIÓN DEL USUARIO
-                ================================================== -->
-
-                <div class="usuario-detalle">
-
-
-                    <!-- =================================================
-                         DATOS DEL USUARIO
-                    ================================================== -->
-
-                    <div class="usuario-detalle-grid">
-
-
-                        <!-- ID -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                ID de usuario
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['id'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- NOMBRE -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Nombre
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['nombre'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- APELLIDOS -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Apellidos
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['apellidos'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- USERNAME -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Username
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['username'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- EMAIL -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Email
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['email'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- TELÉFONO -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Teléfono
-                            </span>
-
-                            <strong>
-
-                                <?php if (!empty($usuario['telefono'])): ?>
-
-                                    <?= htmlspecialchars(
-                                        $usuario['telefono'],
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>
-
-                                <?php else: ?>
-
-                                    No indicado
-
-                                <?php endif; ?>
-
-                            </strong>
-
-                        </div>
-
-
-                        <!-- EMPRESA -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Empresa
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['empresa'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- ROL -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Rol
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['rol'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- USUARIO DE ACCESO -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Usuario de acceso (login)
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuarioAcceso,
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- CONTRASEÑA INICIAL -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Contraseña inicial
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $passwordInicial,
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- ESTADO CONTRASEÑA -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Estado de contraseña
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $estadoPassword,
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                    </div>
-
-
-                </div>
-
-
-                <!-- =================================================
-                     INFORMACIÓN DE CONTRASEÑA
-                ================================================== -->
-
-                <div class="form-info">
-
-                    <p>
-
-                        El usuario deberá acceder con el usuario de
-                        login
-
-                        <strong>
-                            <?= htmlspecialchars(
-                                $usuarioAcceso,
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ) ?>
-                        </strong>
-
-                        y la contraseña
-
-                        <strong>
-                            <?= htmlspecialchars(
-                                $passwordInicial,
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ) ?>
-                        </strong>.
-
-                    </p>
-
-
-                    <p>
-
-                        En su primer acceso se le pedirá
-                        cambiarla obligatoriamente.
-
-                    </p>
-
-                </div>
-
-
-                <!-- =================================================
-                     BOTONES
-                ================================================== -->
-
-                <div class="form-actions">
-
-
-                    <a
-                        href="crear_usuario.php"
-                        class="config-save-button"
-                    >
-                        + Añadir usuario
-                    </a>
-
-
-                    <a
-                        href="usuarios.php"
-                        class="config-cancel-button"
-                    >
-                        Volver a usuarios
-                    </a>
-
-
-                </div>
-
-
-            </div>
-
-
-        </main>
-
-
-    </div>
-
-
-    <!-- =================================================
-         FOOTER
-    ================================================== -->
-
-    <?php include '../../templates/footer.php'; ?>
-
-
-</body>
-
-</html>

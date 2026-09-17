@@ -35,6 +35,7 @@ $stmtEmpresa = $pdo->prepare("
         direccion,
         telefono,
         email,
+        estado,
         creado_por
     FROM empresas
     WHERE id = ?
@@ -140,10 +141,6 @@ if (
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        11 septiembre 2026
-                    </div>
-
                     <a href="empresas.php" class="config-save-button">
                         ← Volver
                     </a>
@@ -178,110 +175,116 @@ if (
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
 
 
-                    <!-- =========================
-                         CÓDIGO DE EMPRESA
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="codigo_empresa">
-                            Código de empresa
-                        </label>
-
-                        <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
-                            value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>" required>
-
-                        <span class="field-error" id="error-codigo_empresa"></span>
-
-                    </div>
+                    <div class="form-grid">
 
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
+                        <!-- =========================
+                             CÓDIGO DE EMPRESA
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="nombre">
-                            Nombre
-                        </label>
+                            <label for="codigo_empresa">
+                                Código de empresa
+                            </label>
 
-                        <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($empresa['nombre']) ?>"
-                            required>
+                            <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
+                                value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>" readonly>
 
-                        <span class="field-error" id="error-nombre"></span>
+                            <span class="field-error" id="error-codigo_empresa"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         CIF
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="cif">
-                            CIF
-                        </label>
-
-                        <input type="text" id="cif" name="cif" value="<?= htmlspecialchars($empresa['cif']) ?>"
-                            required>
-
-                        <span class="field-error" id="error-cif"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         DIRECCIÓN
-                    ========================== -->
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="direccion">
-                            Dirección
-                        </label>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                        <input type="text" id="direccion" name="direccion"
-                            value="<?= htmlspecialchars($empresa['direccion'] ?? '') ?>">
+                            <input type="text" id="nombre" name="nombre"
+                                value="<?= htmlspecialchars($empresa['nombre']) ?>" required>
 
-                        <span class="field-error" id="error-direccion"></span>
+                            <span class="field-error" id="error-nombre"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         TELÉFONO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="telefono">
-                            Teléfono
-                        </label>
-
-                        <input type="tel" id="telefono" name="telefono"
-                            value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>">
-
-                        <span class="field-error" id="error-telefono"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
+                        <!-- =========================
+                             CIF
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="email">
-                            Email
-                        </label>
+                            <label for="cif">
+                                CIF
+                            </label>
 
-                        <input type="email" id="email" name="email"
-                            value="<?= htmlspecialchars($empresa['email'] ?? '') ?>">
+                            <input type="text" id="cif" name="cif" value="<?= htmlspecialchars($empresa['cif']) ?>"
+                                required>
 
-                        <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-cif"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             DIRECCIÓN
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="direccion">
+                                Dirección
+                            </label>
+
+                            <input type="text" id="direccion" name="direccion"
+                                value="<?= htmlspecialchars($empresa['direccion'] ?? '') ?>">
+
+                            <span class="field-error" id="error-direccion"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             TELÉFONO
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="telefono">
+                                Teléfono
+                            </label>
+
+                            <input type="tel" id="telefono" name="telefono"
+                                value="<?= htmlspecialchars($empresa['telefono'] ?? '') ?>">
+
+                            <span class="field-error" id="error-telefono"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email
+                            </label>
+
+                            <input type="email" id="email" name="email"
+                                value="<?= htmlspecialchars($empresa['email'] ?? '') ?>">
+
+                            <span class="field-error" id="error-email"></span>
+
+                        </div>
+
 
                     </div>
 

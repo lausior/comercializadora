@@ -3,11 +3,7 @@
 /* =====================================================
    CONFIGURACIÓN CENTRAL DE PERMISOS POR ROL
    =====================================================
-   Único sitio donde se define qué rol puede ver o
-   acceder a qué sección de la aplicación.
-
-   Si mañana cambia lo que puede ver un rol, SOLO se
-   toca este archivo (no el sidebar, no cada página).
+   Único sitio donde se define qué rol puede ver oacceder a qué sección de la aplicación.
 ========================================================= */
 
 

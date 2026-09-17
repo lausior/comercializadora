@@ -5,6 +5,26 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('configuracion');
 
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/seguridad.php';
+require_once __DIR__ . '/../includes/logs.php';
+require_once __DIR__ . '/../includes/empresas.php';
+
+$minutosBloqueoAutomatico = obtenerBloqueoAutomaticoMinutos($pdo);
+
+$idEmpresaSesion = (int) ($_SESSION['id_empresa'] ?? 0);
+$logoEmpresa     = obtenerLogoEmpresa($pdo, $idEmpresaSesion);
+
+$logoError = $_SESSION['logo_error'] ?? '';
+unset($_SESSION['logo_error']);
+
+$retencionLogsDias = obtenerRetencionLogsDias($pdo);
+$ultimoBorradoLogs = obtenerUltimoBorradoLogs($pdo);
+
+$mensajeBorrado = $retencionLogsDias > 0
+    ? '¿Seguro que quieres borrar ahora mismo los logs con más de ' . $retencionLogsDias . ' días de antigüedad?'
+    : 'No hay una retención definida ("Nunca"), así que se borrarán TODOS los logs. ¿Seguro que quieres continuar?';
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -50,15 +70,11 @@ requerirPermiso('configuracion');
                 <p>Configuración general del comparador</p>
             </div>
 
-            <button class="config-save-button">
-                💾 Guardar cambios
-            </button>
-
         </div>
 
 
         <!-- =========================
-             GENERAL
+             LOGO DE EMPRESA
         ========================== -->
 
         <section class="config-card">
@@ -66,65 +82,63 @@ requerirPermiso('configuracion');
             <div class="config-card-header">
 
                 <div class="config-icon">
-                    ⚙️
+                    🖼️
                 </div>
 
                 <div>
-                    <h2>General</h2>
-                    <p>Configuración básica de la aplicación</p>
+                    <h2>Logo de empresa</h2>
+                    <p>Imagen que identifica a tu empresa en la aplicación</p>
                 </div>
 
             </div>
 
-            <div class="config-grid">
+            <?php if ($logoError !== ''): ?>
 
-                <div class="config-field">
+                <div class="form-error-general" style="display: block; margin-bottom: 17px;">
+                    <?= htmlspecialchars($logoError) ?>
+                </div>
 
-                    <label for="app-name">
-                        Nombre de la aplicación
-                    </label>
+            <?php endif; ?>
 
-                    <input
-                        type="text"
-                        id="app-name"
-                        value="Comparador Eléctrico"
-                    >
+            <div class="logo-empresa-block">
+
+                <div class="logo-empresa-preview">
+
+                    <?php if ($logoEmpresa !== null): ?>
+                        <img src="/comercializadora/<?= htmlspecialchars($logoEmpresa) ?>" alt="Logo de la empresa">
+                    <?php else: ?>
+                        <span>🏢</span>
+                    <?php endif; ?>
 
                 </div>
 
+                <div class="logo-empresa-acciones">
 
-                <div class="config-field">
+                    <form action="guardar_logo_empresa.php" method="POST" enctype="multipart/form-data">
 
-                    <label for="company-name">
-                        Empresa
-                    </label>
+                        <input type="file" name="logo" accept="image/png, image/jpeg, image/webp" required>
 
-                    <input
-                        type="text"
-                        id="company-name"
-                        placeholder="Nombre de la empresa"
-                    >
+                        <button type="submit" class="config-save-button">
+                            Subir logo
+                        </button>
 
-                </div>
+                    </form>
 
+                    <?php if ($logoEmpresa !== null): ?>
 
-                <div class="config-field">
+                        <form action="eliminar_logo_empresa.php" method="POST">
 
-                    <label for="language">
-                        Idioma
-                    </label>
+                            <button type="submit" class="config-secondary-button">
+                                Quitar logo
+                            </button>
 
-                    <select id="language">
+                        </form>
 
-                        <option selected>
-                            Español
-                        </option>
+                    <?php endif; ?>
 
-                        <option>
-                            Inglés
-                        </option>
-
-                    </select>
+                    <p class="logo-empresa-ayuda">
+                        PNG, JPG o WEBP. Máximo 2 MB.
+                    </p>
 
                 </div>
 
@@ -134,7 +148,7 @@ requerirPermiso('configuracion');
 
 
         <!-- =========================
-             COMPARADOR
+             SESIÓN
         ========================== -->
 
         <section class="config-card">
@@ -142,12 +156,12 @@ requerirPermiso('configuracion');
             <div class="config-card-header">
 
                 <div class="config-icon">
-                    💡
+                    🔒
                 </div>
 
                 <div>
-                    <h2>Comparador</h2>
-                    <p>Configuración utilizada para los cálculos</p>
+                    <h2>Sesión</h2>
+                    <p>Bloqueo automático por inactividad</p>
                 </div>
 
             </div>
@@ -156,67 +170,45 @@ requerirPermiso('configuracion');
 
                 <div class="config-field">
 
-                    <label for="iva">
-                        IVA (%)
+                    <label for="bloqueo_automatico_minutos">
+                        Bloqueo automático
                     </label>
 
-                    <input
-                        type="number"
-                        id="iva"
-                        value="21"
-                        min="0"
-                        step="0.01"
+                    <form
+                        id="formBloqueoAutomatico"
+                        method="POST"
+                        action="guardar_bloqueo_automatico.php"
                     >
 
-                </div>
-
-
-                <div class="config-field">
-
-                    <label for="tax">
-                        Impuesto eléctrico (%)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="tax"
-                        value="5.11269632"
-                        min="0"
-                        step="0.0001"
-                    >
-
-                </div>
-
-
-                <div class="config-field">
-
-                    <label for="currency">
-                        Moneda
-                    </label>
-
-                    <select id="currency">
-
-                        <option selected>
-                            Euro (€)
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="config-field config-checkbox">
-
-                    <label>
-
-                        <input
-                            type="checkbox"
-                            checked
+                        <select
+                            name="minutos"
+                            id="bloqueo_automatico_minutos"
+                            class="security-select"
                         >
 
-                        Mostrar precios con impuestos
+                            <option value="5" <?= $minutosBloqueoAutomatico === 5 ? 'selected' : '' ?>>
+                                5 minutos
+                            </option>
 
-                    </label>
+                            <option value="10" <?= $minutosBloqueoAutomatico === 10 ? 'selected' : '' ?>>
+                                10 minutos
+                            </option>
+
+                            <option value="15" <?= $minutosBloqueoAutomatico === 15 ? 'selected' : '' ?>>
+                                15 minutos
+                            </option>
+
+                            <option value="30" <?= $minutosBloqueoAutomatico === 30 ? 'selected' : '' ?>>
+                                30 minutos
+                            </option>
+
+                            <option value="0" <?= $minutosBloqueoAutomatico === 0 ? 'selected' : '' ?>>
+                                Nunca
+                            </option>
+
+                        </select>
+
+                    </form>
 
                 </div>
 
@@ -226,7 +218,7 @@ requerirPermiso('configuracion');
 
 
         <!-- =========================
-             TARIFAS
+             RETENCIÓN DE LOGS
         ========================== -->
 
         <section class="config-card">
@@ -234,12 +226,12 @@ requerirPermiso('configuracion');
             <div class="config-card-header">
 
                 <div class="config-icon">
-                    📊
+                    🗑️
                 </div>
 
                 <div>
-                    <h2>Tarifas</h2>
-                    <p>Configuración de actualización de tarifas</p>
+                    <h2>Retención de logs</h2>
+                    <p>Borrado automático de los logs del aplicativo</p>
                 </div>
 
             </div>
@@ -248,132 +240,63 @@ requerirPermiso('configuracion');
 
                 <div class="config-field">
 
-                    <label for="update-frequency">
-                        Actualización de tarifas
+                    <label for="retencion_logs_dias">
+                        Tiempo de retención
                     </label>
 
-                    <select id="update-frequency">
+                    <form
+                        id="formRetencionLogs"
+                        method="POST"
+                        action="guardar_retencion_logs.php"
+                    >
 
-                        <option selected>
-                            Automática
-                        </option>
-
-                        <option>
-                            Manual
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="config-field">
-
-                    <label for="update-period">
-                        Periodicidad
-                    </label>
-
-                    <select id="update-period">
-
-                        <option selected>
-                            Diaria
-                        </option>
-
-                        <option>
-                            Semanal
-                        </option>
-
-                        <option>
-                            Mensual
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="config-field config-checkbox">
-
-                    <label>
-
-                        <input
-                            type="checkbox"
-                            checked
+                        <select
+                            name="dias"
+                            id="retencion_logs_dias"
+                            class="security-select"
                         >
 
-                        Activar tarifas
+                            <option value="0" <?= $retencionLogsDias === 0 ? 'selected' : '' ?>>
+                                Nunca
+                            </option>
 
-                    </label>
+                            <option value="30" <?= $retencionLogsDias === 30 ? 'selected' : '' ?>>
+                                30 días
+                            </option>
+
+                            <option value="60" <?= $retencionLogsDias === 60 ? 'selected' : '' ?>>
+                                60 días
+                            </option>
+
+                            <option value="90" <?= $retencionLogsDias === 90 ? 'selected' : '' ?>>
+                                90 días
+                            </option>
+
+                            <option value="365" <?= $retencionLogsDias === 365 ? 'selected' : '' ?>>
+                                1 año
+                            </option>
+
+                        </select>
+
+                    </form>
 
                 </div>
 
             </div>
 
-        </section>
+            <div class="logs-retencion-footer">
 
-
-        <!-- =========================
-             SISTEMA
-        ========================== -->
-
-        <section class="config-card">
-
-            <div class="config-card-header">
-
-                <div class="config-icon">
-                    🖥️
-                </div>
-
-                <div>
-                    <h2>Sistema</h2>
-                    <p>Información básica del sistema</p>
-                </div>
-
-            </div>
-
-            <div class="system-info">
-
-                <div class="system-item">
-
-                    <span>
-                        Versión
-                    </span>
-
+                <span class="logs-retencion-info">
+                    Último borrado automático:
                     <strong>
-                        1.0.0
+                        <?= $ultimoBorradoLogs !== null
+                            ? date('d/m/Y H:i', strtotime($ultimoBorradoLogs))
+                            : 'Nunca' ?>
                     </strong>
+                </span>
 
-                </div>
-
-
-                <div class="system-item">
-
-                    <span>
-                        Estado
-                    </span>
-
-                    <span class="system-status">
-                        ● Sistema operativo
-                    </span>
-
-                </div>
-
-
-                <div class="system-item">
-
-                    <span>
-                        Última copia de seguridad
-                    </span>
-
-                    <strong>
-                        No realizada
-                    </strong>
-
-                </div>
-
-
-                <button class="config-secondary-button">
-                    💾 Crear copia de seguridad
+                <button type="button" class="config-secondary-button" onclick="window.abrirModalBorrarLogs()">
+                    🗑️ Borrar logs ahora
                 </button>
 
             </div>
@@ -386,8 +309,52 @@ requerirPermiso('configuracion');
 </div>
 
 
+<!-- =====================================================
+     MODAL CONFIRMAR BORRADO DE LOGS
+====================================================== -->
+
+<div id="modalBorrarLogs" class="modal-overlay" style="display: none;">
+
+    <div class="modal-confirmacion">
+
+        <div class="modal-icon">
+            ⚠
+        </div>
+
+        <h2>Borrar logs ahora</h2>
+
+        <p>
+            <?= htmlspecialchars($mensajeBorrado) ?>
+        </p>
+
+        <p class="modal-warning">
+            Esta acción no se puede deshacer.
+        </p>
+
+        <form action="borrar_logs_ahora.php" method="POST">
+
+            <div class="modal-actions">
+
+                <button type="button" class="modal-button modal-button-cancel" onclick="window.cerrarModalBorrarLogs()">
+                    Cancelar
+                </button>
+
+                <button type="submit" class="modal-button modal-button-delete">
+                    Borrar logs
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
 <?php include '../templates/footer.php'; ?>
 
+<script src="../js/configuracion.js"></script>
 
 </body>
 

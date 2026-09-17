@@ -25,12 +25,11 @@ if (!empty($ids)) {
         SELECT
             id,
             nombre,
-            tipo,
-            identificacion,
-            correo,
-            comercializadora,
-            tarifa,
-            estado,
+            apellidos,
+            direccion,
+            telefono,
+            email,
+            nif,
             creado_por
         FROM clientes
         WHERE id IN ($marcadores)
@@ -73,12 +72,11 @@ $clientes = array_values(array_filter(
 
 $filas = array_map(
     fn(array $cliente): array => [
-        $cliente['nombre'] . ' (' . $cliente['tipo'] . ')',
-        $cliente['identificacion'],
-        $cliente['correo'],
-        $cliente['comercializadora'],
-        $cliente['tarifa'],
-        $cliente['estado'],
+        $cliente['nombre'] . ' ' . $cliente['apellidos'],
+        $cliente['direccion'] ?? '—',
+        $cliente['telefono'] ?? '—',
+        $cliente['email'],
+        $cliente['nif'],
     ],
     $clientes
 );
@@ -89,8 +87,8 @@ $pdf->AliasNbPages();
 $pdf->AddPage();
 
 $pdf->TablaListado(
-    ['Cliente', 'Identificación', 'Correo', 'Comercializadora', 'Tarifa', 'Estado'],
-    [60, 35, 70, 45, 35, 32],
+    ['Cliente', 'Dirección', 'Teléfono', 'Email', 'DNI/NIE'],
+    [60, 87, 35, 65, 30],
     $filas
 );
 

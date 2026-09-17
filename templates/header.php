@@ -1,44 +1,48 @@
 <script>
     /*
-     * Aplica el ancho del sidebar (guardado en localStorage) y el
-     * estado plegado ANTES de que el navegador pinte la página.
+     * Aplica el estado plegado del sidebar (guardado en
+     * localStorage) ANTES de que el navegador pinte la página.
      *
      * Va aquí, como script síncrono al principio de <body>, y no
      * en sidebar.js (que espera a DOMContentLoaded) porque esta es
      * una app multi-página: cada sección es una recarga completa,
      * y DOMContentLoaded no salta hasta que TODO el HTML de la
      * página (tablas incluidas) ha terminado de analizarse. Si el
-     * ancho se aplicara ahí, el sidebar se vería primero con el
-     * ancho por defecto y saltaría al ancho real después,
-     * especialmente notorio al pasar a plegado (236px -> 64px).
+     * estado se aplicara ahí, el sidebar se vería primero expandido
+     * y saltaría a comprimido después.
      */
     (function () {
 
-        var MIN_WIDTH = 64;
-        var MAX_WIDTH = 350;
-        var DEFAULT_WIDTH = 236;
         var MOBILE_BREAKPOINT = 680;
 
-        if (window.innerWidth <= MOBILE_BREAKPOINT) {
-            document.body.classList.add('sidebar-collapsed');
-            return;
-        }
+        var colapsado =
+            window.innerWidth <= MOBILE_BREAKPOINT ||
+            localStorage.getItem('sidebarCollapsed') === 'true';
 
-        var savedWidth = parseInt(localStorage.getItem('sidebarWidth'), 10);
-
-        var width = (!isNaN(savedWidth) && savedWidth >= MIN_WIDTH && savedWidth <= MAX_WIDTH)
-            ? savedWidth
-            : DEFAULT_WIDTH;
-
-        document.documentElement.style.setProperty('--sidebar-width', width + 'px');
-
-        if (width <= MIN_WIDTH) {
+        if (colapsado) {
             document.body.classList.add('sidebar-collapsed');
         }
 
     })();
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<?php
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/seguridad.php';
+require_once __DIR__ . '/../includes/empresas.php';
+
+$minutosBloqueoAutomatico = obtenerBloqueoAutomaticoMinutos($pdo);
+
+$logoEmpresaSesion = isset($_SESSION['id_empresa'])
+    ? obtenerLogoEmpresa($pdo, (int) $_SESSION['id_empresa'])
+    : null;
+
+?>
+<script>
+    window.BLOQUEO_AUTOMATICO_MINUTOS = <?= (int) $minutosBloqueoAutomatico ?>;
+</script>
+<script src="/comercializadora/js/bloqueo-automatico.js"></script>
 <header class="topbar">
 
     <div class="topbar-left">
@@ -47,6 +51,21 @@
             <span class="logo-icon">⚡</span>
             <span>Comparador</span>
         </div>
+
+    </div>
+
+
+    <div class="topbar-right">
+
+        <!-- Bloqueo de pantalla (solo icono) -->
+        <a
+            href="/comercializadora/views/login/bloquear.php"
+            class="topbar-button topbar-button-icon"
+            title="Bloquear pantalla"
+            aria-label="Bloquear pantalla"
+        >
+            <span>🔒</span>
+        </a>
 
         <?php
 
@@ -83,9 +102,19 @@
 
             <div class="topbar-user" title="Sesión iniciada como <?= htmlspecialchars($nombreSesion) ?>">
 
-                <div class="topbar-user-avatar">
-                    <?= htmlspecialchars($inicialesSesion) ?>
-                </div>
+                <?php if ($logoEmpresaSesion !== null): ?>
+
+                    <div class="topbar-user-avatar topbar-user-avatar-img">
+                        <img src="/comercializadora/<?= htmlspecialchars($logoEmpresaSesion) ?>" alt="">
+                    </div>
+
+                <?php else: ?>
+
+                    <div class="topbar-user-avatar">
+                        <?= htmlspecialchars($inicialesSesion) ?>
+                    </div>
+
+                <?php endif; ?>
 
                 <div class="topbar-user-info">
                     <strong><?= htmlspecialchars($nombreSesion) ?></strong>
@@ -95,31 +124,6 @@
             </div>
 
         <?php endif; ?>
-
-    </div>
-
-
-    <div class="topbar-right">
-
-        <!-- Bloqueo de pantalla -->
-        <a
-            href="/comercializadora/views/login/bloquear.php"
-            class="topbar-button"
-            title="Bloquear pantalla"
-        >
-            <span>🔒</span>
-            <span>Bloquear</span>
-        </a>
-
-
-        <!-- Cerrar sesión -->
-        <a
-            href="/comercializadora/views/login/logout.php"
-            class="logout-button"
-        >
-            <span>↪</span>
-            <span>Cerrar sesión</span>
-        </a>
 
     </div>
 

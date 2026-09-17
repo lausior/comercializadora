@@ -32,6 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const botonFiltrar = document.querySelector('.logs-filters .logs-btn.primary');
 
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
+
+    const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
+
+    const filtrosColumna = table.querySelectorAll('.column-filter');
+
+    const modalDetalle = document.getElementById('modalDetalleLog');
+    const detalleAvatar = document.getElementById('detalleLogAvatar');
+    const detalleEvento = document.getElementById('detalleLogEvento');
+    const detalleFecha = document.getElementById('detalleLogFecha');
+    const detalleTipo = document.getElementById('detalleLogTipo');
+    const detalleUsuario = document.getElementById('detalleLogUsuario');
+    const detalleDescripcion = document.getElementById('detalleLogDescripcion');
+    const detalleIp = document.getElementById('detalleLogIp');
+
     const sortButtons = table.querySelectorAll('.sort-button');
 
     /*
@@ -53,21 +68,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ? window.obtenerSeleccionMultiFiltro(filtroUsuario).map(v => v.toLowerCase().trim())
             : [];
 
-        const fechaSeleccionada = filtroFecha
-            ? filtroFecha.value
-            : '';
+        // Fecha, Evento, Descripción e IP también admiten
+        // marcar varias opciones a la vez (ver
+        // js/multi-select-filter.js); si no hay ninguna
+        // marcada, el filtro no se aplica.
+        const fechasSeleccionadas = filtroFecha
+            ? window.obtenerSeleccionMultiFiltro(filtroFecha)
+            : [];
 
-        const eventoSeleccionado = filtroEvento
-            ? filtroEvento.value.toLowerCase().trim()
-            : '';
+        const eventosSeleccionados = filtroEvento
+            ? window.obtenerSeleccionMultiFiltro(filtroEvento).map(v => v.toLowerCase().trim())
+            : [];
 
-        const descripcionSeleccionada = filtroDescripcion
-            ? filtroDescripcion.value.toLowerCase().trim()
-            : '';
+        const descripcionesSeleccionadas = filtroDescripcion
+            ? window.obtenerSeleccionMultiFiltro(filtroDescripcion).map(v => v.toLowerCase().trim())
+            : [];
 
-        const ipSeleccionada = filtroIp
-            ? filtroIp.value.toLowerCase().trim()
-            : '';
+        const ipsSeleccionadas = filtroIp
+            ? window.obtenerSeleccionMultiFiltro(filtroIp).map(v => v.toLowerCase().trim())
+            : [];
 
         filasFiltradasActuales = rows.filter(row => {
 
@@ -139,21 +158,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 usuariosSeleccionados.includes(usuario);
 
 
+            // Las fechas marcadas llegan como "dd/mm/aaaa" (igual
+            // que se muestran en la tabla); las convertimos al
+            // mismo formato "aaaa-mm-dd" que fechaFila para
+            // poder compararlas.
             const coincideFecha =
-                fechaSeleccionada === '' ||
-                fechaFila === fechaSeleccionada;
+                fechasSeleccionadas.length === 0 ||
+                fechasSeleccionadas.some(fechaSeleccionada => {
+
+                    const partes = fechaSeleccionada.match(
+                        /^(\d{2})\/(\d{2})\/(\d{4})$/
+                    );
+
+                    if (!partes) {
+                        return false;
+                    }
+
+                    return fechaFila === `${partes[3]}-${partes[2]}-${partes[1]}`;
+
+                });
 
             const coincideEvento =
-                eventoSeleccionado === '' ||
-                evento.includes(eventoSeleccionado);
+                eventosSeleccionados.length === 0 ||
+                eventosSeleccionados.includes(evento);
 
             const coincideDescripcion =
-                descripcionSeleccionada === '' ||
-                descripcion.includes(descripcionSeleccionada);
+                descripcionesSeleccionadas.length === 0 ||
+                descripcionesSeleccionadas.includes(descripcion);
 
             const coincideIp =
-                ipSeleccionada === '' ||
-                ip.includes(ipSeleccionada);
+                ipsSeleccionadas.length === 0 ||
+                ipsSeleccionadas.includes(ip);
 
 
             return (
@@ -341,17 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    if (filtroFecha) {
-
-        filtroFecha.addEventListener('change', () => {
-            paginaActual = 1;
-            aplicarFiltros();
-        });
-
-    }
-
-
     [
+        filtroFecha,
         filtroEvento,
         filtroDescripcion,
         filtroIp
@@ -361,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        filtro.addEventListener('input', () => {
+        filtro.addEventListener('change', () => {
             paginaActual = 1;
             aplicarFiltros();
         });
@@ -613,6 +639,159 @@ document.addEventListener('DOMContentLoaded', () => {
             minutos,
             segundos
         ).getTime();
+
+    }
+
+
+    /*
+    ========================================
+    VENTANA DE DETALLE
+    Al pulsar una fila se abre una ventana con toda la
+    información del log, con el mismo estilo que las de
+    Clientes/Usuarios/Empresas.
+    ========================================
+    */
+
+    function claseBadgeLog(tipo) {
+
+        switch (tipo) {
+            case 'Éxito':
+                return 'log-success';
+            case 'Información':
+                return 'log-info';
+            case 'Advertencia':
+                return 'log-warning';
+            case 'Error':
+                return 'log-error';
+            default:
+                return 'log-info';
+        }
+
+    }
+
+    function abrirModalDetalleLog(fila) {
+
+        const datos = fila.dataset;
+
+        if (detalleEvento) {
+            detalleEvento.textContent = datos.evento || '';
+        }
+
+        if (detalleFecha) {
+            detalleFecha.textContent = datos.fecha || '';
+        }
+
+        if (detalleAvatar) {
+            detalleAvatar.className = 'modal-detalle-avatar ' + claseBadgeLog(datos.tipo);
+            detalleAvatar.textContent = (datos.tipo || '').charAt(0);
+        }
+
+        if (detalleTipo) {
+            detalleTipo.className = 'log-badge ' + claseBadgeLog(datos.tipo);
+            detalleTipo.textContent = datos.tipo || '';
+        }
+
+        if (detalleUsuario) {
+            detalleUsuario.textContent = datos.usuario || '';
+        }
+
+        if (detalleDescripcion) {
+            detalleDescripcion.textContent = datos.descripcion || '';
+        }
+
+        if (detalleIp) {
+            detalleIp.textContent = datos.ip || '';
+        }
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'flex';
+        }
+
+    }
+
+    window.cerrarModalDetalleLog = function () {
+
+        if (modalDetalle) {
+            modalDetalle.style.display = 'none';
+        }
+
+    };
+
+    rows.forEach(fila => {
+
+        fila.addEventListener('click', () => {
+            abrirModalDetalleLog(fila);
+        });
+
+    });
+
+    if (modalDetalle) {
+
+        modalDetalle.addEventListener('click', event => {
+
+            if (event.target === modalDetalle) {
+                window.cerrarModalDetalleLog();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (
+            event.key === 'Escape' &&
+            modalDetalle &&
+            modalDetalle.style.display !== 'none'
+        ) {
+            window.cerrarModalDetalleLog();
+        }
+
+    });
+
+
+    /*
+    ========================================
+    LIMPIAR FILTROS
+    ========================================
+    */
+
+    if (btnLimpiarFiltros) {
+
+        btnLimpiarFiltros.addEventListener('click', () => {
+
+            filtrosColumna.forEach(filtro => {
+
+                if (filtro.classList.contains('multi-select-filter')) {
+                    window.limpiarMultiFiltro(filtro);
+                } else {
+                    filtro.value = '';
+                }
+
+            });
+
+            paginaActual = 1;
+
+            aplicarFiltros();
+
+        });
+
+    }
+
+
+    /*
+    ========================================
+    EXPORTAR PDF
+    Exporta los logs que cumplen los filtros activos
+    (ver js/exportar-pdf.js).
+    ========================================
+    */
+
+    if (btnExportarPDF) {
+
+        btnExportarPDF.addEventListener('click', () => {
+            exportarListadoPDF('exportar_pdf.php', () => filasFiltradasActuales);
+        });
 
     }
 

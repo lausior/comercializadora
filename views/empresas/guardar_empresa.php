@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/validaciones.php';
 
 
 // =====================================================
@@ -25,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // RECOGER DATOS DEL FORMULARIO
 // =====================================================
 
+$codigoEmpresa = trim($_POST['codigo_empresa'] ?? '');
 $nombre        = trim($_POST['nombre'] ?? '');
 $cif           = trim($_POST['cif'] ?? '');
 $direccion     = trim($_POST['direccion'] ?? '');
@@ -37,6 +39,7 @@ $email         = trim($_POST['email'] ?? '');
 // =====================================================
 
 if (
+    $codigoEmpresa === '' ||
     $nombre === '' ||
     $cif === ''
 ) {
@@ -57,8 +60,53 @@ if (
 
 }
 
+if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
 
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    die('
+        <h2>Error</h2>
+
+        <p>
+            El código de empresa no es válido.
+        </p>
+
+        <p>
+            <a href="crear_empresa.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
+
+if (!validarNombre($nombre)) {
+
+    if (preg_match("/^[-']/", $nombre)) {
+        die('El nombre de la empresa debe empezar con una letra.');
+    }
+
+    die('El nombre de la empresa no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
+
+}
+
+if (!validarCIF($cif)) {
+
+    die('El CIF no es válido.');
+
+}
+
+if ($direccion !== '' && !validarDireccion($direccion)) {
+
+    die('La dirección no es válida.');
+
+}
+
+if ($telefono !== '' && !validarTelefono($telefono)) {
+
+    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+
+}
+
+if ($email !== '' && !validarEmail($email)) {
 
     die('
         <h2>Error</h2>
@@ -110,28 +158,41 @@ if ($stmt->fetch()) {
 
 
 // =====================================================
-// GENERAR CÓDIGO DE EMPRESA ALEATORIO
+// COMPROBAR QUE EL CÓDIGO DE EMPRESA SIGUE LIBRE
 // =====================================================
 //
-// 6 dígitos, comprobando que no coincida con uno ya
-// existente antes de darlo por válido.
+// Se generó al cargar el formulario (ver crear_empresa.php);
+// se vuelve a comprobar aquí por si, entretanto, otra
+// empresa se ha creado con el mismo código.
 //
 // =====================================================
 
-do {
+$stmtCodigo = $pdo->prepare("
+    SELECT id
+    FROM empresas
+    WHERE codigo_empresa = ?
+    LIMIT 1
+");
 
-    $codigoEmpresa = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+$stmtCodigo->execute([$codigoEmpresa]);
 
-    $stmtCodigo = $pdo->prepare("
-        SELECT id
-        FROM empresas
-        WHERE codigo_empresa = ?
-        LIMIT 1
-    ");
+if ($stmtCodigo->fetch()) {
 
-    $stmtCodigo->execute([$codigoEmpresa]);
+    die('
+        <h2>Error</h2>
 
-} while ($stmtCodigo->fetch());
+        <p>
+            El código de empresa ya no está disponible, vuelve a intentarlo.
+        </p>
+
+        <p>
+            <a href="crear_empresa.php">
+                Volver al formulario
+            </a>
+        </p>
+    ');
+
+}
 
 
 // =====================================================
@@ -184,7 +245,8 @@ $stmtDatos = $pdo->prepare("
         cif,
         direccion,
         telefono,
-        email
+        email,
+        estado
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -312,6 +374,11 @@ registrarLog(
                         <div class="usuario-detalle-item">
                             <span>Email</span>
                             <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Estado</span>
+                            <strong><?= htmlspecialchars($empresa['estado']) ?></strong>
                         </div>
 
                     </div>

@@ -30,6 +30,7 @@ if (!empty($ids)) {
             direccion,
             telefono,
             email,
+            estado,
             creado_por
         FROM empresas
         WHERE id IN ($marcadores)
@@ -78,6 +79,7 @@ $filas = array_map(
         $empresa['direccion'] ?? '—',
         $empresa['telefono'] ?? '—',
         $empresa['email'] ?? '—',
+        $empresa['estado'],
     ],
     $empresas
 );
@@ -88,8 +90,8 @@ $pdf->AliasNbPages();
 $pdf->AddPage();
 
 $pdf->TablaListado(
-    ['Empresa', 'Código', 'CIF', 'Dirección', 'Teléfono', 'Email'],
-    [55, 25, 30, 70, 30, 67],
+    ['Empresa', 'Código', 'CIF', 'Dirección', 'Teléfono', 'Email', 'Estado'],
+    [48, 22, 27, 58, 27, 58, 27],
     $filas
 );
 

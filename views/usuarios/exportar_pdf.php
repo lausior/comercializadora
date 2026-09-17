@@ -29,6 +29,7 @@ if (!empty($ids)) {
             u.apellidos,
             u.email,
             u.telefono,
+            u.estado,
             u.creado_por,
             e.nombre AS empresa,
             r.nombre AS rol
@@ -85,6 +86,7 @@ $filas = array_map(
         $usuario['telefono'] ?? '—',
         $usuario['rol'],
         $usuario['empresa'],
+        $usuario['estado'],
     ],
     $usuarios
 );
@@ -95,8 +97,8 @@ $pdf->AliasNbPages();
 $pdf->AddPage();
 
 $pdf->TablaListado(
-    ['Usuario', 'Email', 'Teléfono', 'Rol', 'Empresa'],
-    [60, 70, 30, 35, 82],
+    ['Usuario', 'Email', 'Teléfono', 'Rol', 'Empresa', 'Estado'],
+    [55, 62, 28, 32, 68, 32],
     $filas
 );
 

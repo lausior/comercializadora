@@ -36,6 +36,8 @@ $stmtUsuario = $pdo->prepare("
         telefono,
         id_empresa,
         id_rol,
+        estado,
+        motivo_inactivo,
         creado_por
     FROM usuarios
     WHERE id = ?
@@ -268,6 +270,9 @@ if (rolActual() === ROL_EMPRESA) {
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
 
 
+                    <div class="form-grid">
+
+
 
                     <!-- =========================
                          NOMBRE
@@ -469,6 +474,55 @@ if (rolActual() === ROL_EMPRESA) {
                         </select>
 
                         <span class="field-error" id="error-id_rol"></span>
+
+                    </div>
+
+
+
+                    <!-- =========================
+                         ESTADO
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="estado">
+                            Estado
+                        </label>
+
+                        <select id="estado" name="estado" required>
+
+                            <?php foreach (['Activo', 'Inactivo'] as $estadoOpcion): ?>
+
+                                <option value="<?= $estadoOpcion ?>" <?= $usuario['estado'] === $estadoOpcion ? 'selected' : '' ?>>
+                                    <?= $estadoOpcion ?>
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                        <span class="field-error" id="error-estado"></span>
+
+                    </div>
+
+
+                    </div>
+
+
+                    <!-- =========================
+                         MOTIVO (SOLO SI INACTIVO)
+                    ========================== -->
+
+                    <div class="form-group <?= $usuario['estado'] === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
+
+                        <label for="motivo_inactivo">
+                            Motivo
+                        </label>
+
+                        <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
+                            placeholder="Explica por qué el usuario se marca como inactivo"><?= htmlspecialchars($usuario['motivo_inactivo'] ?? '') ?></textarea>
+
+                        <span class="field-error" id="error-motivo_inactivo"></span>
 
                     </div>
 

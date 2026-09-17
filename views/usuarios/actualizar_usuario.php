@@ -47,10 +47,16 @@ $idRol = isset($_POST['id_rol'])
     ? (int) $_POST['id_rol']
     : 0;
 
+$estado = trim($_POST['estado'] ?? '');
+
+$motivoInactivo = trim($_POST['motivo_inactivo'] ?? '');
+
 
 // =====================================================
 // COMPROBAR CAMPOS OBLIGATORIOS
 // =====================================================
+
+$estadosValidos = ['Activo', 'Inactivo'];
 
 if (
     $id <= 0 ||
@@ -59,7 +65,8 @@ if (
     $apellidos === '' ||
     $email === '' ||
     $idEmpresa <= 0 ||
-    $idRol <= 0
+    $idRol <= 0 ||
+    !in_array($estado, $estadosValidos, true)
 ) {
 
     die('
@@ -72,6 +79,24 @@ if (
         <p>
             <a href="usuarios.php">
                 Volver a usuarios
+            </a>
+        </p>
+    ');
+
+}
+
+if ($estado === 'Inactivo' && $motivoInactivo === '') {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            Indica el motivo por el que el usuario se marca como inactivo.
+        </p>
+
+        <p>
+            <a href="javascript:history.back()">
+                Volver al formulario
             </a>
         </p>
     ');
@@ -405,7 +430,9 @@ $stmtActualizar = $pdo->prepare("
         email = ?,
         telefono = ?,
         id_empresa = ?,
-        id_rol = ?
+        id_rol = ?,
+        estado = ?,
+        motivo_inactivo = ?
     WHERE id = ?
 ");
 
@@ -417,6 +444,8 @@ $stmtActualizar->execute([
     $telefono !== '' ? $telefono : null,
     $idEmpresa,
     $idRol,
+    $estado,
+    $estado === 'Inactivo' ? $motivoInactivo : null,
     $id
 ]);
 
@@ -439,6 +468,8 @@ $stmtDatos = $pdo->prepare("
         u.email,
         u.telefono,
         u.cambiar_password,
+        u.estado,
+        u.motivo_inactivo,
         e.nombre AS empresa,
         r.nombre AS rol
     FROM usuarios u
@@ -602,10 +633,6 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
 
                 <div class="page-header-actions">
-
-                    <div class="page-date">
-                        9 septiembre 2026
-                    </div>
 
                 </div>
 
@@ -802,6 +829,48 @@ if ((int) $usuario['cambiar_password'] === 1) {
                             </strong>
 
                         </div>
+
+
+                        <!-- ESTADO -->
+
+                        <div class="usuario-detalle-item">
+
+                            <span>
+                                Estado
+                            </span>
+
+                            <strong>
+                                <?= htmlspecialchars(
+                                    $usuario['estado'],
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ) ?>
+                            </strong>
+
+                        </div>
+
+
+                        <?php if ($usuario['estado'] === 'Inactivo'): ?>
+
+                            <!-- MOTIVO -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Motivo
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['motivo_inactivo'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+                        <?php endif; ?>
 
 
                         <!-- ROL -->

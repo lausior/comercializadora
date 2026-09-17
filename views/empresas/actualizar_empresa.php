@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/validaciones.php';
 
 
 // =====================================================
@@ -26,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // =====================================================
 
 $id            = (int) ($_POST['id'] ?? 0);
-$codigoEmpresa = trim($_POST['codigo_empresa'] ?? '');
 $nombre        = trim($_POST['nombre'] ?? '');
 $cif           = trim($_POST['cif'] ?? '');
 $direccion     = trim($_POST['direccion'] ?? '');
@@ -57,7 +57,6 @@ if ($id <= 0) {
 }
 
 if (
-    $codigoEmpresa === '' ||
     $nombre === '' ||
     $cif === ''
 ) {
@@ -78,25 +77,35 @@ if (
 
 }
 
-if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
+if (!validarNombre($nombre)) {
 
-    die('
-        <h2>Error</h2>
+    if (preg_match("/^[-']/", $nombre)) {
+        die('El nombre de la empresa debe empezar con una letra.');
+    }
 
-        <p>
-            El código de empresa debe tener exactamente 6 dígitos.
-        </p>
-
-        <p>
-            <a href="editar_empresa.php?id=' . (int) $id . '">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    die('El nombre de la empresa no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
 
 }
 
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (!validarCIF($cif)) {
+
+    die('El CIF no es válido.');
+
+}
+
+if ($direccion !== '' && !validarDireccion($direccion)) {
+
+    die('La dirección no es válida.');
+
+}
+
+if ($telefono !== '' && !validarTelefono($telefono)) {
+
+    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+
+}
+
+if ($email !== '' && !validarEmail($email)) {
 
     die('
         <h2>Error</h2>
@@ -175,39 +184,6 @@ if (!puedeVerEmpresa(
 
 
 // =====================================================
-// COMPROBAR CÓDIGO DUPLICADO (EN OTRA EMPRESA)
-// =====================================================
-
-$stmt = $pdo->prepare("
-    SELECT id
-    FROM empresas
-    WHERE codigo_empresa = ?
-        AND id != ?
-    LIMIT 1
-");
-
-$stmt->execute([$codigoEmpresa, $id]);
-
-if ($stmt->fetch()) {
-
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Ya existe otra empresa con ese código.
-        </p>
-
-        <p>
-            <a href="editar_empresa.php?id=' . (int) $id . '">
-                Volver al formulario
-            </a>
-        </p>
-    ');
-
-}
-
-
-// =====================================================
 // COMPROBAR CIF DUPLICADO (EN OTRA EMPRESA)
 // =====================================================
 
@@ -247,7 +223,6 @@ if ($stmt->fetch()) {
 $stmt = $pdo->prepare("
     UPDATE empresas
     SET
-        codigo_empresa = :codigo_empresa,
         nombre = :nombre,
         cif = :cif,
         direccion = :direccion,
@@ -257,7 +232,6 @@ $stmt = $pdo->prepare("
 ");
 
 $stmt->execute([
-    ':codigo_empresa' => $codigoEmpresa,
     ':nombre'         => $nombre,
     ':cif'            => $cif,
     ':direccion'      => $direccion !== '' ? $direccion : null,

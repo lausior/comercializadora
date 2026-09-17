@@ -2,12 +2,12 @@
 
 session_start();
 
-require_once __DIR__ . '/../config/permisos.php';
+require_once __DIR__ . '/../../config/permisos.php';
 requerirPermiso('planificador');
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/logs.php';
-require_once __DIR__ . '/../includes/fechas.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/logs.php';
+require_once __DIR__ . '/../../includes/fechas.php';
 
 
 // =====================================================
@@ -138,20 +138,20 @@ $mesTarea = substr($tarea['fecha'], 0, 7);
 
     <title>Tarea creada - Comparador Eléctrico</title>
 
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../../css/style.css">
 
 </head>
 
 <body>
 
 
-    <?php include '../templates/header.php'; ?>
+    <?php include '../../templates/header.php'; ?>
 
 
     <div class="app-container">
 
 
-        <?php include '../templates/sidebar.php'; ?>
+        <?php include '../../templates/sidebar.php'; ?>
 
 
         <main class="main-content">
@@ -248,7 +248,7 @@ $mesTarea = substr($tarea['fecha'], 0, 7);
     </div>
 
 
-    <?php include '../templates/footer.php'; ?>
+    <?php include '../../templates/footer.php'; ?>
 
 
 </body>

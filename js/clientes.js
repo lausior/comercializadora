@@ -114,6 +114,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       05B. VALOR "LIMPIO" DE UNA COLUMNA PARA LOS FILTROS
+       DESPLEGABLES
+       =========================================================
+       La celda de "Cliente" (columna 0) mezcla en su texto el
+       avatar, el nombre y el tipo de cliente, así que no sirve
+       para comparar contra las opciones del desplegable (que
+       son solo nombres). Usamos el data-nombre de la fila, que
+       ya trae el valor limpio; el resto de columnas coincide
+       con su celda, así que caen al mismo sitio.
+    ========================================================= */
+
+    const CAMPO_POR_COLUMNA = {
+        0: 'nombre',
+        1: 'nif',
+        2: 'direccion',
+        3: 'telefono',
+        4: 'email'
+    };
+
+    function obtenerValorFiltroFila(fila, columna) {
+
+        const campo = CAMPO_POR_COLUMNA[columna];
+
+        if (campo && fila.dataset[campo] !== undefined) {
+            return normalizar(fila.dataset[campo]);
+        }
+
+        return obtenerTextoCelda(fila, columna);
+
+    }
+
+
+    /* =========================================================
        06. FILTRADO
        Devuelve solo las filas que cumplen TODOS los filtros
        de columna activos (texto o select).
@@ -147,12 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    const valorCelda = obtenerTextoCelda(
+                    const valorFila = obtenerValorFiltroFila(
                         fila,
                         columna
                     );
 
-                    if (!seleccionados.includes(valorCelda)) {
+                    if (!seleccionados.includes(valorFila)) {
                         coincide = false;
                     }
 
@@ -896,12 +929,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const detalleAvatar = document.getElementById('detalleClienteAvatar');
     const detalleNombre = document.getElementById('detalleClienteNombre');
-    const detalleTipo = document.getElementById('detalleClienteTipo');
-    const detalleIdentificacion = document.getElementById('detalleClienteIdentificacion');
-    const detalleCorreo = document.getElementById('detalleClienteCorreo');
-    const detalleComercializadora = document.getElementById('detalleClienteComercializadora');
-    const detalleTarifa = document.getElementById('detalleClienteTarifa');
-    const detalleEstado = document.getElementById('detalleClienteEstado');
+    const detalleNif = document.getElementById('detalleClienteNif');
+    const detalleDniNie = document.getElementById('detalleClienteDniNie');
+    const detalleDireccion = document.getElementById('detalleClienteDireccion');
+    const detalleTelefono = document.getElementById('detalleClienteTelefono');
+    const detalleEmail = document.getElementById('detalleClienteEmail');
     const btnDetalleEditar = document.getElementById('btnDetalleEditarCliente');
     const btnDetalleEliminar = document.getElementById('btnDetalleEliminarCliente');
 
@@ -919,28 +951,24 @@ document.addEventListener('DOMContentLoaded', () => {
             detalleNombre.textContent = fila.dataset.nombre || '';
         }
 
-        if (detalleTipo) {
-            detalleTipo.textContent = fila.dataset.tipo || '';
+        if (detalleNif) {
+            detalleNif.textContent = fila.dataset.id || '';
         }
 
-        if (detalleIdentificacion) {
-            detalleIdentificacion.textContent = fila.dataset.identificacion || '—';
+        if (detalleDniNie) {
+            detalleDniNie.textContent = fila.dataset.nif || '';
         }
 
-        if (detalleCorreo) {
-            detalleCorreo.textContent = fila.dataset.correo || '—';
+        if (detalleDireccion) {
+            detalleDireccion.textContent = fila.dataset.direccion || '—';
         }
 
-        if (detalleComercializadora) {
-            detalleComercializadora.textContent = fila.dataset.comercializadora || '—';
+        if (detalleTelefono) {
+            detalleTelefono.textContent = fila.dataset.telefono || '—';
         }
 
-        if (detalleTarifa) {
-            detalleTarifa.textContent = fila.dataset.tarifa || '—';
-        }
-
-        if (detalleEstado) {
-            detalleEstado.textContent = fila.dataset.estado || '—';
+        if (detalleEmail) {
+            detalleEmail.textContent = fila.dataset.email || '—';
         }
 
         if (btnDetalleEditar) {
@@ -968,15 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filas.forEach(fila => {
 
         fila.addEventListener('click', () => {
-
-            // En escritorio la fila no es clicable: ahí ya
-            // se ve todo en la propia tabla.
-            if (!esMovil()) {
-                return;
-            }
-
             abrirModalDetalleCliente(fila);
-
         });
 
     });

@@ -33,7 +33,7 @@
     --shadow-lg: 0 14px 35px rgba(20, 35, 60, .08);
     --radius: 12px;
     --radius-sm: 8px;
-    --sidebar-width: 236px;
+    --sidebar-width: 196px;
     --topbar-height: 68px;
     --footer-height: 42px;
 }
@@ -152,6 +152,14 @@ textarea:focus-visible {
     box-shadow: 0 4px 10px rgba(16, 47, 91, .15);
 }
 
+.logo-empresa img {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(16, 47, 91, .15);
+}
+
 
 /* =========================================================
    BOTONES TOPBAR
@@ -196,6 +204,18 @@ textarea:focus-visible {
     font-weight: 700;
 }
 
+.topbar-user-avatar-img {
+    overflow: hidden;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+}
+
+.topbar-user-avatar-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .topbar-user-info {
     display: flex;
     flex-direction: column;
@@ -237,6 +257,12 @@ textarea:focus-visible {
         border-color .18s ease,
         color .18s ease,
         transform .18s ease;
+}
+
+.topbar-button-icon {
+    width: 38px;
+    padding: 0;
+    font-size: 15px;
 }
 
 .topbar-button:hover,
@@ -485,9 +511,7 @@ textarea:focus-visible {
 
 .dashboard-card,
 .panel,
-.config-card,
-.logs-filters,
-.logs-table-container {
+.config-card {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -611,11 +635,16 @@ textarea:focus-visible {
    11. GRIDS
 ========================================================= */
 
-.dashboard-grid,
-.security-grid {
+.dashboard-grid {
     display: grid;
     grid-template-columns:
         minmax(0, 1.7fr) minmax(280px, 1fr);
+    gap: 20px;
+}
+
+.security-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
 }
 
@@ -990,6 +1019,16 @@ textarea:focus-visible {
     gap: 3px;
 }
 
+.security-setting form {
+    margin: 0;
+}
+
+.security-select {
+    min-height: 33px;
+    min-width: 120px;
+    font-size: 12px;
+}
+
 
 /* =========================================================
    TOGGLE
@@ -1064,15 +1103,6 @@ textarea:focus-visible {
    FILTROS
 ========================================================= */
 
-.logs-filters {
-    display: flex;
-    align-items: end;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-bottom: 19px;
-    padding: 17px;
-}
-
 .filter-group,
 .config-field {
     display: flex;
@@ -1091,7 +1121,8 @@ textarea:focus-visible {
 .filter-group input,
 .config-field input,
 .config-field select,
-.planner-select {
+.planner-select,
+.security-select {
     min-height: 39px;
     padding: 0 10px;
     border: 1px solid var(--line-dark);
@@ -1112,13 +1143,13 @@ textarea:focus-visible {
 .filter-group input:focus,
 .config-field input:focus,
 .config-field select:focus,
-.planner-select:focus {
+.planner-select:focus,
+.security-select:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow:
         0 0 0 3px rgba(23, 105, 224, .10);
 }
-
 
 /* =========================================================
    TABLA LOGS
@@ -1141,6 +1172,22 @@ textarea:focus-visible {
     font-weight: 700;
     text-align: left;
     white-space: nowrap;
+}
+
+/* Fila de filtros por columna: mismo sitio y aspecto que en
+   Clientes/Usuarios/Empresas (ver
+   .clientes-table thead .clientes-filter-row-table th). */
+.logs-table thead .logs-filter-row-table th {
+    padding: 7px 9px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--line);
+    white-space: normal;
+}
+
+.logs-table .multi-select-filter {
+    border: none;
+    padding: 0;
+    background: transparent;
 }
 
 .logs-table td {
@@ -1246,7 +1293,8 @@ textarea:focus-visible {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 0;
+    padding: 14px 21px;
+    border-top: 1px solid var(--line);
     color: var(--muted);
     font-size: 12px;
 }
@@ -1426,8 +1474,94 @@ textarea:focus-visible {
     font-weight: 700;
 }
 
-.config-secondary-button {
+/* Separa el botón de la lista de arriba SOLO en esta tarjeta
+   (Configuración > "Crear copia de seguridad"); en
+   .page-header-actions (Clientes/Usuarios/Empresas > "Exportar
+   PDF") esa misma clase va en una fila junto a otro botón y no
+   debe llevar este margen, o queda descolocada verticalmente. */
+.system-info .config-secondary-button {
     margin-top: 17px;
+}
+
+
+/* =========================================================
+   LOGO DE EMPRESA
+========================================================= */
+
+.logo-empresa-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.logo-empresa-preview {
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 30px;
+}
+
+.logo-empresa-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-empresa-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-empresa-acciones form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-empresa-acciones input[type="file"] {
+    max-width: 240px;
+    font-size: 12px;
+    color: var(--ink-soft);
+}
+
+.logo-empresa-ayuda {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   RETENCIÓN DE LOGS
+========================================================= */
+
+.logs-retencion-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 17px;
+    padding-top: 17px;
+    border-top: 1px solid var(--line);
+}
+
+.logs-retencion-info {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.logs-retencion-info strong {
+    color: var(--ink);
 }
 
 
@@ -1882,7 +2016,8 @@ textarea:focus-visible {
 ========================================================= */
 
 .clientes-table-panel,
-.usuarios-table-panel {
+.usuarios-table-panel,
+.logs-table-panel {
     width: 100%;
     margin-bottom: 19px;
 }
@@ -2002,6 +2137,15 @@ textarea:focus-visible {
     border-bottom: 1px solid var(--line);
 }
 
+/* Última celda de la fila de filtros (columna Acciones):
+   ahí vive el botón "Limpiar filtros", alineado a la
+   izquierda, justo debajo de la palabra "Acciones". */
+.clientes-filter-row-table th:last-child,
+.usuarios-filter-row-table th:last-child {
+    text-align: left;
+    white-space: nowrap;
+}
+
 .clientes-table .column-filter,
 .usuarios-table .column-filter {
     width: 100%;
@@ -2059,16 +2203,12 @@ textarea:focus-visible {
     border: 1px solid var(--line-dark);
     border-radius: 7px;
     background: #ffffff;
-    color: var(--ink);
-    font-size: 10px;
-    text-align: left;
-    cursor: pointer;
+    cursor: text;
     transition: border-color .18s ease, box-shadow .18s ease;
 }
 
 .filter-group .multi-select-toggle {
     min-height: 39px;
-    font-size: 12px;
 }
 
 .filter-group .multi-select-filter {
@@ -2079,17 +2219,48 @@ textarea:focus-visible {
     border-color: var(--primary);
 }
 
-.multi-select-toggle[aria-expanded="true"] {
-    outline: none;
+.multi-select-toggle:focus-within {
     border-color: var(--primary);
     box-shadow:
         0 0 0 3px rgba(23, 105, 224, .09);
 }
 
-.multi-select-toggle-label {
+/* La barra es a la vez el resumen de lo marcado (cerrada) y el
+   buscador (al enfocarla, se vacía para poder escribir).
+
+   El selector va con ".multi-select-toggle" delante (en vez de
+   solo ".multi-select-input") para ganarle en especificidad a
+   ".filter-group input" (usado por los filtros de texto de
+   siempre): si no, ese input "en bruto" volvía a traer su
+   propio borde/fondo/relleno y se veía como una cajita metida
+   dentro de la barra, con márgenes a los lados. */
+.multi-select-toggle .multi-select-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    border: none;
+    outline: none;
+    padding: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 10px;
+}
+
+/* El anillo de foco ya lo pone ".multi-select-toggle:focus-within"
+   en toda la barra; sin este reset, ".filter-group input:focus"
+   le metía otro anillo propio solo al input. */
+.multi-select-toggle .multi-select-input:focus {
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.filter-group .multi-select-input {
+    font-size: 12px;
 }
 
 .multi-select-toggle-icon {
@@ -2102,10 +2273,11 @@ textarea:focus-visible {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    z-index: 20;
+    z-index: 250;
+    display: flex;
+    flex-direction: column;
     min-width: 180px;
-    max-height: 240px;
-    overflow-y: auto;
+    max-height: 280px;
     padding: 8px;
     border: 1px solid var(--line-dark);
     border-radius: var(--radius-sm);
@@ -2113,12 +2285,54 @@ textarea:focus-visible {
     box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
 }
 
+/* El "display: flex" de arriba, al tener más especificidad que
+   la regla por defecto del navegador para [hidden], impedía
+   que el atributo "hidden" ocultara el menú (se quedaba
+   siempre visible). Lo forzamos aquí explícitamente. */
+.multi-select-menu[hidden] {
+    display: none;
+}
+
+.multi-select-options-list {
+    padding-top: 4px;
+    overflow-y: auto;
+}
+
+.multi-select-no-results {
+    padding: 6px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .multi-select-option {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 6px;
     padding: 6px;
     border-radius: 6px;
+    cursor: pointer;
+}
+
+.multi-select-option:hover,
+.multi-select-option.is-checked {
+    background: var(--primary-soft);
+}
+
+/* Separa visualmente el grupo de marcadas (que suben arriba
+   del todo, ver reordenarOpciones() en multi-select-filter.js)
+   del resto de opciones. */
+.multi-select-option.is-checked + .multi-select-option:not(.is-checked) {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.multi-select-option-label {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
     font-size: 12px;
     font-weight: 500;
     color: var(--ink);
@@ -2126,15 +2340,49 @@ textarea:focus-visible {
     white-space: nowrap;
 }
 
-.multi-select-option:hover {
-    background: var(--primary-soft);
+.multi-select-option.is-checked .multi-select-option-label {
+    color: var(--primary);
+    font-weight: 700;
 }
 
-.multi-select-option input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--primary);
+/* El checkbox sigue ahí para el estado/accesibilidad (foco de
+   teclado, lectores de pantalla), pero se oculta visualmente:
+   la selección se ve marcando la fila en azul, no con la
+   casilla. */
+.multi-select-option-label input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.multi-select-option-remove {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--primary);
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.multi-select-option.is-checked .multi-select-option-remove {
+    display: inline-flex;
+}
+
+.multi-select-option-remove:hover {
+    background: rgba(23, 105, 224, .15);
 }
 
 .multi-select-empty {
@@ -2215,38 +2463,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   TARIFAS
-========================================================= */
-
-.tarifa-badge {
-    min-height: 23px;
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 8px;
-    border-radius: 99px;
-    font-size: 9px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.tarifa-pvpc {
-    background: var(--primary-soft);
-    color: var(--primary);
-}
-
-.tarifa-libre {
-    background: var(--purple-soft);
-    color: var(--purple);
-}
-
-.tarifa-fija {
-    background: var(--warning-soft);
-    color: var(--warning);
-}
-
-
-/* =========================================================
-   ESTADOS CLIENTES
+   ESTADOS (CLIENTES/USUARIOS)
 ========================================================= */
 
 .cliente-active {
@@ -2254,14 +2471,14 @@ textarea:focus-visible {
     color: var(--success);
 }
 
-.cliente-pending {
-    background: var(--warning-soft);
-    color: var(--warning);
-}
-
 .cliente-inactive {
     background: #eef1f5;
     color: var(--muted);
+}
+
+.usuarios-table .cliente-inactive {
+    background: var(--danger-soft);
+    color: var(--danger);
 }
 
 
@@ -2304,6 +2521,18 @@ textarea:focus-visible {
     color: var(--primary);
 }
 
+.table-action-button.list-edit {
+    border-color: #c7dcff;
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.table-action-button.list-edit:hover {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #ffffff;
+}
+
 
 /* =========================================================
    BOTÓN "ELIMINAR"
@@ -2321,6 +2550,45 @@ textarea:focus-visible {
 .table-action-button.danger:hover {
     border-color: var(--danger);
     background: var(--danger);
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   BOTONES DE ACCIÓN CON SOLO ICONO
+   =========================================================
+   Variante cuadrada de .table-action-button (mismo alto,
+   sin texto) para Editar/Eliminar/Restablecer contraseña
+   y el candado de Activo/Inactivo en Usuarios y Empresas.
+========================================================= */
+
+.icon-action-button {
+    width: 30px;
+    padding: 0;
+    font-size: 13px;
+}
+
+.icon-action-button.estado-toggle.activo {
+    border-color: #b9e6c9;
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.icon-action-button.estado-toggle.activo:hover {
+    border-color: var(--success);
+    background: var(--success);
+    color: #ffffff;
+}
+
+.icon-action-button.estado-toggle.inactivo {
+    border-color: var(--line-dark);
+    background: #eef1f5;
+    color: var(--muted);
+}
+
+.icon-action-button.estado-toggle.inactivo:hover {
+    border-color: var(--muted);
+    background: var(--muted);
     color: #ffffff;
 }
 
@@ -2727,8 +2995,8 @@ textarea:focus-visible {
 }
 
 .por-pagina-select {
-    min-height: 37px;
-    padding: 0 10px;
+    min-height: 32px;
+    padding: 0 9px;
     border: 1px solid var(--line-dark);
     border-radius: var(--radius-sm);
     background: var(--surface);
@@ -2855,7 +3123,6 @@ textarea:focus-visible {
         height: 32px;
     }
 
-    .topbar-button span:last-child,
     .logout-button span:last-child {
         display: none;
     }
@@ -2928,7 +3195,8 @@ textarea:focus-visible {
 
     .dashboard-cards,
     .security-cards,
-    .config-grid {
+    .config-grid,
+    .form-grid {
         grid-template-columns: 1fr;
     }
 
@@ -2944,15 +3212,9 @@ textarea:focus-visible {
         width: 100%;
     }
 
-    .logs-filters {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
     .filter-group,
     .filter-group select,
-    .filter-group input,
-    .logs-filters>.logs-btn {
+    .filter-group input {
         width: 100%;
     }
 
@@ -3813,6 +4075,18 @@ select {
     margin-bottom: 17px;
 }
 
+
+/* =========================================================
+   FORMULARIO EN DOS COLUMNAS
+   (Clientes, Empresas, Usuarios, Planificador: crear/editar)
+========================================================= */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+}
+
 .form-group label {
     color: var(--ink-soft);
     font-size: 11px;
@@ -3820,7 +4094,8 @@ select {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     min-height: 40px;
     padding: 0 11px;
@@ -3835,22 +4110,44 @@ select {
         background .18s ease;
 }
 
-.form-group input::placeholder {
+.form-group textarea {
+    min-height: 80px;
+    padding: 9px 11px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
     color: var(--muted);
 }
 
 .form-group input:hover,
-.form-group select:hover {
+.form-group select:hover,
+.form-group textarea:hover {
     border-color: #b8c3d2;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow:
         0 0 0 3px rgba(23, 105, 224, .10);
     background: #ffffff;
+}
+
+.form-group input[readonly] {
+    background: var(--surface-soft);
+    color: var(--muted);
+    cursor: default;
+}
+
+.form-group input[readonly]:hover,
+.form-group input[readonly]:focus {
+    border-color: var(--line-dark);
+    box-shadow: none;
 }
 
 
@@ -4259,6 +4556,99 @@ select {
 
 
 /* =========================================================
+   MENSAJE DE ÉXITO GENERAL DEL FORMULARIO
+========================================================= */
+
+.form-success-general {
+    background-color: var(--success-soft);
+    border: 1px solid var(--success);
+    color: var(--success);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   CAMBIO DE CONTRASEÑA (SECCIÓN SEGURIDAD)
+========================================================= */
+
+.security-password-form {
+    padding: 3px 21px 21px;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 42px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.password-requisitos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px 12px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.password-requisitos li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 11.5px;
+    transition: color .15s ease;
+}
+
+.password-requisitos li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid var(--line-dark);
+    border-radius: 50%;
+    background: var(--surface);
+    transition: .15s ease;
+}
+
+.password-requisitos li.cumplido {
+    color: var(--success);
+}
+
+.password-requisitos li.cumplido::before {
+    border-color: var(--success);
+    background: var(--success)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8l3.5 3.5L13 5'/%3E%3C/svg%3E")
+        center / 10px no-repeat;
+}
+
+
+/* =========================================================
    SIDEBAR COMPRIMIBLE
 ========================================================= */
 
@@ -4334,6 +4724,22 @@ body.sidebar-collapsed .menu-label {
 
 body.sidebar-collapsed .menu-icon {
     margin-right: 0;
+}
+
+
+/* =========================================================
+   SUBMENÚ COMPRIMIDO
+   Con el sidebar comprimido a solo iconos, la flecha y el
+   submenú desplegado (con texto) no tienen sitio: se ocultan
+   igual que el resto de etiquetas.
+========================================================= */
+
+body.sidebar-collapsed .menu-arrow {
+    display: none;
+}
+
+body.sidebar-collapsed .submenu {
+    display: none !important;
 }
 
 
@@ -4416,13 +4822,11 @@ body.sidebar-collapsed .menu-item:hover::after {
 }
 
 /* =========================================================
-   SIDEBAR - AJUSTE MANUAL DE ANCHO
+   SIDEBAR - ANCHO
 ========================================================= */
 
 :root {
-    --sidebar-width: 236px;
-    --sidebar-min-width: 64px;
-    --sidebar-max-width: 350px;
+    --sidebar-width: 196px;
 }
 
 
@@ -4451,7 +4855,7 @@ body.sidebar-collapsed .menu-item:hover::after {
 
 
 /* =========================================================
-   ZONA PARA ARRASTRAR
+   BOTÓN PARA COMPRIMIR / EXPANDIR
 ========================================================= */
 
 .sidebar-resizer {
@@ -4460,9 +4864,13 @@ body.sidebar-collapsed .menu-item:hover::after {
     right: 0;
     width: 5px;
     height: 100%;
-    cursor: col-resize;
+    cursor: pointer;
     z-index: 200;
     background: transparent;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
     transition:
         background 0.15s ease;
 }
@@ -4474,33 +4882,25 @@ body.sidebar-collapsed .menu-item:hover::after {
 
 
 /* =========================================================
-   SIDEBAR MIENTRAS SE REDIMENSIONA
-========================================================= */
-
-body.sidebar-resizing {
-    cursor: col-resize;
-    user-select: none;
-}
-
-
-body.sidebar-resizing .sidebar-resizer {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-
-body.sidebar-resizing .sidebar,
-body.sidebar-resizing .main-content {
-    transition: none;
-}
-
-
-/* =========================================================
    SIDEBAR COMPRIMIDO
 ========================================================= */
 
 body.sidebar-collapsed .sidebar {
     padding-left: 8px;
     padding-right: 8px;
+}
+
+
+/* Oculta la barra de scroll solo visualmente: el menú
+   sigue siendo desplazable con la rueda o el táctil. */
+
+body.sidebar-collapsed .sidebar-nav {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+body.sidebar-collapsed .sidebar-nav::-webkit-scrollbar {
+    display: none;
 }
 
 
@@ -4519,6 +4919,15 @@ body.sidebar-collapsed .menu-label {
 
 body.sidebar-collapsed .menu-icon {
     margin-right: 0;
+}
+
+
+body.sidebar-collapsed .menu-arrow {
+    display: none;
+}
+
+body.sidebar-collapsed .submenu {
+    display: none !important;
 }
 
 
@@ -4639,10 +5048,11 @@ body.sidebar-collapsed .menu-item:hover::after {
     color: #abc4e3;
     font-size: 18px;
     line-height: 1;
-    cursor: col-resize;
+    cursor: pointer;
     transition:
         background 0.18s ease,
-        color 0.18s ease;
+        color 0.18s ease,
+        transform 0.18s ease;
 }
 
 
@@ -4654,28 +5064,16 @@ body.sidebar-collapsed .menu-item:hover::after {
 }
 
 
-/* Mientras se está arrastrando */
-
-body.sidebar-resizing .sidebar-resizer-arrow {
-    background: var(--sidebar-active);
-    color: #ffffff;
-}
-
-
 /* =========================================================
-   CUANDO EL SIDEBAR ESTÁ MUY ESTRECHO
+   FLECHA CUANDO ESTÁ COMPRIMIDO
+   Se gira 180º para apuntar hacia el lado contrario (indica
+   que al pulsar ahora se expande en vez de comprimir).
 ========================================================= */
 
 body.sidebar-collapsed .sidebar-resizer-arrow {
     right: -9px;
     font-size: 18px;
-}
-
-
-/* Cambiar la flecha cuando está comprimido */
-
-body.sidebar-collapsed .sidebar-resizer-arrow {
-    transform: translateY(-50%);
+    transform: translateY(-50%) rotate(180deg);
 }
 
 
@@ -4795,6 +5193,27 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
     border-bottom: 1px solid var(--line);
 }
 
+/* La tarjeta se puede arrastrar agarrando la cabecera
+   (ver js/modal-detalle.js); el botón de cerrar mantiene su
+   propio cursor normal. */
+.modal-detalle-header.modal-detalle-arrastrable {
+    cursor: move;
+    user-select: none;
+}
+
+.modal-detalle-header.modal-detalle-arrastrable .modal-detalle-close {
+    cursor: pointer;
+}
+
+body.modal-detalle-arrastrando {
+    cursor: move;
+    user-select: none;
+}
+
+body.modal-detalle-arrastrando .modal-detalle {
+    box-shadow: 0 25px 55px rgba(0, 0, 0, .30);
+}
+
 .modal-detalle-avatar {
     width: 48px;
     height: 48px;
@@ -4885,6 +5304,14 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
     border-top: 1px solid var(--line);
 }
 
+/* Editar y Eliminar mantienen sus propios colores, pero
+   aquí comparten tamaño de letra (por defecto son de
+   tamaños distintos: .table-action-button es más pequeño). */
+.modal-detalle-acciones .table-action-button,
+.modal-detalle-acciones .config-save-button {
+    font-size: 13px;
+}
+
 
 /* =========================================================
    MÓVIL
@@ -4934,6 +5361,12 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
     display: none;
 }
 
+/* Al pulsar la fila (escritorio o móvil) se abre la ventana
+   de detalle con toda la información; ver .modal-detalle. */
+.fila-detalle {
+    cursor: pointer;
+}
+
 @media (max-width: 680px) {
 
     .vista-escritorio {
@@ -4942,10 +5375,6 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
 
     .filtros-toggle-button.vista-movil {
         display: inline-flex;
-    }
-
-    .fila-detalle {
-        cursor: pointer;
     }
 
     .clientes-table-container,
@@ -4959,4 +5388,95 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
         table-layout: auto;
     }
 
+}
+
+/* =========================================================
+   SUBMENÚ DE AYUDA
+========================================================= */
+
+.menu-group {
+    width: 100%;
+}
+
+
+.menu-toggle {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.menu-toggle .menu-icon {
+    color: #ffffff;
+}
+
+
+.menu-arrow {
+    margin-left: auto;
+    font-size: 11px;
+    transition: transform .18s ease;
+}
+
+
+.menu-toggle.open .menu-arrow {
+    transform: rotate(180deg);
+}
+
+
+/* SUBMENÚ */
+
+.submenu {
+    display: none;
+    flex-direction: column;
+    margin-left: 16px;
+    padding-left: 14px;
+    border-left: 1px solid rgba(255, 255, 255, .12);
+}
+
+
+.submenu.open {
+    display: flex;
+}
+
+
+.submenu-item {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+
+    color: #d7e4f5;
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    transition:
+        background .18s ease,
+        color .18s ease;
+}
+
+
+.submenu-item:hover {
+    background: var(--sidebar-hover);
+    color: #ffffff;
+}
+
+
+.submenu-icon {
+    width: 25px;
+
+    display: inline-grid;
+    place-items: center;
+    margin-right: 10px;
+
+    color: #abc4e3;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.submenu-item:hover .submenu-icon {
+    color: #ffffff;
 }

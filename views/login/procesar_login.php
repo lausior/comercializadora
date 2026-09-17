@@ -109,6 +109,7 @@ $stmt = $pdo->prepare("
         u.cambiar_password,
         u.id_empresa,
         u.id_rol,
+        u.estado,
         e.codigo_empresa,
         e.nombre AS empresa,
         r.nombre AS rol
@@ -171,6 +172,26 @@ if (!$usuario || !password_verify($password, $usuario['password'])) {
 
 
 // =====================================================
+// COMPROBAR QUE EL USUARIO ESTÉ ACTIVO
+// =====================================================
+
+if ($usuario['estado'] !== 'Activo') {
+
+    registrarLog(
+        LOG_ADVERTENCIA,
+        'Acceso denegado',
+        'Intento de acceso con la cuenta inactiva.',
+        (int) $usuario['id'],
+        $usuario['username'],
+        $usuario['rol']
+    );
+
+    volverConError('Tu cuenta está inactiva. Contacta con un administrador.');
+
+}
+
+
+// =====================================================
 // INICIAR SESIÓN
 // =====================================================
 
@@ -192,6 +213,8 @@ registrarLog(
     'Inicio de sesión',
     'Inicio de sesión realizado correctamente.'
 );
+
+comprobarYBorrarLogsAntiguos($pdo);
 
 
 // =====================================================

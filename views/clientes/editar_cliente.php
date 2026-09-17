@@ -30,12 +30,11 @@ $stmtCliente = $pdo->prepare("
     SELECT
         id,
         nombre,
-        tipo,
-        identificacion,
-        correo,
-        comercializadora,
-        tarifa,
-        estado,
+        apellidos,
+        direccion,
+        telefono,
+        email,
+        nif,
         creado_por
     FROM clientes
     WHERE id = ?
@@ -141,10 +140,6 @@ if (
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        15 septiembre 2026
-                    </div>
-
                     <a href="clientes.php" class="config-save-button">
                         ← Volver
                     </a>
@@ -179,165 +174,116 @@ if (
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
 
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="nombre">
-                            Nombre
-                        </label>
-
-                        <input type="text" id="nombre" name="nombre" value="<?= htmlspecialchars($cliente['nombre']) ?>"
-                            required>
-
-                        <span class="field-error" id="error-nombre"></span>
-
-                    </div>
+                    <div class="form-grid">
 
 
-                    <!-- =========================
-                         TIPO
-                    ========================== -->
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="tipo">
-                            Tipo
-                        </label>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                        <select id="tipo" name="tipo" required>
+                            <input type="text" id="nombre" name="nombre"
+                                value="<?= htmlspecialchars($cliente['nombre']) ?>" required>
 
-                            <?php foreach (['Particular', 'Empresa'] as $tipoOpcion): ?>
+                            <span class="field-error" id="error-nombre"></span>
 
-                                <option value="<?= $tipoOpcion ?>" <?= $cliente['tipo'] === $tipoOpcion ? 'selected' : '' ?>>
-                                    <?= $tipoOpcion ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-                        </select>
-
-                        <span class="field-error" id="error-tipo"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         IDENTIFICACIÓN
-                    ========================== -->
+                        <!-- =========================
+                             APELLIDOS
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="identificacion">
-                            Identificación (DNI / CIF)
-                        </label>
+                            <label for="apellidos">
+                                Apellidos
+                            </label>
 
-                        <input type="text" id="identificacion" name="identificacion"
-                            value="<?= htmlspecialchars($cliente['identificacion']) ?>" required>
+                            <input type="text" id="apellidos" name="apellidos"
+                                value="<?= htmlspecialchars($cliente['apellidos']) ?>" required>
 
-                        <span class="field-error" id="error-identificacion"></span>
+                            <span class="field-error" id="error-apellidos"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         CORREO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="correo">
-                            Correo
-                        </label>
-
-                        <input type="email" id="correo" name="correo"
-                            value="<?= htmlspecialchars($cliente['correo']) ?>" required>
-
-                        <span class="field-error" id="error-correo"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         COMERCIALIZADORA
-                    ========================== -->
+                        <!-- =========================
+                             DNI/NIE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="comercializadora">
-                            Comercializadora
-                        </label>
+                            <label for="nif">
+                                DNI/NIE
+                            </label>
 
-                        <select id="comercializadora" name="comercializadora" required>
+                            <input type="text" id="nif" name="nif"
+                                value="<?= htmlspecialchars($cliente['nif']) ?>" required>
 
-                            <?php foreach (['Endesa', 'Iberdrola', 'Naturgy', 'Repsol', 'TotalEnergies'] as $comercializadoraOpcion): ?>
+                            <span class="field-error" id="error-nif"></span>
 
-                                <option value="<?= $comercializadoraOpcion ?>"
-                                    <?= $cliente['comercializadora'] === $comercializadoraOpcion ? 'selected' : '' ?>>
-                                    <?= $comercializadoraOpcion ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-                        </select>
-
-                        <span class="field-error" id="error-comercializadora"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         TARIFA
-                    ========================== -->
+                        <!-- =========================
+                             DIRECCIÓN
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="tarifa">
-                            Tarifa
-                        </label>
+                            <label for="direccion">
+                                Dirección
+                            </label>
 
-                        <select id="tarifa" name="tarifa" required>
+                            <input type="text" id="direccion" name="direccion"
+                                value="<?= htmlspecialchars($cliente['direccion'] ?? '') ?>">
 
-                            <?php foreach (['PVPC', 'Mercado libre', 'Tarifa fija'] as $tarifaOpcion): ?>
+                            <span class="field-error" id="error-direccion"></span>
 
-                                <option value="<?= $tarifaOpcion ?>" <?= $cliente['tarifa'] === $tarifaOpcion ? 'selected' : '' ?>>
-                                    <?= $tarifaOpcion ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-                        </select>
-
-                        <span class="field-error" id="error-tarifa"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         ESTADO
-                    ========================== -->
+                        <!-- =========================
+                             TELÉFONO
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="estado">
-                            Estado
-                        </label>
+                            <label for="telefono">
+                                Teléfono
+                            </label>
 
-                        <select id="estado" name="estado" required>
+                            <input type="tel" id="telefono" name="telefono"
+                                value="<?= htmlspecialchars($cliente['telefono'] ?? '') ?>">
 
-                            <?php foreach (['Activo', 'Pendiente', 'Inactivo'] as $estadoOpcion): ?>
+                            <span class="field-error" id="error-telefono"></span>
 
-                                <option value="<?= $estadoOpcion ?>" <?= $cliente['estado'] === $estadoOpcion ? 'selected' : '' ?>>
-                                    <?= $estadoOpcion ?>
-                                </option>
+                        </div>
 
-                            <?php endforeach; ?>
 
-                        </select>
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
 
-                        <span class="field-error" id="error-estado"></span>
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email
+                            </label>
+
+                            <input type="email" id="email" name="email"
+                                value="<?= htmlspecialchars($cliente['email']) ?>" required>
+
+                            <span class="field-error" id="error-email"></span>
+
+                        </div>
+
 
                     </div>
 

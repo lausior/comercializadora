@@ -5,6 +5,35 @@ session_start();
 require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
+require_once '../../config/database.php';
+
+
+// =====================================================
+// GENERAR CÓDIGO DE EMPRESA ALEATORIO
+// =====================================================
+//
+// 6 dígitos, comprobando que no coincida con uno ya
+// existente antes de darlo por válido. Se muestra ya
+// relleno (y no editable) en el formulario; se vuelve a
+// comprobar que sigue libre al guardar (guardar_empresa.php).
+//
+// =====================================================
+
+do {
+
+    $codigoEmpresa = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+    $stmtCodigo = $pdo->prepare("
+        SELECT id
+        FROM empresas
+        WHERE codigo_empresa = ?
+        LIMIT 1
+    ");
+
+    $stmtCodigo->execute([$codigoEmpresa]);
+
+} while ($stmtCodigo->fetch());
+
 ?>
 
 <!DOCTYPE html>
@@ -67,10 +96,6 @@ requerirPermiso('empresas');
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        11 septiembre 2026
-                    </div>
-
                     <a href="empresas.php" class="config-save-button">
                         ← Volver
                     </a>
@@ -101,94 +126,116 @@ requerirPermiso('empresas');
                     <div class="form-info">
 
                         <p>
-                            El código de empresa se generará automáticamente
-                            y se mostrará al terminar de crear la empresa.
+                            El código de empresa se genera automáticamente
+                            y no se puede modificar.
                         </p>
 
                     </div>
 
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="nombre">
-                            Nombre
-                        </label>
-
-                        <input type="text" id="nombre" name="nombre" required>
-
-                        <span class="field-error" id="error-nombre"></span>
-
-                    </div>
+                    <div class="form-grid">
 
 
-                    <!-- =========================
-                         CIF
-                    ========================== -->
+                        <!-- =========================
+                             CÓDIGO DE EMPRESA
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="cif">
-                            CIF
-                        </label>
+                            <label for="codigo_empresa">
+                                Código de empresa
+                            </label>
 
-                        <input type="text" id="cif" name="cif" required>
+                            <input type="text" id="codigo_empresa" name="codigo_empresa"
+                                value="<?= htmlspecialchars($codigoEmpresa) ?>" readonly>
 
-                        <span class="field-error" id="error-cif"></span>
-
-                    </div>
-
-
-                    <!-- =========================
-                         DIRECCIÓN
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="direccion">
-                            Dirección
-                        </label>
-
-                        <input type="text" id="direccion" name="direccion">
-
-                        <span class="field-error" id="error-direccion"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         TELÉFONO
-                    ========================== -->
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="telefono">
-                            Teléfono
-                        </label>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                        <input type="tel" id="telefono" name="telefono">
+                            <input type="text" id="nombre" name="nombre" required>
 
-                        <span class="field-error" id="error-telefono"></span>
+                            <span class="field-error" id="error-nombre"></span>
 
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
+                        <!-- =========================
+                             CIF
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="email">
-                            Email
-                        </label>
+                            <label for="cif">
+                                CIF
+                            </label>
 
-                        <input type="email" id="email" name="email">
+                            <input type="text" id="cif" name="cif" required>
 
-                        <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-cif"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             DIRECCIÓN
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="direccion">
+                                Dirección
+                            </label>
+
+                            <input type="text" id="direccion" name="direccion">
+
+                            <span class="field-error" id="error-direccion"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             TELÉFONO
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="telefono">
+                                Teléfono
+                            </label>
+
+                            <input type="tel" id="telefono" name="telefono">
+
+                            <span class="field-error" id="error-telefono"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email
+                            </label>
+
+                            <input type="email" id="email" name="email">
+
+                            <span class="field-error" id="error-email"></span>
+
+                        </div>
+
 
                     </div>
 
@@ -199,13 +246,13 @@ requerirPermiso('empresas');
 
                     <div class="form-actions">
 
-                        <a href="empresas.php" class="config-cancel-button">
-                            Cancelar
-                        </a>
-
                         <button type="submit" class="config-save-button">
                             Crear empresa
                         </button>
+
+                        <a href="empresas.php" class="config-cancel-button">
+                            Cancelar
+                        </a>
 
                     </div>
 

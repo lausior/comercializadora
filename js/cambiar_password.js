@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (input.type === 'password') {
                 input.type = 'text';
-                boton.textContent = '🙈';
+                boton.innerHTML = '<i class="bi bi-eye"></i>';
             } else {
                 input.type = 'password';
-                boton.textContent = '👁';
+                boton.innerHTML = '<i class="bi bi-eye-slash"></i>';
             }
 
         });

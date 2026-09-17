@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
 require_once '../../config/database.php';
+require_once '../../includes/filtro_multiselect.php';
 
 
 // =====================================================
@@ -21,6 +22,7 @@ $stmtEmpresas = $pdo->query("
         direccion,
         telefono,
         email,
+        estado,
         creado_por
     FROM empresas
     ORDER BY nombre
@@ -52,6 +54,40 @@ $empresas = array_values(array_filter(
 ));
 
 $totalEmpresas = count($empresas);
+
+
+// =====================================================
+// VALORES DISTINTOS PARA LOS DESPLEGABLES DE FILTRO
+// =====================================================
+//
+// La lista de opciones de cada desplegable son los
+// valores que realmente aparecen en $empresas (ya
+// filtrado por permisos).
+//
+// =====================================================
+
+$nombresEmpresaFiltro = array_values(array_unique(array_column($empresas, 'nombre')));
+sort($nombresEmpresaFiltro);
+
+$cifsFiltro = array_values(array_unique(array_column($empresas, 'cif')));
+sort($cifsFiltro);
+
+$direccionesFiltro = array_values(array_unique(array_filter(
+    array_column($empresas, 'direccion')
+)));
+sort($direccionesFiltro);
+
+$telefonosEmpresaFiltro = array_values(array_unique(array_filter(
+    array_column($empresas, 'telefono')
+)));
+sort($telefonosEmpresaFiltro);
+
+$emailsEmpresaFiltro = array_values(array_unique(array_filter(
+    array_column($empresas, 'email')
+)));
+sort($emailsEmpresaFiltro);
+
+$estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
 ?>
 
@@ -97,10 +133,6 @@ $totalEmpresas = count($empresas);
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        11 septiembre 2026
-                    </div>
-
                     <button type="button" class="config-secondary-button" id="btnExportarPDF">
                         📄 Exportar PDF
                     </button>
@@ -133,21 +165,8 @@ $totalEmpresas = count($empresas);
                         </p>
                     </div>
 
-                    <div class="panel-header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
-
-                        <div class="usuarios-por-pagina">
-                            <label for="selectorPorPagina">Mostrar:</label>
-                            <select id="selectorPorPagina" class="por-pagina-select">
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                                <option value="todos">Todos</option>
-                            </select>
-                        </div>
-
-                        <!-- Solo en escritorio: limpia los filtros de columna de la tabla -->
-                        <button type="button" class="panel-action vista-escritorio" id="btnLimpiarFiltros">
-                            Limpiar filtros
-                        </button>
+                    <div class="panel-header-actions"
+                        style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
 
                         <!-- Solo en móvil: despliega el panel de filtros apilados -->
                         <button type="button" class="filtros-toggle-button vista-movil" id="btnToggleFiltros"
@@ -175,33 +194,33 @@ $totalEmpresas = count($empresas);
                     <div class="filtros-panel-campos">
 
                         <div class="filter-group">
-                            <label for="filtroNombreMovil">Empresa</label>
-                            <input type="text" id="filtroNombreMovil" class="column-filter" data-column="0"
-                                placeholder="Buscar empresa...">
+                            <label>Empresa</label>
+                            <?php filtroMultiSelect('filtroNombreMovil', 0, 'Todas', $nombresEmpresaFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroCifMovil">CIF</label>
-                            <input type="text" id="filtroCifMovil" class="column-filter" data-column="1"
-                                placeholder="Buscar CIF...">
+                            <label>CIF</label>
+                            <?php filtroMultiSelect('filtroCifMovil', 1, 'Todos', $cifsFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroDireccionMovil">Dirección</label>
-                            <input type="text" id="filtroDireccionMovil" class="column-filter" data-column="2"
-                                placeholder="Buscar dirección...">
+                            <label>Dirección</label>
+                            <?php filtroMultiSelect('filtroDireccionMovil', 2, 'Todas', $direccionesFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroTelefonoMovil">Teléfono</label>
-                            <input type="text" id="filtroTelefonoMovil" class="column-filter" data-column="3"
-                                placeholder="Buscar teléfono...">
+                            <label>Teléfono</label>
+                            <?php filtroMultiSelect('filtroTelefonoMovil', 3, 'Todos', $telefonosEmpresaFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroEmailMovil">Email</label>
-                            <input type="text" id="filtroEmailMovil" class="column-filter" data-column="4"
-                                placeholder="Buscar email...">
+                            <label>Email</label>
+                            <?php filtroMultiSelect('filtroEmailMovil', 4, 'Todos', $emailsEmpresaFiltro); ?>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Estado</label>
+                            <?php filtroMultiSelect('filtroEstadoMovil', 5, 'Todos', $estadosEmpresaFiltro); ?>
                         </div>
 
                     </div>
@@ -286,6 +305,17 @@ $totalEmpresas = count($empresas);
                                 </th>
 
                                 <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Estado</span>
+
+                                        <button type="button" class="sort-button" data-column="5"
+                                            title="Ordenar por estado">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
                                     <span>Acciones</span>
                                 </th>
 
@@ -299,31 +329,34 @@ $totalEmpresas = count($empresas);
                             <tr class="usuarios-filter-row-table vista-escritorio">
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="0"
-                                        placeholder="Buscar empresa...">
+                                    <?php filtroMultiSelect('filtroNombreEscritorio', 0, 'Todas', $nombresEmpresaFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="1"
-                                        placeholder="Buscar CIF...">
+                                    <?php filtroMultiSelect('filtroCifEscritorio', 1, 'Todos', $cifsFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="2"
-                                        placeholder="Buscar dirección...">
+                                    <?php filtroMultiSelect('filtroDireccionEscritorio', 2, 'Todas', $direccionesFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="3"
-                                        placeholder="Buscar teléfono...">
+                                    <?php filtroMultiSelect('filtroTelefonoEscritorio', 3, 'Todos', $telefonosEmpresaFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="4"
-                                        placeholder="Buscar email...">
+                                    <?php filtroMultiSelect('filtroEmailEscritorio', 4, 'Todos', $emailsEmpresaFiltro); ?>
                                 </th>
 
-                                <th></th>
+                                <th>
+                                    <?php filtroMultiSelect('filtroEstadoEscritorio', 5, 'Todos', $estadosEmpresaFiltro); ?>
+                                </th>
+
+                                <th>
+                                    <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                                        Limpiar filtros
+                                    </button>
+                                </th>
 
                             </tr>
 
@@ -336,7 +369,7 @@ $totalEmpresas = count($empresas);
 
                                 <tr>
 
-                                    <td colspan="6" style="text-align:center; padding:40px;">
+                                    <td colspan="7" style="text-align:center; padding:40px;">
                                         No hay empresas registradas.
                                     </td>
 
@@ -363,14 +396,17 @@ $totalEmpresas = count($empresas);
 
                                     $inicialesEmpresa = mb_strtoupper($inicialesEmpresa, 'UTF-8');
 
+                                    $estadoClase = $empresa['estado'] === 'Activo'
+                                        ? 'cliente-active'
+                                        : 'cliente-inactive';
+
                                     ?>
 
                                     <!-- fila-detalle: en móvil, pulsar la fila abre la
                                          tarjeta con toda la información (ver empresas.js);
                                          en escritorio no hace nada, ahí ya se ve todo. -->
 
-                                    <tr class="fila-detalle"
-                                        data-id="<?= (int) $empresa['id'] ?>"
+                                    <tr class="fila-detalle" data-id="<?= (int) $empresa['id'] ?>"
                                         data-nombre="<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>"
                                         data-iniciales="<?= htmlspecialchars($inicialesEmpresa, ENT_QUOTES, 'UTF-8') ?>"
                                         data-codigo="<?= htmlspecialchars($empresa['codigo_empresa'], ENT_QUOTES, 'UTF-8') ?>"
@@ -378,7 +414,7 @@ $totalEmpresas = count($empresas);
                                         data-direccion="<?= htmlspecialchars($empresa['direccion'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-telefono="<?= htmlspecialchars($empresa['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-email="<?= htmlspecialchars($empresa['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                    >
+                                        data-estado="<?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>">
 
                                         <td>
 
@@ -413,22 +449,40 @@ $totalEmpresas = count($empresas);
                                         <td class="vista-escritorio"><?= htmlspecialchars($empresa['email'] ?? '—') ?></td>
 
                                         <td class="vista-escritorio">
+                                            <span class="status-badge <?= $estadoClase ?>">
+                                                <?= htmlspecialchars($empresa['estado']) ?>
+                                            </span>
+                                        </td>
+
+                                        <td class="vista-escritorio">
 
                                             <div class="user-actions">
 
-                                            <button type="button" class="table-action-button"
-                                                    onclick="event.stopPropagation(); window.location.href='editar_empresa.php?id=<?= (int) $empresa['id'] ?>'">
-                                                    Editar
-                                                </button>
                                                 
-                                                <button type="button" class="table-action-button danger" onclick="event.stopPropagation(); abrirModalEliminarEmpresa(
+
+                                                <button type="button" class="table-action-button icon-action-button list-edit"
+                                                    title="Editar"
+                                                    onclick="event.stopPropagation(); window.location.href='editar_empresa.php?id=<?= (int) $empresa['id'] ?>'">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+
+
+
+                                                <button type="button" class="table-action-button icon-action-button danger"
+                                                    title="Eliminar" onclick="event.stopPropagation(); abrirModalEliminarEmpresa(
         <?= (int) $empresa['id'] ?>,
         '<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>'
     )">
-                                                    Eliminar
+                                                    <i class="bi bi-trash3"></i>
                                                 </button>
 
-                                                
+                                                <a href="cambiar_estado_empresa.php?id=<?= (int) $empresa['id'] ?>"
+                                                    class="table-action-button icon-action-button estado-toggle <?= $empresa['estado'] === 'Activo' ? 'activo' : 'inactivo' ?>"
+                                                    title="<?= $empresa['estado'] === 'Activo' ? 'Activo — clic para desactivar' : 'Inactivo — clic para activar' ?>"
+                                                    onclick="event.stopPropagation();">
+                                                    <i
+                                                        class="bi <?= $empresa['estado'] === 'Activo' ? 'bi-unlock-fill' : 'bi-lock-fill' ?>"></i>
+                                                </a>
 
                                             </div>
 
@@ -452,6 +506,15 @@ $totalEmpresas = count($empresas);
                 ====================================================== -->
 
                 <div class="usuarios-pagination">
+
+                    <div class="usuarios-por-pagina">
+                        <label for="selectorPorPagina">Mostrar:</label>
+                        <select id="selectorPorPagina" class="por-pagina-select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="todos">Todos</option>
+                        </select>
+                    </div>
 
                     <span id="empresasMostrando">
                         Mostrando <?= $totalEmpresas ?> de <?= $totalEmpresas ?>
@@ -487,7 +550,9 @@ $totalEmpresas = count($empresas);
 
 
     <script src="../../js/exportar-pdf.js"></script>
+    <script src="../../js/multi-select-filter.js"></script>
     <script src="../../js/empresas.js"></script>
+    <script src="../../js/modal-detalle.js"></script>
 
 
     <!-- =====================================================
@@ -515,13 +580,11 @@ $totalEmpresas = count($empresas);
 
             <div class="modal-actions">
 
-                <button type="button" class="modal-button modal-button-cancel"
-                    onclick="cerrarModalEliminarEmpresa()">
+                <button type="button" class="modal-button modal-button-cancel" onclick="cerrarModalEliminarEmpresa()">
                     Cancelar
                 </button>
 
-                <button type="button" class="modal-button modal-button-delete"
-                    onclick="confirmarEliminarEmpresa()">
+                <button type="button" class="modal-button modal-button-delete" onclick="confirmarEliminarEmpresa()">
                     Eliminar empresa
                 </button>
 
@@ -578,17 +641,22 @@ $totalEmpresas = count($empresas);
                     <strong id="detalleEmpresaEmail"></strong>
                 </div>
 
+                <div class="usuario-detalle-item">
+                    <span>Estado</span>
+                    <strong id="detalleEmpresaEstado"></strong>
+                </div>
+
             </div>
 
             <div class="modal-detalle-acciones">
 
-                <button type="button" class="table-action-button danger" id="btnDetalleEliminarEmpresa">
-                    Eliminar
-                </button>
-
                 <a href="#" class="config-save-button" id="btnDetalleEditarEmpresa">
                     Editar
                 </a>
+
+                <button type="button" class="table-action-button danger" id="btnDetalleEliminarEmpresa">
+                    Eliminar
+                </button>
 
             </div>
 

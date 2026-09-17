@@ -60,10 +60,6 @@ requerirPermiso('partes');
 
             <div class="page-header-actions">
 
-                <div class="page-date">
-                    4 septiembre 2026
-                </div>
-
                 <button class="config-save-button">
                     + Nuevo parte
                 </button>

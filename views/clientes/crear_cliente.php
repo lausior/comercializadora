@@ -67,10 +67,6 @@ requerirPermiso('clientes');
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        15 septiembre 2026
-                    </div>
-
                     <a href="clientes.php" class="config-save-button">
                         ← Volver
                     </a>
@@ -98,149 +94,110 @@ requerirPermiso('clientes');
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
 
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="nombre">
-                            Nombre
-                        </label>
-
-                        <input type="text" id="nombre" name="nombre" required>
-
-                        <span class="field-error" id="error-nombre"></span>
-
-                    </div>
+                    <div class="form-grid">
 
 
-                    <!-- =========================
-                         TIPO
-                    ========================== -->
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="tipo">
-                            Tipo
-                        </label>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                        <select id="tipo" name="tipo" required>
+                            <input type="text" id="nombre" name="nombre" required>
 
-                            <option value="">Seleccionar tipo</option>
-                            <option value="Particular">Particular</option>
-                            <option value="Empresa">Empresa</option>
+                            <span class="field-error" id="error-nombre"></span>
 
-                        </select>
-
-                        <span class="field-error" id="error-tipo"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         IDENTIFICACIÓN
-                    ========================== -->
+                        <!-- =========================
+                             APELLIDOS
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="identificacion">
-                            Identificación (DNI / CIF)
-                        </label>
+                            <label for="apellidos">
+                                Apellidos
+                            </label>
 
-                        <input type="text" id="identificacion" name="identificacion" required>
+                            <input type="text" id="apellidos" name="apellidos" required>
 
-                        <span class="field-error" id="error-identificacion"></span>
+                            <span class="field-error" id="error-apellidos"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         CORREO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="correo">
-                            Correo
-                        </label>
-
-                        <input type="email" id="correo" name="correo" required>
-
-                        <span class="field-error" id="error-correo"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         COMERCIALIZADORA
-                    ========================== -->
+                        <!-- =========================
+                             DNI/NIE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="comercializadora">
-                            Comercializadora
-                        </label>
+                            <label for="nif">
+                                DNI/NIE
+                            </label>
 
-                        <select id="comercializadora" name="comercializadora" required>
+                            <input type="text" id="nif" name="nif" required>
 
-                            <option value="">Seleccionar comercializadora</option>
-                            <option value="Endesa">Endesa</option>
-                            <option value="Iberdrola">Iberdrola</option>
-                            <option value="Naturgy">Naturgy</option>
-                            <option value="Repsol">Repsol</option>
-                            <option value="TotalEnergies">TotalEnergies</option>
+                            <span class="field-error" id="error-nif"></span>
 
-                        </select>
-
-                        <span class="field-error" id="error-comercializadora"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         TARIFA
-                    ========================== -->
+                        <!-- =========================
+                             DIRECCIÓN
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="tarifa">
-                            Tarifa
-                        </label>
+                            <label for="direccion">
+                                Dirección
+                            </label>
 
-                        <select id="tarifa" name="tarifa" required>
+                            <input type="text" id="direccion" name="direccion">
 
-                            <option value="">Seleccionar tarifa</option>
-                            <option value="PVPC">PVPC</option>
-                            <option value="Mercado libre">Mercado libre</option>
-                            <option value="Tarifa fija">Tarifa fija</option>
+                            <span class="field-error" id="error-direccion"></span>
 
-                        </select>
-
-                        <span class="field-error" id="error-tarifa"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         ESTADO
-                    ========================== -->
+                        <!-- =========================
+                             TELÉFONO
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="estado">
-                            Estado
-                        </label>
+                            <label for="telefono">
+                                Teléfono
+                            </label>
 
-                        <select id="estado" name="estado" required>
+                            <input type="tel" id="telefono" name="telefono">
 
-                            <option value="Activo" selected>Activo</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Inactivo">Inactivo</option>
+                            <span class="field-error" id="error-telefono"></span>
 
-                        </select>
+                        </div>
 
-                        <span class="field-error" id="error-estado"></span>
+
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email
+                            </label>
+
+                            <input type="email" id="email" name="email" required>
+
+                            <span class="field-error" id="error-email"></span>
+
+                        </div>
+
 
                     </div>
 
@@ -251,13 +208,13 @@ requerirPermiso('clientes');
 
                     <div class="form-actions">
 
-                        <a href="clientes.php" class="config-cancel-button">
-                            Cancelar
-                        </a>
-
                         <button type="submit" class="config-save-button">
                             Crear cliente
                         </button>
+
+                        <a href="clientes.php" class="config-cancel-button">
+                            Cancelar
+                        </a>
 
                     </div>
 

@@ -140,10 +140,6 @@ if (rolActual() === ROL_EMPRESA) {
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        9 septiembre 2026
-                    </div>
-
                     <a href="usuarios.php" class="config-save-button">
                         ← Volver
                     </a>
@@ -171,153 +167,199 @@ if (rolActual() === ROL_EMPRESA) {
                     <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
 
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="nombre">
-                            Nombre
-                        </label>
-
-                        <input type="text" id="nombre" name="nombre" required>
-
-                        <span class="field-error" id="error-nombre"></span>
-
-                    </div>
+                    <div class="form-grid">
 
 
-                    <!-- =========================
-                         APELLIDOS
-                    ========================== -->
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="apellidos">
-                            Apellidos
-                        </label>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                        <input type="text" id="apellidos" name="apellidos" required>
+                            <input type="text" id="nombre" name="nombre" required>
 
-                        <span class="field-error" id="error-apellidos"></span>
+                            <span class="field-error" id="error-nombre"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         USERNAME
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="username">
-                            Username
-                        </label>
-
-                        <input type="text" id="username" name="username" required>
-
-                        <span class="field-error" id="error-username"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
+                        <!-- =========================
+                             APELLIDOS
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="email">
-                            Email
-                        </label>
+                            <label for="apellidos">
+                                Apellidos
+                            </label>
 
-                        <input type="email" id="email" name="email" required>
+                            <input type="text" id="apellidos" name="apellidos" required>
 
-                        <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-apellidos"></span>
 
-                    </div>
-
-
-                    <!-- =========================
-                         TELEFONO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="telefono">
-                            Teléfono
-                        </label>
-
-                        <input type="tel" id="telefono" name="telefono">
-
-                        <span class="field-error" id="error-telefono"></span>
-
-                    </div>
+                        </div>
 
 
-                    <!-- =========================
-                         EMPRESA
-                    ========================== -->
+                        <!-- =========================
+                             USERNAME
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="id_empresa">
-                            Empresa
-                        </label>
+                            <label for="username">
+                                Username
+                            </label>
 
-                        <select id="id_empresa" name="id_empresa" required>
+                            <input type="text" id="username" name="username" required>
 
-                            <option value="">
-                                Seleccionar empresa
-                            </option>
+                            <span class="field-error" id="error-username"></span>
+
+                        </div>
 
 
-                            <?php foreach ($empresas as $empresa): ?>
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
 
-                                <option value="<?= $empresa['id'] ?>">
-                                    <?= htmlspecialchars($empresa['nombre']) ?>
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email
+                            </label>
+
+                            <input type="email" id="email" name="email" required>
+
+                            <span class="field-error" id="error-email"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             TELEFONO
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="telefono">
+                                Teléfono
+                            </label>
+
+                            <input type="tel" id="telefono" name="telefono">
+
+                            <span class="field-error" id="error-telefono"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             EMPRESA
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="id_empresa">
+                                Empresa
+                            </label>
+
+                            <select id="id_empresa" name="id_empresa" required>
+
+                                <option value="">
+                                    Seleccionar empresa
                                 </option>
 
-                            <?php endforeach; ?>
+
+                                <?php foreach ($empresas as $empresa): ?>
+
+                                    <option value="<?= $empresa['id'] ?>">
+                                        <?= htmlspecialchars($empresa['nombre']) ?>
+                                    </option>
+
+                                <?php endforeach; ?>
 
 
-                        </select>
+                            </select>
 
-                        <span class="field-error" id="error-id_empresa"></span>
+                            <span class="field-error" id="error-id_empresa"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             ROL
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="id_rol">
+                                Rol
+                            </label>
+
+                            <select id="id_rol" name="id_rol" required>
+
+                                <option value="">
+                                    Seleccionar rol
+                                </option>
+
+
+                                <?php foreach ($roles as $rol): ?>
+
+                                    <option value="<?= $rol['id'] ?>">
+                                        <?= htmlspecialchars($rol['nombre']) ?>
+                                    </option>
+
+                                <?php endforeach; ?>
+
+
+                            </select>
+
+                            <span class="field-error" id="error-id_rol"></span>
+
+                        </div>
+
+
+                        <!-- =========================
+                             ESTADO
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="estado">
+                                Estado
+                            </label>
+
+                            <select id="estado" name="estado" required>
+
+                                <option value="Activo" selected>Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+
+                            </select>
+
+                            <span class="field-error" id="error-estado"></span>
+
+                        </div>
+
 
                     </div>
 
 
                     <!-- =========================
-                         ROL
+                         MOTIVO (SOLO SI INACTIVO)
                     ========================== -->
 
-                    <div class="form-group">
+                    <div class="form-group hidden" id="grupo_motivo_inactivo">
 
-                        <label for="id_rol">
-                            Rol
+                        <label for="motivo_inactivo">
+                            Motivo
                         </label>
 
-                        <select id="id_rol" name="id_rol" required>
+                        <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
+                            placeholder="Explica por qué el usuario se marca como inactivo"></textarea>
 
-                            <option value="">
-                                Seleccionar rol
-                            </option>
-
-
-                            <?php foreach ($roles as $rol): ?>
-
-                                <option value="<?= $rol['id'] ?>">
-                                    <?= htmlspecialchars($rol['nombre']) ?>
-                                </option>
-
-                            <?php endforeach; ?>
-
-
-                        </select>
-
-                        <span class="field-error" id="error-id_rol"></span>
+                        <span class="field-error" id="error-motivo_inactivo"></span>
 
                     </div>
 

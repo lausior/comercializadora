@@ -52,12 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (password.type === 'password') {
 
                 password.type = 'text';
-                togglePassword.textContent = '🙈';
+                togglePassword.innerHTML = '<i class="bi bi-eye"></i>';
 
             } else {
 
                 password.type = 'password';
-                togglePassword.textContent = '👁';
+                togglePassword.innerHTML = '<i class="bi bi-eye-slash"></i>';
 
             }
 

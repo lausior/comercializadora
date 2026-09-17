@@ -23,8 +23,11 @@ $stmtUsuarios = $pdo->query("
         u.telefono,
         u.cambiar_password,
         u.id_empresa,
+        u.estado,
+        u.motivo_inactivo,
         u.creado_por,
         e.nombre AS empresa,
+        e.codigo_empresa,
         r.nombre AS rol
     FROM usuarios u
 
@@ -69,10 +72,12 @@ $usuarios = array_values(array_filter(
 $totalUsuarios = count($usuarios);
 
 
-// Actualmente no tenemos campo "estado" en usuarios.
-// Por ahora todos los usuarios creados están activos.
-$usuariosActivos = $totalUsuarios;
-$usuariosInactivos = 0;
+$usuariosActivos = count(array_filter(
+    $usuarios,
+    fn(array $usuario): bool => $usuario['estado'] === 'Activo'
+));
+
+$usuariosInactivos = $totalUsuarios - $usuariosActivos;
 
 
 // =====================================================
@@ -87,6 +92,35 @@ foreach ($usuarios as $usuario) {
         $administradores++;
     }
 }
+
+
+// =====================================================
+// VALORES DISTINTOS PARA LOS DESPLEGABLES DE USUARIO/
+// EMAIL/TELÉFONO
+// =====================================================
+//
+// Igual que $rolesFiltro/$empresasFiltro más abajo: la
+// lista de opciones del desplegable son los valores que
+// realmente aparecen en $usuarios (ya filtrado por
+// permisos).
+//
+// =====================================================
+
+$nombresUsuarioFiltro = array_values(array_unique(array_map(
+    fn(array $usuario): string => $usuario['nombre'] . ' ' . $usuario['apellidos'],
+    $usuarios
+)));
+sort($nombresUsuarioFiltro);
+
+$emailsFiltro = array_values(array_unique(array_column($usuarios, 'email')));
+sort($emailsFiltro);
+
+$telefonosFiltro = array_values(array_unique(array_filter(
+    array_column($usuarios, 'telefono')
+)));
+sort($telefonosFiltro);
+
+$estadosFiltro = ['Activo', 'Inactivo'];
 
 ?>
 
@@ -141,11 +175,7 @@ foreach ($usuarios as $usuario) {
 
 
                 <div class="page-header-actions">
-
-                    <div class="page-date">
-                        9 septiembre 2026
-                    </div>
-
+                    
                     <button type="button" class="config-secondary-button" id="btnExportarPDF">
                         📄 Exportar PDF
                     </button>
@@ -312,36 +342,6 @@ foreach ($usuarios as $usuario) {
 
                     <div class="panel-header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
 
-                        <div class="usuarios-por-pagina">
-
-                            <label for="selectorPorPagina">
-                                Mostrar:
-                            </label>
-
-                            <select id="selectorPorPagina" class="por-pagina-select">
-
-                                <option value="5">
-                                    5
-                                </option>
-
-                                <option value="10">
-                                    10
-                                </option>
-
-                                <option value="todos">
-                                    Todos
-                                </option>
-
-                            </select>
-
-                        </div>
-
-
-                        <!-- Solo en escritorio: limpia los filtros de columna de la tabla -->
-                        <button type="button" class="panel-action vista-escritorio" id="btnLimpiarFiltros">
-                            Limpiar filtros
-                        </button>
-
                         <!-- Solo en móvil: despliega el panel de filtros apilados -->
                         <button type="button" class="filtros-toggle-button vista-movil" id="btnToggleFiltros"
                             aria-expanded="false" aria-controls="panelFiltrosUsuarios">
@@ -368,21 +368,18 @@ foreach ($usuarios as $usuario) {
                     <div class="filtros-panel-campos">
 
                         <div class="filter-group">
-                            <label for="filtroUsuarioMovil">Usuario</label>
-                            <input type="text" id="filtroUsuarioMovil" class="column-filter" data-column="0"
-                                placeholder="Buscar usuario...">
+                            <label>Usuario</label>
+                            <?php filtroMultiSelect('filtroUsuarioMovil', 0, 'Todos', $nombresUsuarioFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroEmailMovil">Email</label>
-                            <input type="text" id="filtroEmailMovil" class="column-filter" data-column="1"
-                                placeholder="Buscar email...">
+                            <label>Email</label>
+                            <?php filtroMultiSelect('filtroEmailMovil', 1, 'Todos', $emailsFiltro); ?>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filtroTelefonoMovil">Teléfono</label>
-                            <input type="text" id="filtroTelefonoMovil" class="column-filter" data-column="2"
-                                placeholder="Buscar teléfono...">
+                            <label>Teléfono</label>
+                            <?php filtroMultiSelect('filtroTelefonoMovil', 2, 'Todos', $telefonosFiltro); ?>
                         </div>
 
                         <?php
@@ -417,6 +414,11 @@ foreach ($usuarios as $usuario) {
                         <div class="filter-group">
                             <label>Empresa</label>
                             <?php filtroMultiSelect('filtroEmpresaMovil', 4, 'Todas', $empresasFiltro); ?>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Estado</label>
+                            <?php filtroMultiSelect('filtroEstadoMovil', 5, 'Todos', $estadosFiltro); ?>
                         </div>
 
                     </div>
@@ -510,6 +512,17 @@ foreach ($usuarios as $usuario) {
                                 </th>
 
                                 <th class="vista-escritorio">
+                                    <div class="table-header-content">
+                                        <span>Estado</span>
+
+                                        <button type="button" class="sort-button" data-column="5"
+                                            title="Ordenar por estado">
+                                            ↕
+                                        </button>
+                                    </div>
+                                </th>
+
+                                <th class="vista-escritorio">
                                     <span>Acciones</span>
                                 </th>
 
@@ -523,18 +536,15 @@ foreach ($usuarios as $usuario) {
                             <tr class="usuarios-filter-row-table vista-escritorio">
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="0"
-                                        placeholder="Buscar usuario...">
+                                    <?php filtroMultiSelect('filtroUsuarioEscritorio', 0, 'Todos', $nombresUsuarioFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="1"
-                                        placeholder="Buscar email...">
+                                    <?php filtroMultiSelect('filtroEmailEscritorio', 1, 'Todos', $emailsFiltro); ?>
                                 </th>
 
                                 <th>
-                                    <input type="text" class="column-filter" data-column="2"
-                                        placeholder="Buscar teléfono...">
+                                    <?php filtroMultiSelect('filtroTelefonoEscritorio', 2, 'Todos', $telefonosFiltro); ?>
                                 </th>
 
                                 <th>
@@ -545,7 +555,15 @@ foreach ($usuarios as $usuario) {
                                     <?php filtroMultiSelect('filtroEmpresaEscritorio', 4, 'Todas', $empresasFiltro); ?>
                                 </th>
 
-                                <th></th>
+                                <th>
+                                    <?php filtroMultiSelect('filtroEstadoEscritorio', 5, 'Todos', $estadosFiltro); ?>
+                                </th>
+
+                                <th>
+                                    <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                                        Limpiar filtros
+                                    </button>
+                                </th>
 
                             </tr>
 
@@ -567,7 +585,7 @@ foreach ($usuarios as $usuario) {
 
                                 <tr>
 
-                                    <td colspan="6" style="text-align:center; padding:40px;">
+                                    <td colspan="7" style="text-align:center; padding:40px;">
 
                                         No hay usuarios registrados.
 
@@ -646,6 +664,26 @@ foreach ($usuarios as $usuario) {
                                             break;
                                     }
 
+
+                                    // =================================================
+                                    // CLASE DEL ESTADO
+                                    // =================================================
+
+                                    $estadoClase = $usuario['estado'] === 'Activo'
+                                        ? 'cliente-active'
+                                        : 'cliente-inactive';
+
+                                    $estadoPasswordUsuario = (int) $usuario['cambiar_password'] === 1
+                                        ? 'Pendiente de cambio'
+                                        : 'Contraseña establecida';
+
+                                    // Usuario de acceso (login): codigo_empresa-id-username,
+                                    // el mismo formato que se escribe en login.php.
+                                    $usuarioAcceso =
+                                        $usuario['codigo_empresa'] . '-' .
+                                        $usuario['id'] . '-' .
+                                        $usuario['username'];
+
                                     ?>
 
 
@@ -657,11 +695,14 @@ foreach ($usuarios as $usuario) {
                                         data-id="<?= (int) $usuario['id'] ?>"
                                         data-nombre="<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>"
                                         data-iniciales="<?= htmlspecialchars($iniciales, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-usuario="<?= htmlspecialchars($usuario['username'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-usuario="<?= htmlspecialchars($usuarioAcceso, ENT_QUOTES, 'UTF-8') ?>"
                                         data-email="<?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?>"
                                         data-telefono="<?= htmlspecialchars($usuario['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-rol="<?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?>"
                                         data-empresa="<?= htmlspecialchars($usuario['empresa'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-estado="<?= htmlspecialchars($usuario['estado'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-motivo="<?= htmlspecialchars($usuario['motivo_inactivo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-password-estado="<?= htmlspecialchars($estadoPasswordUsuario, ENT_QUOTES, 'UTF-8') ?>"
                                     >
 
                                         <!-- =================================================
@@ -692,7 +733,7 @@ foreach ($usuarios as $usuario) {
 
                                                     <span>
 
-                                                        @<?= htmlspecialchars($usuario['username']) ?>
+                                                        <?= htmlspecialchars($usuarioAcceso) ?>
 
                                                     </span>
 
@@ -717,19 +758,37 @@ foreach ($usuarios as $usuario) {
                                         <td class="vista-escritorio"><?= htmlspecialchars($usuario['empresa']) ?></td>
 
                                         <td class="vista-escritorio">
+                                            <span class="status-badge <?= $estadoClase ?>">
+                                                <?= htmlspecialchars($usuario['estado']) ?>
+                                            </span>
+                                        </td>
+
+                                        <td class="vista-escritorio">
 
                                             <div class="user-actions">
 
-                                                <button type="button" class="table-action-button"
+                                                <button type="button" class="table-action-button icon-action-button list-edit"
+                                                    title="Editar"
                                                     onclick="event.stopPropagation(); window.location.href='editar_usuario.php?id=<?= (int) $usuario['id'] ?>'">
-                                                    Editar
+                                                    <i class="bi bi-pencil"></i>
                                                 </button>
 
-                                                <button type="button" class="table-action-button danger" onclick="event.stopPropagation(); window.abrirModalEliminar(
+                                                <button type="button" class="table-action-button icon-action-button danger"
+                                                    title="Eliminar"
+                                                    onclick="event.stopPropagation(); window.abrirModalEliminar(
         <?= (int) $usuario['id'] ?>,
         '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
     )">
-                                                    Eliminar
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+
+                                                <button type="button" class="table-action-button icon-action-button"
+                                                    title="Restablecer contraseña"
+                                                    onclick="event.stopPropagation(); window.abrirModalResetPasswordListado(
+        <?= (int) $usuario['id'] ?>,
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                    <i class="bi bi-key"></i>
                                                 </button>
 
                                             </div>
@@ -759,6 +818,31 @@ foreach ($usuarios as $usuario) {
                 ====================================================== -->
 
                 <div class="usuarios-pagination">
+
+
+                    <div class="usuarios-por-pagina">
+
+                        <label for="selectorPorPagina">
+                            Mostrar:
+                        </label>
+
+                        <select id="selectorPorPagina" class="por-pagina-select">
+
+                            <option value="5">
+                                5
+                            </option>
+
+                            <option value="10">
+                                10
+                            </option>
+
+                            <option value="todos">
+                                Todos
+                            </option>
+
+                        </select>
+
+                    </div>
 
 
                     <span id="usuariosMostrando">
@@ -935,6 +1019,49 @@ foreach ($usuarios as $usuario) {
 
 
 <!-- =====================================================
+     MODAL RESTABLECER CONTRASEÑA (DESDE EL LISTADO)
+====================================================== -->
+
+<div id="modalResetPasswordListado" class="modal-overlay" style="display: none;">
+
+    <div class="modal-confirmacion">
+
+        <div class="modal-icon">
+            🔑
+        </div>
+
+        <h2>Restablecer contraseña</h2>
+
+        <p>
+            ¿Seguro que quieres restablecer la contraseña de
+            <strong id="nombreUsuarioResetPassword"></strong>
+            a la contraseña inicial?
+        </p>
+
+        <p class="modal-warning">
+            El usuario deberá cambiarla en su próximo acceso.
+        </p>
+
+        <div class="modal-actions">
+
+            <button type="button" class="modal-button modal-button-cancel"
+                onclick="cerrarModalResetPasswordListado()">
+                Cancelar
+            </button>
+
+            <button type="button" class="modal-button modal-button-primary"
+                onclick="confirmarResetPasswordListado()">
+                Restablecer contraseña
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
      TARJETA DE DETALLE
 ====================================================== -->
 
@@ -980,21 +1107,32 @@ foreach ($usuarios as $usuario) {
                 <strong id="detalleUsuarioEmpresa"></strong>
             </div>
 
+            <div class="usuario-detalle-item">
+                <span>Estado</span>
+                <strong id="detalleUsuarioEstado"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Estado de contraseña</span>
+                <strong id="detalleUsuarioPasswordEstado"></strong>
+            </div>
+
+            <div class="usuario-detalle-item hidden" id="detalleUsuarioMotivoItem">
+                <span>Motivo</span>
+                <strong id="detalleUsuarioMotivo"></strong>
+            </div>
+
         </div>
 
         <div class="modal-detalle-acciones">
 
-        <button type="button" class="table-action-button danger" id="btnDetalleEliminarUsuario">
-                Eliminar
-            </button>
-
-         <a href="#" class="config-save-button" id="btnDetalleEditarUsuario">
+            <a href="#" class="config-save-button" id="btnDetalleEditarUsuario">
                 Editar
             </a>
 
-            
-
-           
+            <button type="button" class="table-action-button danger" id="btnDetalleEliminarUsuario">
+                Eliminar
+            </button>
 
         </div>
 
@@ -1006,6 +1144,7 @@ foreach ($usuarios as $usuario) {
 <script src="../../js/exportar-pdf.js"></script>
 <script src="../../js/multi-select-filter.js"></script>
 <script src="../../js/usuarios.js"></script>
+<script src="../../js/modal-detalle.js"></script>
 
 </body>
 

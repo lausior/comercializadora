@@ -20,6 +20,7 @@ $estaBloqueado = $usuarioBloqueado !== '';
 
     <link rel="stylesheet" href="../../css/forms.css">
     <link rel="stylesheet" href="../../css/login.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 </head>
 
 <body>
@@ -90,7 +91,7 @@ $estaBloqueado = $usuarioBloqueado !== '';
 
                         <button type="button" class="password-toggle" id="togglePassword"
                             aria-label="Mostrar contraseña">
-                            👁
+                            <i class="bi bi-eye-slash"></i>
                         </button>
 
                     </div>

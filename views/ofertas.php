@@ -48,10 +48,6 @@ requerirPermiso('ofertas');
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        7 septiembre 2026
-                    </div>
-
                     <button type="button" class="config-save-button">
                         + Nuevo cliente
                     </button>

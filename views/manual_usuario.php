@@ -14,7 +14,7 @@ requerirPermiso('ayuda');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Ayuda - Comparador Eléctrico</title>
+    <title>Manual de usuario - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../css/style.css">
 
@@ -52,7 +52,7 @@ requerirPermiso('ayuda');
             <div>
 
                 <h1>
-                    Ayuda
+                    Manual de usuario
                 </h1>
 
                 <p>
@@ -423,4 +423,3 @@ requerirPermiso('ayuda');
 </body>
 
 </html>
-

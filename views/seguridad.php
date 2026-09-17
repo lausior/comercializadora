@@ -5,6 +5,18 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('seguridad');
 
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/seguridad.php';
+
+$intentosLoginMax        = obtenerIntentosLoginMax($pdo);
+$minutosBloqueoIntentos  = obtenerMinutosBloqueoIntentos($pdo);
+
+$passwordError = $_SESSION['password_error'] ?? '';
+unset($_SESSION['password_error']);
+
+$passwordSuccess = $_SESSION['password_success'] ?? '';
+unset($_SESSION['password_success']);
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -46,226 +58,13 @@ requerirPermiso('seguridad');
 
 
         <!-- ========================================
-             ESTADO GENERAL
-        ========================================= -->
-
-        <section class="security-status panel">
-
-            <div class="security-status-content">
-
-                <div class="security-status-icon">
-                    ✓
-                </div>
-
-                <div class="security-status-info">
-
-                    <h2>
-                        Sistema protegido
-                    </h2>
-
-                    <p>
-                        No se han detectado problemas de seguridad.
-                    </p>
-
-                </div>
-
-                <div class="security-status-badge">
-                    Seguridad activa
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ========================================
-             TARJETAS DE SEGURIDAD
-        ========================================= -->
-
-        <section class="security-cards">
-
-            <!-- SESIONES -->
-
-            <div class="security-card panel">
-
-                <div class="security-card-header">
-
-                    <div class="security-card-icon blue">
-                        ◉
-                    </div>
-
-                    <div>
-
-                        <h2>
-                            Sesiones
-                        </h2>
-
-                        <p>
-                            Usuarios conectados
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="security-card-value">
-                    3
-                </div>
-
-                <div class="security-card-footer">
-
-                    <span>
-                        Sesiones activas
-                    </span>
-
-                    <a href="#">
-                        Ver sesiones
-                    </a>
-
-                </div>
-
-            </div>
-
-
-            <!-- USUARIOS -->
-
-            <div class="security-card panel">
-
-                <div class="security-card-header">
-
-                    <div class="security-card-icon green">
-                        ♙
-                    </div>
-
-                    <div>
-
-                        <h2>
-                            Usuarios
-                        </h2>
-
-                        <p>
-                            Usuarios registrados
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="security-card-value">
-                    12
-                </div>
-
-                <div class="security-card-footer">
-
-                    <span>
-                        Usuarios activos
-                    </span>
-
-                    <a href="#">
-                        Gestionar
-                    </a>
-
-                </div>
-
-            </div>
-
-
-            <!-- ACCESOS -->
-
-            <div class="security-card panel">
-
-                <div class="security-card-header">
-
-                    <div class="security-card-icon purple">
-                        ↔
-                    </div>
-
-                    <div>
-
-                        <h2>
-                            Accesos
-                        </h2>
-
-                        <p>
-                            Actividad de acceso
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="security-card-value">
-                    128
-                </div>
-
-                <div class="security-card-footer">
-
-                    <span>
-                        Este mes
-                    </span>
-
-                    <a href="logs.php">
-                        Ver logs
-                    </a>
-
-                </div>
-
-            </div>
-
-
-            <!-- ALERTAS -->
-
-            <div class="security-card panel">
-
-                <div class="security-card-header">
-
-                    <div class="security-card-icon orange">
-                        !
-                    </div>
-
-                    <div>
-
-                        <h2>
-                            Alertas
-                        </h2>
-
-                        <p>
-                            Incidencias de seguridad
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="security-card-value warning">
-                    2
-                </div>
-
-                <div class="security-card-footer">
-
-                    <span>
-                        Pendientes
-                    </span>
-
-                    <a href="#">
-                        Revisar
-                    </a>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ========================================
-             CONTENIDO INFERIOR
+             CAMBIO DE CONTRASEÑA / CONTROL DE ACCESOS
         ========================================= -->
 
         <section class="security-grid">
 
 
-            <!-- ACTIVIDAD -->
+            <!-- CAMBIAR CONTRASEÑA -->
 
             <div class="panel">
 
@@ -274,123 +73,103 @@ requerirPermiso('seguridad');
                     <div>
 
                         <h2>
-                            Actividad de seguridad
+                            Cambiar contraseña
                         </h2>
 
                         <p>
-                            Últimos eventos registrados
+                            Actualiza la contraseña de tu cuenta
                         </p>
 
                     </div>
 
-                    <button class="panel-action">
-                        Ver todo
-                    </button>
-
                 </div>
 
 
-                <div class="security-activity">
+                <div class="security-password-form">
 
 
-                    <div class="security-activity-item">
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="<?= $passwordError !== '' ? 'display: block;' : 'display: none;' ?>">
+                        <?= htmlspecialchars($passwordError) ?>
+                    </div>
 
-                        <div class="activity-status success">
-                            ✓
-                        </div>
-
-                        <div class="activity-content">
-
-                            <strong>
-                                Inicio de sesión
-                            </strong>
-
-                            <span>
-                                Usuario administrador ha iniciado sesión
-                            </span>
-
-                        </div>
-
-                        <span class="activity-time">
-                            10:32
-                        </span>
-
+                    <div class="form-success-general" id="form-success-general" role="status"
+                        style="<?= $passwordSuccess !== '' ? 'display: block;' : 'display: none;' ?>">
+                        <?= htmlspecialchars($passwordSuccess) ?>
                     </div>
 
 
-                    <div class="security-activity-item">
-
-                        <div class="activity-status success">
-                            ✓
-                        </div>
-
-                        <div class="activity-content">
-
-                            <strong>
-                                Cierre de sesión
-                            </strong>
-
-                            <span>
-                                Usuario juan ha cerrado sesión
-                            </span>
-
-                        </div>
-
-                        <span class="activity-time">
-                            10:15
-                        </span>
-
-                    </div>
+                    <form action="actualizar_password.php" method="POST" novalidate>
 
 
-                    <div class="security-activity-item">
+                        <!-- CONTRASEÑA NUEVA -->
 
-                        <div class="activity-status warning">
-                            !
-                        </div>
+                        <div class="form-group">
 
-                        <div class="activity-content">
+                            <label for="password_nueva">
+                                Contraseña nueva
+                            </label>
 
-                            <strong>
-                                Intento de acceso fallido
-                            </strong>
+                            <div class="password-wrapper">
 
-                            <span>
-                                Se ha producido un intento de acceso no válido
-                            </span>
+                                <input type="password" id="password_nueva" name="password_nueva"
+                                    placeholder="Escribe tu nueva contraseña" autocomplete="new-password"
+                                    required minlength="8">
+
+                                <button type="button" class="password-toggle" data-target="password_nueva"
+                                    aria-label="Mostrar contraseña">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+
+                            </div>
+
+                            <ul class="password-requisitos" id="passwordRequisitos">
+
+                                <li data-req="longitud">Mínimo 8 caracteres</li>
+                                <li data-req="mayuscula">Mayúsculas</li>
+                                <li data-req="minuscula">Minúsculas</li>
+                                <li data-req="numero">Números</li>
+                                <li data-req="especial">Caracteres especiales</li>
+
+                            </ul>
 
                         </div>
 
-                        <span class="activity-time">
-                            09:47
-                        </span>
 
-                    </div>
+                        <!-- REPETIR CONTRASEÑA -->
 
+                        <div class="form-group">
 
-                    <div class="security-activity-item">
+                            <label for="password_confirmar">
+                                Repite la contraseña nueva
+                            </label>
 
-                        <div class="activity-status success">
-                            ✓
+                            <div class="password-wrapper">
+
+                                <input type="password" id="password_confirmar" name="password_confirmar"
+                                    placeholder="Repite la nueva contraseña" autocomplete="new-password"
+                                    required minlength="8">
+
+                                <button type="button" class="password-toggle" data-target="password_confirmar"
+                                    aria-label="Mostrar contraseña">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+
+                            </div>
+
                         </div>
 
-                        <div class="activity-content">
 
-                            <strong>
-                                Configuración modificada
-                            </strong>
+                        <div class="form-actions">
 
-                            <span>
-                                Se ha actualizado la configuración de seguridad
-                            </span>
+                            <button type="submit" class="config-save-button">
+                                Guardar nueva contraseña
+                            </button>
 
                         </div>
 
-                        <span class="activity-time">
-                            09:20
-                        </span>
 
-                    </div>
+                    </form>
 
 
                 </div>
@@ -398,7 +177,7 @@ requerirPermiso('seguridad');
             </div>
 
 
-            <!-- CONFIGURACIÓN -->
+            <!-- CONTROL DE ACCESOS -->
 
             <div class="panel">
 
@@ -407,11 +186,11 @@ requerirPermiso('seguridad');
                     <div>
 
                         <h2>
-                            Configuración
+                            Control de accesos
                         </h2>
 
                         <p>
-                            Opciones de seguridad
+                            Bloqueo por intentos fallidos
                         </p>
 
                     </div>
@@ -419,7 +198,7 @@ requerirPermiso('seguridad');
                 </div>
 
 
-                <div class="security-settings">
+                <form action="guardar_intentos_login.php" method="POST" class="security-settings">
 
 
                     <div class="security-setting">
@@ -427,18 +206,17 @@ requerirPermiso('seguridad');
                         <div>
 
                             <strong>
-                                Bloqueo automático
+                                Intentos de login antes de bloqueo
                             </strong>
 
                             <span>
-                                Bloquear después de 15 minutos
+                                Número de intentos fallidos permitidos
                             </span>
 
                         </div>
 
-                        <div class="toggle active">
-                            <div class="toggle-circle"></div>
-                        </div>
+                        <input type="number" name="intentos_login_max" class="security-select"
+                            min="1" max="20" value="<?= $intentosLoginMax ?>" required>
 
                     </div>
 
@@ -448,65 +226,31 @@ requerirPermiso('seguridad');
                         <div>
 
                             <strong>
-                                Protección de sesión
+                                Minutos de bloqueo tras intentos fallidos
                             </strong>
 
                             <span>
-                                Control de sesiones activas
+                                Tiempo que permanece bloqueado el acceso
                             </span>
 
                         </div>
 
-                        <div class="toggle active">
-                            <div class="toggle-circle"></div>
-                        </div>
+                        <input type="number" name="minutos_bloqueo_intentos" class="security-select"
+                            min="1" max="1440" value="<?= $minutosBloqueoIntentos ?>" required>
 
                     </div>
 
 
-                    <div class="security-setting">
+                    <div class="form-actions">
 
-                        <div>
-
-                            <strong>
-                                Registro de actividad
-                            </strong>
-
-                            <span>
-                                Registrar acciones de usuarios
-                            </span>
-
-                        </div>
-
-                        <div class="toggle active">
-                            <div class="toggle-circle"></div>
-                        </div>
+                        <button type="submit" class="config-save-button">
+                            Guardar cambios
+                        </button>
 
                     </div>
 
 
-                    <div class="security-setting">
-
-                        <div>
-
-                            <strong>
-                                Alertas de seguridad
-                            </strong>
-
-                            <span>
-                                Notificar accesos sospechosos
-                            </span>
-
-                        </div>
-
-                        <div class="toggle active">
-                            <div class="toggle-circle"></div>
-                        </div>
-
-                    </div>
-
-
-                </div>
+                </form>
 
             </div>
 
@@ -520,6 +264,8 @@ requerirPermiso('seguridad');
 
 
 <?php include '../templates/footer.php'; ?>
+
+<script src="../js/seguridad.js"></script>
 
 </body>
 </html>

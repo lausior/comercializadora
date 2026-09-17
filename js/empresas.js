@@ -369,6 +369,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       06B. VALOR "LIMPIO" DE UNA COLUMNA PARA LOS FILTROS
+       DESPLEGABLES
+       =========================================================
+       Usamos los data-* de la fila (ya traen el valor limpio
+       de cada campo) en vez del texto de la celda, para que
+       las opciones marcadas en el desplegable coincidan de
+       forma exacta.
+    ========================================================= */
+
+    const CAMPO_POR_COLUMNA = {
+        0: 'nombre',
+        1: 'cif',
+        2: 'direccion',
+        3: 'telefono',
+        4: 'email',
+        5: 'estado'
+    };
+
+    function obtenerValorFiltroFila(fila, columna) {
+
+        const campo = CAMPO_POR_COLUMNA[columna];
+
+        if (campo && fila.dataset[campo] !== undefined) {
+            return normalizar(fila.dataset[campo]);
+        }
+
+        return obtenerTextoCelda(fila, columna);
+
+    }
+
+
+    /* =========================================================
        07. FILTRADO
     ========================================================= */
 
@@ -381,6 +413,30 @@ document.addEventListener('DOMContentLoaded', () => {
             filtros.forEach(filtro => {
 
                 const columna = Number(filtro.dataset.column);
+
+                // Filtros desplegables de selección múltiple:
+                // la fila pasa si su valor coincide con
+                // CUALQUIERA de las opciones marcadas (si no
+                // hay ninguna marcada, el filtro no se aplica).
+                if (filtro.classList.contains('multi-select-filter')) {
+
+                    const seleccionados = window.obtenerSeleccionMultiFiltro(filtro)
+                        .map(normalizar);
+
+                    if (seleccionados.length === 0) {
+                        return;
+                    }
+
+                    const valorFila = obtenerValorFiltroFila(fila, columna);
+
+                    if (!seleccionados.includes(valorFila)) {
+                        coincide = false;
+                    }
+
+                    return;
+
+                }
+
                 const valorFiltro = normalizar(filtro.value);
 
                 if (valorFiltro === '') {
@@ -638,7 +694,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
 
             filtros.forEach(filtro => {
-                filtro.value = '';
+
+                if (filtro.classList.contains('multi-select-filter')) {
+                    window.limpiarMultiFiltro(filtro);
+                } else {
+                    filtro.value = '';
+                }
+
             });
 
             paginaActual = 1;
@@ -804,6 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleDireccion = document.getElementById('detalleEmpresaDireccion');
     const detalleTelefono = document.getElementById('detalleEmpresaTelefono');
     const detalleEmail = document.getElementById('detalleEmpresaEmail');
+    const detalleEstado = document.getElementById('detalleEmpresaEstado');
     const btnDetalleEditar = document.getElementById('btnDetalleEditarEmpresa');
     const btnDetalleEliminar = document.getElementById('btnDetalleEliminarEmpresa');
 
@@ -841,6 +904,10 @@ document.addEventListener('DOMContentLoaded', () => {
             detalleEmail.textContent = fila.dataset.email || '—';
         }
 
+        if (detalleEstado) {
+            detalleEstado.textContent = fila.dataset.estado || '—';
+        }
+
         if (btnDetalleEditar) {
             btnDetalleEditar.href = 'editar_empresa.php?id=' + encodeURIComponent(fila.dataset.id);
         }
@@ -866,15 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filas.forEach(fila => {
 
         fila.addEventListener('click', () => {
-
-            // En escritorio la fila no es clicable: ahí ya
-            // se ve todo en la propia tabla.
-            if (!esMovil()) {
-                return;
-            }
-
             abrirModalDetalleEmpresa(fila);
-
         });
 
     });

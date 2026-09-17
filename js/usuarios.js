@@ -16,12 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'Este campo es obligatorio.';
         }
 
-        if (texto.length < 2) {
-            return 'Debe tener al menos 2 caracteres.';
+        if (/^[-']/.test(texto)) {
+            return 'Debe empezar con una letra.';
         }
 
-        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ'\- ]+$/.test(texto)) {
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'\- ]*[A-Za-zÀ-ÖØ-öø-ÿ])?$/.test(texto)) {
             return 'Solo se permiten letras, espacios, guiones y apóstrofos.';
+        }
+
+        if (texto.length < 2) {
+            return 'Debe tener al menos 2 caracteres.';
         }
 
         return null;
@@ -36,12 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'Este campo es obligatorio.';
         }
 
-        if (texto.length < 2) {
-            return 'Debe tener al menos 2 caracteres.';
+        if (!/^[a-z]+$/.test(texto)) {
+            return 'Solo se permiten letras minúsculas, sin números, espacios ni caracteres especiales.';
         }
 
-        if (!/^[A-Za-z0-9._]+$/.test(texto)) {
-            return 'Solo letras sin acentos, números, puntos y guiones bajos (sin espacios).';
+        if (texto.length < 3) {
+            return 'Debe tener al menos 3 caracteres.';
         }
 
         return null;
@@ -97,6 +101,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+    function validarMotivoInactivo(valor) {
+
+        const estado = document.getElementById('estado');
+
+        if (estado && estado.value === 'Inactivo' && valor.trim() === '') {
+            return 'Indica el motivo por el que el usuario pasa a inactivo.';
+        }
+
+        return null;
+
+    }
+
     const VALIDADORES_USUARIO = {
         nombre: validarNombreApellidos,
         apellidos: validarNombreApellidos,
@@ -104,7 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
         email: validarEmail,
         telefono: validarTelefono,
         id_empresa: validarSeleccionRequerida,
-        id_rol: validarSeleccionRequerida
+        id_rol: validarSeleccionRequerida,
+        estado: validarSeleccionRequerida,
+        motivo_inactivo: validarMotivoInactivo
     };
 
     function validarCampoUsuario(input) {
@@ -283,6 +301,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       00B. MOTIVO DE INACTIVO
+       El textarea solo se muestra (y solo hace falta
+       rellenarlo) cuando el estado elegido es "Inactivo".
+    ========================================================= */
+
+    function actualizarVisibilidadMotivoInactivo() {
+
+        const estado = document.getElementById('estado');
+        const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
+
+        if (!estado || !grupoMotivo) {
+            return;
+        }
+
+        grupoMotivo.classList.toggle('hidden', estado.value !== 'Inactivo');
+
+    }
+
+    const estadoUsuarioSelect = document.getElementById('estado');
+
+    if (estadoUsuarioSelect) {
+
+        actualizarVisibilidadMotivoInactivo();
+
+        estadoUsuarioSelect.addEventListener('change', () => {
+
+            actualizarVisibilidadMotivoInactivo();
+
+            const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
+            const motivo = document.getElementById('motivo_inactivo');
+
+            if (grupoMotivo && grupoMotivo.classList.contains('hidden') && motivo) {
+                motivo.classList.remove('input-error');
+                const contenedorError = document.getElementById('error-motivo_inactivo');
+                if (contenedorError) {
+                    contenedorError.textContent = '';
+                }
+            }
+
+        });
+
+    }
+
+
+    /* =========================================================
        01. ELEMENTOS DEL DOM
     ========================================================= */
 
@@ -402,6 +465,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       06B. VALOR "LIMPIO" DE UNA COLUMNA PARA LOS FILTROS
+       DESPLEGABLES
+       =========================================================
+       La celda de "Usuario" (columna 0) mezcla en su texto el
+       nombre completo y el @username, así que no sirve para
+       comparar contra las opciones del desplegable (que son
+       solo nombres completos). Usamos los data-* de la fila,
+       que ya traen el valor limpio de cada campo.
+    ========================================================= */
+
+    const CAMPO_POR_COLUMNA = {
+        0: 'nombre',
+        1: 'email',
+        2: 'telefono',
+        3: 'rol',
+        4: 'empresa',
+        5: 'estado'
+    };
+
+    function obtenerValorFiltroFila(fila, columna) {
+
+        const campo = CAMPO_POR_COLUMNA[columna];
+
+        if (campo && fila.dataset[campo] !== undefined) {
+            return normalizar(fila.dataset[campo]);
+        }
+
+        return obtenerTextoCelda(fila, columna);
+
+    }
+
+
+    /* =========================================================
        07. FILTRADO
     ========================================================= */
 
@@ -433,13 +529,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    const valorCelda =
-                        obtenerTextoCelda(
+                    const valorFila =
+                        obtenerValorFiltroFila(
                             fila,
                             columna
                         );
 
-                    if (!seleccionados.includes(valorCelda)) {
+                    if (!seleccionados.includes(valorFila)) {
                         coincide = false;
                     }
 
@@ -1238,6 +1334,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleTelefono = document.getElementById('detalleUsuarioTelefono');
     const detalleRol = document.getElementById('detalleUsuarioRol');
     const detalleEmpresa = document.getElementById('detalleUsuarioEmpresa');
+    const detalleEstado = document.getElementById('detalleUsuarioEstado');
+    const detallePasswordEstado = document.getElementById('detalleUsuarioPasswordEstado');
+    const detalleMotivoItem = document.getElementById('detalleUsuarioMotivoItem');
+    const detalleMotivo = document.getElementById('detalleUsuarioMotivo');
     const btnDetalleEditar = document.getElementById('btnDetalleEditarUsuario');
     const btnDetalleEliminar = document.getElementById('btnDetalleEliminarUsuario');
 
@@ -1256,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (detalleUsername) {
-            detalleUsername.textContent = '@' + (fila.dataset.usuario || '');
+            detalleUsername.textContent = fila.dataset.usuario || '';
         }
 
         if (detalleEmail) {
@@ -1273,6 +1373,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (detalleEmpresa) {
             detalleEmpresa.textContent = fila.dataset.empresa || '—';
+        }
+
+        if (detalleEstado) {
+            detalleEstado.textContent = fila.dataset.estado || '—';
+        }
+
+        if (detallePasswordEstado) {
+            detallePasswordEstado.textContent = fila.dataset.passwordEstado || '—';
+        }
+
+        if (detalleMotivoItem) {
+            const esInactivo = fila.dataset.estado === 'Inactivo';
+            detalleMotivoItem.classList.toggle('hidden', !esInactivo);
+
+            if (detalleMotivo) {
+                detalleMotivo.textContent = fila.dataset.motivo || '—';
+            }
         }
 
         if (btnDetalleEditar) {
@@ -1300,15 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filas.forEach(fila => {
 
         fila.addEventListener('click', () => {
-
-            // En escritorio la fila no es clicable: ahí ya
-            // se ve todo en la propia tabla.
-            if (!esMovil()) {
-                return;
-            }
-
             abrirModalDetalleUsuario(fila);
-
         });
 
     });
@@ -1514,7 +1623,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
-       23. PAGINACIÓN INICIAL
+       23. RESTABLECER CONTRASEÑA DESDE EL LISTADO
+       Mismo patrón que el modal de eliminación: un único
+       modal reutilizado por todas las filas, con el id del
+       usuario objetivo guardado en una variable hasta que
+       se confirma o se cancela.
+    ========================================================= */
+
+    let usuarioResetPasswordId = 0;
+
+    const modalResetPasswordListado = document.getElementById('modalResetPasswordListado');
+    const nombreUsuarioResetPassword = document.getElementById('nombreUsuarioResetPassword');
+
+    window.abrirModalResetPasswordListado = function (id, nombre) {
+
+        usuarioResetPasswordId = Number(id);
+
+        if (nombreUsuarioResetPassword) {
+            nombreUsuarioResetPassword.textContent = nombre;
+        }
+
+        if (modalResetPasswordListado) {
+            modalResetPasswordListado.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    };
+
+    window.cerrarModalResetPasswordListado = function () {
+
+        usuarioResetPasswordId = 0;
+
+        if (modalResetPasswordListado) {
+            modalResetPasswordListado.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    window.confirmarResetPasswordListado = function () {
+
+        if (usuarioResetPasswordId <= 0) {
+            return;
+        }
+
+        window.location.href =
+            'resetear_password.php?id=' + encodeURIComponent(usuarioResetPasswordId);
+
+    };
+
+    if (modalResetPasswordListado) {
+
+        modalResetPasswordListado.addEventListener('click', event => {
+
+            if (event.target === modalResetPasswordListado) {
+                window.cerrarModalResetPasswordListado();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && usuarioResetPasswordId > 0) {
+            window.cerrarModalResetPasswordListado();
+        }
+
+    });
+
+
+    /* =========================================================
+       24. PAGINACIÓN INICIAL
     ========================================================= */
 
     mostrarPagina();

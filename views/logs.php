@@ -32,6 +32,7 @@ if (!empty($rolesVisibles)) {
 
     $stmt = $pdo->prepare("
         SELECT
+            id,
             fecha_hora,
             tipo,
             usuario,
@@ -75,6 +76,30 @@ $usuariosFiltro = array_values(array_unique(array_column($logs, 'usuario')));
 sort($usuariosFiltro);
 
 $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
+
+
+// =====================================================
+// VALORES DISTINTOS PARA LOS DESPLEGABLES DE FECHA/
+// EVENTO/IP
+// =====================================================
+
+$fechasFiltro = array_values(array_unique(array_map(
+    fn(array $log): string => date('d/m/Y', strtotime($log['fecha_hora'])),
+    $logs
+)));
+
+usort($fechasFiltro, fn(string $a, string $b): int =>
+    DateTime::createFromFormat('d/m/Y', $a) <=> DateTime::createFromFormat('d/m/Y', $b)
+);
+
+$eventosFiltro = array_values(array_unique(array_column($logs, 'evento')));
+sort($eventosFiltro);
+
+$descripcionesFiltro = array_values(array_unique(array_column($logs, 'descripcion')));
+sort($descripcionesFiltro);
+
+$ipsFiltro = array_values(array_unique(array_column($logs, 'ip')));
+sort($ipsFiltro);
 
 ?>
 <!DOCTYPE html>
@@ -129,6 +154,10 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
 
             <div class="logs-actions">
 
+                <button type="button" class="logs-btn" id="btnExportarPDF">
+                    📄 Exportar PDF
+                </button>
+
                 <button class="logs-btn" onclick="location.reload()">
                     🔄 Actualizar
                 </button>
@@ -139,85 +168,13 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
 
 
         <!-- =========================
-             FILTROS
-        ========================== -->
-
-        <div class="logs-filters">
-
-
-            <div class="filter-group">
-
-                <label>
-                    Tipo de evento
-                </label>
-
-                <?php filtroMultiSelect('tipo', 1, 'Todos', $tiposFiltro); ?>
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label>
-                    Usuario
-                </label>
-
-                <?php filtroMultiSelect('usuario', 2, 'Todos los usuarios', $usuariosFiltro); ?>
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label for="fecha">
-                    Fecha
-                </label>
-
-                <input
-                    type="date"
-                    id="fecha"
-                >
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label for="evento">
-                    Evento
-                </label>
-
-                <input
-                    type="text"
-                    id="evento"
-                    placeholder="Buscar evento..."
-                >
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label for="ip">
-                    IP
-                </label>
-
-                <input
-                    type="text"
-                    id="ip"
-                    placeholder="Buscar IP..."
-                >
-
-            </div>
-
-
-
-        </div>
-
-
-        <!-- =========================
              TABLA DE LOGS
+             (tabla, filtros por columna, "mostrar por
+             página" y paginación, todo dentro de la misma
+             "caja", igual que en Clientes/Usuarios/Empresas)
         ========================== -->
+
+        <section class="panel logs-table-panel">
 
         <div class="logs-table-container">
 
@@ -283,6 +240,49 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
             </span>
         </th>
 
+        <th></th>
+
+    </tr>
+
+
+    <!-- =================================================
+         FILTROS POR COLUMNA
+         (mismo sitio que en Clientes/Usuarios/Empresas:
+         una fila bajo las cabeceras, dentro de la tabla)
+    ================================================== -->
+
+    <tr class="logs-filter-row-table">
+
+        <th>
+            <?php filtroMultiSelect('fecha', 0, 'Todas las fechas', $fechasFiltro); ?>
+        </th>
+
+        <th>
+            <?php filtroMultiSelect('tipo', 1, 'Todos', $tiposFiltro); ?>
+        </th>
+
+        <th>
+            <?php filtroMultiSelect('usuario', 2, 'Todos', $usuariosFiltro); ?>
+        </th>
+
+        <th>
+            <?php filtroMultiSelect('evento', 3, 'Todos', $eventosFiltro); ?>
+        </th>
+
+        <th>
+            <?php filtroMultiSelect('descripcion', 4, 'Todas', $descripcionesFiltro); ?>
+        </th>
+
+        <th>
+            <?php filtroMultiSelect('ip', 5, 'Todas', $ipsFiltro); ?>
+        </th>
+
+        <th>
+            <button type="button" class="panel-action" id="btnLimpiarFiltros">
+                Limpiar filtros
+            </button>
+        </th>
+
     </tr>
 
 </thead>
@@ -292,7 +292,16 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
 
                     <?php foreach ($logs as $log): ?>
 
-                        <tr>
+                        <tr
+                            class="fila-detalle"
+                            data-id="<?= (int) $log['id'] ?>"
+                            data-fecha="<?= htmlspecialchars(date('d/m/Y H:i:s', strtotime($log['fecha_hora'])), ENT_QUOTES, 'UTF-8') ?>"
+                            data-tipo="<?= htmlspecialchars($log['tipo'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-usuario="<?= htmlspecialchars($log['usuario'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-evento="<?= htmlspecialchars($log['evento'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-descripcion="<?= htmlspecialchars($log['descripcion'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-ip="<?= htmlspecialchars($log['ip'], ENT_QUOTES, 'UTF-8') ?>"
+                        >
 
                             <td class="log-date">
                                 <?= htmlspecialchars(date('d/m/Y H:i:s', strtotime($log['fecha_hora']))) ?>
@@ -321,6 +330,8 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
                             <td>
                                 <?= htmlspecialchars($log['ip']) ?>
                             </td>
+
+                            <td></td>
 
                         </tr>
 
@@ -396,6 +407,8 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
 
         </div>
 
+        </section>
+
 
     </main>
 
@@ -405,8 +418,64 @@ $tiposFiltro = ['Información', 'Éxito', 'Advertencia', 'Error'];
 
 <?php include '../templates/footer.php'; ?>
 
+
+<!-- =====================================================
+     VENTANA DE DETALLE
+====================================================== -->
+
+<div id="modalDetalleLog" class="modal-overlay" style="display: none;">
+
+    <div class="modal-detalle">
+
+        <div class="modal-detalle-header">
+
+            <div class="modal-detalle-avatar" id="detalleLogAvatar"></div>
+
+            <div class="modal-detalle-titulo">
+                <h2 id="detalleLogEvento"></h2>
+                <span id="detalleLogFecha"></span>
+            </div>
+
+            <button type="button" class="modal-detalle-close" onclick="window.cerrarModalDetalleLog()"
+                aria-label="Cerrar">
+                ✕
+            </button>
+
+        </div>
+
+        <div class="usuario-detalle-grid">
+
+            <div class="usuario-detalle-item">
+                <span>Tipo</span>
+                <strong><span id="detalleLogTipo" class="log-badge"></span></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Usuario</span>
+                <strong id="detalleLogUsuario"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>Descripción</span>
+                <strong id="detalleLogDescripcion"></strong>
+            </div>
+
+            <div class="usuario-detalle-item">
+                <span>IP</span>
+                <strong id="detalleLogIp"></strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="../js/exportar-pdf.js"></script>
 <script src="../js/multi-select-filter.js"></script>
 <script src="../js/logs.js"></script>
+<script src="../js/modal-detalle.js"></script>
 
 </body>
 

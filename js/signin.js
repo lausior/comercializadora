@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
             campo.type =
                 mostrar ? 'text' : 'password';
 
-            boton.textContent =
-                mostrar ? '🙈' : '👁';
+            boton.innerHTML =
+                mostrar ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
 
             boton.setAttribute(
                 'aria-label',
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const regex =
-            /^[A-Za-zÁÉÍÓÚáéíóúÜüÑñÀ-ÿ\s'-]+$/;
+            /^[A-Za-zÁÉÍÓÚáéíóúÜüÑñÀ-ÿ](?:[A-Za-zÁÉÍÓÚáéíóúÜüÑñÀ-ÿ\s'-]*[A-Za-zÁÉÍÓÚáéíóúÜüÑñÀ-ÿ])?$/;
 
         if (!regex.test(valor)) {
 
