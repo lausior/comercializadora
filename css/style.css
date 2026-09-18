@@ -1382,12 +1382,14 @@ textarea:focus-visible {
 }
 
 .confirmation-card {
-    width: min(100%, 680px);
+    width: min(100%, 760px);
     margin-right: auto;
     margin-left: auto;
 }
 
 .confirmation-card .usuario-detalle-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-right: auto;
     margin-left: auto;
 }

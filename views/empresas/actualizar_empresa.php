@@ -205,16 +205,164 @@ $stmt->execute([
     ':id'             => $id,
 ]);
 
+$stmtDatos = $pdo->prepare("
+    SELECT
+        id,
+        codigo_empresa,
+        nombre,
+        cif,
+        direccion,
+        telefono,
+        email,
+        estado
+    FROM empresas
+    WHERE id = ?
+    LIMIT 1
+");
+
+$stmtDatos->execute([$id]);
+
+$empresa = $stmtDatos->fetch(PDO::FETCH_ASSOC);
+
+if (!$empresa) {
+
+    die('
+        <h2>Error</h2>
+
+        <p>
+            La empresa se actualizó, pero no se pudieron recuperar sus datos.
+        </p>
+
+        <p>
+            <a href="empresas.php">
+                Volver a empresas
+            </a>
+        </p>
+    ');
+
+}
+
 registrarLog(
     LOG_EXITO,
     'Empresa modificada',
     'Se ha modificado la empresa "' . $nombre . '".'
 );
 
+?>
 
-// =====================================================
-// VOLVER AL LISTADO
-// =====================================================
+<!DOCTYPE html>
+<html lang="es">
 
-header('Location: empresas.php');
-exit;
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Empresa actualizada - Comparador Eléctrico</title>
+
+    <link rel="stylesheet" href="../../css/style.css">
+
+</head>
+
+<body>
+
+    <?php include '../../templates/header.php'; ?>
+
+    <div class="app-container">
+
+        <?php include '../../templates/sidebar.php'; ?>
+
+        <main class="main-content">
+
+            <div class="page-header">
+
+                <div>
+                    <h1>Empresas</h1>
+                    <p>Empresa actualizada correctamente</p>
+                </div>
+
+            </div>
+
+            <div class="config-card confirmation-card">
+
+                <h2>Empresa actualizada</h2>
+
+                <div class="form-info">
+                    <p>
+                        La empresa
+                        <strong><?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        se ha actualizado correctamente.
+                    </p>
+                </div>
+
+                <div class="usuario-detalle">
+
+                    <div class="usuario-detalle-grid">
+
+                        <div class="usuario-detalle-item">
+                            <span>ID de empresa</span>
+                            <strong><?= htmlspecialchars($empresa['id'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Código de empresa</span>
+                            <strong><?= htmlspecialchars($empresa['codigo_empresa'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Nombre</span>
+                            <strong><?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>CIF</span>
+                            <strong><?= htmlspecialchars($empresa['cif'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Dirección</span>
+                            <strong><?= htmlspecialchars($empresa['direccion'] ?? 'No indicada', ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Teléfono</span>
+                            <strong><?= htmlspecialchars($empresa['telefono'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Email</span>
+                            <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Estado</span>
+                            <strong><?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <a href="editar_empresa.php?id=<?= (int) $empresa['id'] ?>" class="config-save-button">
+                        Seguir editando
+                    </a>
+
+                    <a href="empresas.php" class="config-cancel-button">
+                        Volver a empresas
+                    </a>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <?php include '../../templates/footer.php'; ?>
+
+</body>
+
+</html>
