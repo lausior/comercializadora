@@ -519,6 +519,7 @@ sort($nifsFiltro);
 
     <script src="../../js/exportar-pdf.js"></script>
     <script src="../../js/multi-select-filter.js"></script>
+    <script src="../../js/notificacion-eliminacion.js"></script>
     <script src="../../js/clientes.js"></script>
     <script src="../../js/modal-detalle.js"></script>
 

@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -58,8 +59,14 @@ $motivoInactivo = trim($_POST['motivo_inactivo'] ?? '');
 
 $estadosValidos = ['Activo', 'Inactivo'];
 
+if ($id <= 0) {
+
+    header('Location: usuarios.php');
+    exit;
+
+}
+
 if (
-    $id <= 0 ||
     $username === '' ||
     $nombre === '' ||
     $apellidos === '' ||
@@ -69,37 +76,13 @@ if (
     !in_array($estado, $estadosValidos, true)
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Todos los campos obligatorios deben estar completos.
-        </p>
-
-        <p>
-            <a href="usuarios.php">
-                Volver a usuarios
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Todos los campos obligatorios deben estar completos.', $_POST, 'editar_usuario.php?id=' . $id);
 
 }
 
 if ($estado === 'Inactivo' && $motivoInactivo === '') {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Indica el motivo por el que el usuario se marca como inactivo.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Indica el motivo por el que el usuario se marca como inactivo.', $_POST, 'editar_usuario.php?id=' . $id, 'motivo_inactivo');
 
 }
 
@@ -110,19 +93,7 @@ if ($estado === 'Inactivo' && $motivoInactivo === '') {
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El correo electrónico no tiene un formato válido.
-        </p>
-
-        <p>
-            <a href="usuarios.php">
-                Volver a usuarios
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El correo electrónico no tiene un formato válido.', $_POST, 'editar_usuario.php?id=' . $id, 'email');
 
 }
 
@@ -132,7 +103,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // =====================================================
 
 $stmtUsuario = $pdo->prepare("
-    SELECT id, id_empresa, creado_por
+    SELECT id, id_empresa, id_rol, creado_por
     FROM usuarios
     WHERE id = ?
 ");
@@ -201,19 +172,7 @@ if (
     $idEmpresa !== (int) $usuarioExiste['id_empresa']
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes cambiar la empresa de este usuario.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('No puedes cambiar la empresa de este usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'id_empresa');
 
 }
 
@@ -236,19 +195,7 @@ $stmtUsername->execute([
 
 if ($stmtUsername->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El username ya está siendo utilizado por otro usuario.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El username ya está siendo utilizado por otro usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'username');
 
 }
 
@@ -271,19 +218,7 @@ $stmtEmail->execute([
 
 if ($stmtEmail->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El email ya está siendo utilizado por otro usuario.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El email ya está siendo utilizado por otro usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'email');
 
 }
 
@@ -307,19 +242,7 @@ $empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
 
 if (!$empresa) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            La empresa seleccionada no existe.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('La empresa seleccionada no existe.', $_POST, 'editar_usuario.php?id=' . $id, 'id_empresa');
 
 }
 
@@ -343,19 +266,7 @@ $rol = $stmtRol->fetch(PDO::FETCH_ASSOC);
 
 if (!$rol) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El rol seleccionado no existe.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El rol seleccionado no existe.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
 
 }
 
@@ -363,25 +274,20 @@ if (!$rol) {
 // =====================================================
 // COMPROBAR QUE PUEDE ASIGNAR ESE ROL
 // =====================================================
+//
+// EMPRESA no elige rol en el formulario: el campo no se
+// muestra, así que no puede cambiar el rol del usuario
+// (el desplegable normal ya no se lo deja elegir, pero
+// esto es lo que de verdad lo impide).
+//
+// =====================================================
 
 if (
     rolActual() === ROL_EMPRESA &&
-    !in_array($rol['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
+    $idRol !== (int) $usuarioExiste['id_rol']
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No puedes asignar ese rol.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('No puedes cambiar el rol de este usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
 
 }
 
@@ -390,19 +296,39 @@ if (
     $rol['nombre'] === ROL_SRG
 ) {
 
-    die('
-        <h2>Error</h2>
+    establecerErrorFormulario('No puedes asignar ese rol.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
 
-        <p>
-            No puedes asignar ese rol.
-        </p>
+}
 
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+
+// =====================================================
+// UNA EMPRESA SOLO PUEDE TENER UN USUARIO CON ROL EMPRESA
+// =====================================================
+//
+// Mismo criterio que guardar_usuario.php. Se excluye al
+// propio usuario que se está editando, para no bloquearle
+// a él mismo si es precisamente el que ya tenía ese rol.
+//
+// =====================================================
+
+if ($rol['nombre'] === ROL_EMPRESA) {
+
+    $stmtEmpresaYaTieneAdmin = $pdo->prepare("
+        SELECT id
+        FROM usuarios
+        WHERE id_empresa = ?
+            AND id_rol = (SELECT id FROM roles WHERE nombre = ? LIMIT 1)
+            AND id != ?
+        LIMIT 1
+    ");
+
+    $stmtEmpresaYaTieneAdmin->execute([$idEmpresa, ROL_EMPRESA, $id]);
+
+    if ($stmtEmpresaYaTieneAdmin->fetch()) {
+
+        establecerErrorFormulario('Esa empresa ya tiene un usuario con rol Empresa.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
+
+    }
 
 }
 
@@ -448,6 +374,21 @@ $stmtActualizar->execute([
     $estado === 'Inactivo' ? $motivoInactivo : null,
     $id
 ]);
+
+// El usuario con rol EMPRESA representa el acceso de su empresa.
+// Mantener ambos estados sincronizados evita que el listado de
+// empresas conserve un estado distinto al del acceso principal.
+if ($rol['nombre'] === ROL_EMPRESA) {
+
+    $stmtEmpresaEstado = $pdo->prepare("
+        UPDATE empresas
+        SET estado = ?
+        WHERE id = ?
+    ");
+
+    $stmtEmpresaEstado->execute([$estado, $idEmpresa]);
+
+}
 
 
 // =====================================================
@@ -643,7 +584,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
                  MENSAJE DE CONFIRMACIÓN
             ================================================== -->
 
-            <div class="config-card">
+            <div class="config-card confirmation-card">
 
 
                 <h2>

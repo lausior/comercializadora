@@ -476,14 +476,6 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-trash3"></i>
                                                 </button>
 
-                                                <a href="cambiar_estado_empresa.php?id=<?= (int) $empresa['id'] ?>"
-                                                    class="table-action-button icon-action-button estado-toggle <?= $empresa['estado'] === 'Activo' ? 'activo' : 'inactivo' ?>"
-                                                    title="<?= $empresa['estado'] === 'Activo' ? 'Activo — clic para desactivar' : 'Inactivo — clic para activar' ?>"
-                                                    onclick="event.stopPropagation();">
-                                                    <i
-                                                        class="bi <?= $empresa['estado'] === 'Activo' ? 'bi-unlock-fill' : 'bi-lock-fill' ?>"></i>
-                                                </a>
-
                                             </div>
 
                                         </td>
@@ -551,6 +543,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
     <script src="../../js/exportar-pdf.js"></script>
     <script src="../../js/multi-select-filter.js"></script>
+    <script src="../../js/notificacion-eliminacion.js"></script>
     <script src="../../js/empresas.js"></script>
     <script src="../../js/modal-detalle.js"></script>
 

@@ -6,75 +6,136 @@ require_once '../../config/permisos.php';
 requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
-// OBTENER EMPRESAS
+// ERROR PENDIENTE (SI VENIMOS DE guardar_usuario.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
+
+
+// =====================================================
+// EMPRESA: NI EMPRESA NI ROL SON ELEGIBLES
 // =====================================================
 //
-// EMPRESA solo puede crear usuarios para su propia
-// empresa. SRG y NG pueden elegir cualquiera (NG la
-// necesita para dar de alta al primer usuario de una
-// empresa nueva).
+// Un usuario con rol EMPRESA solo puede dar de alta
+// usuarios de su propia empresa y con rol USUARIO (equipo
+// simple), así que ni la empresa ni el rol se muestran
+// como campos del formulario: se fijan directamente al
+// guardar (ver guardar_usuario.php).
 //
 // =====================================================
 
-if (rolActual() === ROL_EMPRESA) {
+$esEmpresa = rolActual() === ROL_EMPRESA;
 
-    $stmtEmpresas = $pdo->prepare("
-        SELECT id, nombre
-        FROM empresas
-        WHERE id = ?
+if ($esEmpresa) {
+
+    $stmtRolUsuario = $pdo->prepare("
+        SELECT id
+        FROM roles
+        WHERE nombre = ?
+        LIMIT 1
     ");
 
-    $stmtEmpresas->execute([$_SESSION['id_empresa']]);
+    $stmtRolUsuario->execute([ROL_USUARIO]);
 
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+    $idRolUsuario = (int) $stmtRolUsuario->fetchColumn();
 
 } else {
 
-    $stmtEmpresas = $pdo->query("
+
+    // =====================================================
+    // OBTENER EMPRESAS
+    // =====================================================
+    //
+    // NG solo para las empresas que ha creado él mismo
+    // (igual que en el resto de la app, ver
+    // puedeVerEmpresa() en permisos.php). SRG puede elegir
+    // cualquiera.
+    //
+    // =====================================================
+
+    if (rolActual() === ROL_NG) {
+
+        $stmtEmpresas = $pdo->prepare("
+            SELECT id, nombre
+            FROM empresas
+            WHERE creado_por = ?
+            ORDER BY nombre
+        ");
+
+        $stmtEmpresas->execute([$_SESSION['id_usuario']]);
+
+        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+    } else {
+
+        $stmtEmpresas = $pdo->query("
+            SELECT id, nombre
+            FROM empresas
+            ORDER BY nombre
+        ");
+
+        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+
+    }
+
+
+    // =====================================================
+    // OBTENER ROLES
+    // =====================================================
+    //
+    // Nadie puede crear un usuario con un rol más
+    // privilegiado que el suyo propio: NG no puede crear
+    // otro SRG.
+    //
+    // =====================================================
+
+    $stmtRoles = $pdo->query("
         SELECT id, nombre
-        FROM empresas
-        ORDER BY nombre
+        FROM roles
+        ORDER BY id
     ");
 
-    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
+    $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
 
-}
+    if (rolActual() === ROL_NG) {
+
+        $roles = array_values(array_filter(
+            $roles,
+            fn(array $r): bool => $r['nombre'] !== ROL_SRG
+        ));
+
+    }
 
 
-// =====================================================
-// OBTENER ROLES
-// =====================================================
-//
-// Nadie puede crear un usuario con un rol más privilegiado
-// que el suyo propio: EMPRESA solo puede dar de alta
-// EMPRESA o USUARIO; NG no puede crear otro SRG.
-//
-// =====================================================
+    // =====================================================
+    // EMPRESAS QUE YA TIENEN UN USUARIO CON ROL EMPRESA
+    // =====================================================
+    //
+    // Una empresa solo puede tener UN usuario con rol
+    // EMPRESA (su "admin"). Si la empresa elegida ya tiene
+    // uno, el campo Rol se bloquea en USUARIO en el propio
+    // formulario (ver el <script> más abajo) y también se
+    // vuelve a comprobar al guardar (ver guardar_usuario.php).
+    //
+    // =====================================================
 
-$stmtRoles = $pdo->query("
-    SELECT id, nombre
-    FROM roles
-    ORDER BY id
-");
+    $stmtEmpresasConAdmin = $pdo->prepare("
+        SELECT DISTINCT id_empresa
+        FROM usuarios
+        WHERE id_rol = (SELECT id FROM roles WHERE nombre = ? LIMIT 1)
+    ");
 
-$roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
+    $stmtEmpresasConAdmin->execute([ROL_EMPRESA]);
 
-if (rolActual() === ROL_EMPRESA) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => in_array($r['nombre'], [ROL_EMPRESA, ROL_USUARIO], true)
-    ));
-
-} elseif (rolActual() === ROL_NG) {
-
-    $roles = array_values(array_filter(
-        $roles,
-        fn(array $r): bool => $r['nombre'] !== ROL_SRG
-    ));
+    $empresasConRolEmpresa = array_map(
+        'intval',
+        array_column($stmtEmpresasConAdmin->fetchAll(PDO::FETCH_ASSOC), 'id_empresa')
+    );
 
 }
 
@@ -164,7 +225,10 @@ if (rolActual() === ROL_EMPRESA) {
                          MENSAJE DE ERROR GENERAL
                     ========================== -->
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
 
                     <div class="form-grid">
@@ -180,9 +244,11 @@ if (rolActual() === ROL_EMPRESA) {
                                 Nombre
                             </label>
 
-                            <input type="text" id="nombre" name="nombre" required>
+                            <input type="text" id="nombre" name="nombre"
+                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nombre') ?>" required>
 
-                            <span class="field-error" id="error-nombre"></span>
+                            <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
 
                         </div>
 
@@ -197,9 +263,11 @@ if (rolActual() === ROL_EMPRESA) {
                                 Apellidos
                             </label>
 
-                            <input type="text" id="apellidos" name="apellidos" required>
+                            <input type="text" id="apellidos" name="apellidos"
+                                class="<?= claseErrorCampo($errorFormulario, 'apellidos') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'apellidos') ?>" required>
 
-                            <span class="field-error" id="error-apellidos"></span>
+                            <span class="field-error" id="error-apellidos"><?= mensajeErrorCampo($errorFormulario, 'apellidos') ?></span>
 
                         </div>
 
@@ -214,9 +282,11 @@ if (rolActual() === ROL_EMPRESA) {
                                 Username
                             </label>
 
-                            <input type="text" id="username" name="username" required>
+                            <input type="text" id="username" name="username"
+                                class="<?= claseErrorCampo($errorFormulario, 'username') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'username') ?>" required>
 
-                            <span class="field-error" id="error-username"></span>
+                            <span class="field-error" id="error-username"><?= mensajeErrorCampo($errorFormulario, 'username') ?></span>
 
                         </div>
 
@@ -231,9 +301,11 @@ if (rolActual() === ROL_EMPRESA) {
                                 Email
                             </label>
 
-                            <input type="email" id="email" name="email" required>
+                            <input type="email" id="email" name="email"
+                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'email') ?>" required>
 
-                            <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
 
                         </div>
 
@@ -248,77 +320,100 @@ if (rolActual() === ROL_EMPRESA) {
                                 Teléfono
                             </label>
 
-                            <input type="tel" id="telefono" name="telefono">
+                            <input type="tel" id="telefono" name="telefono"
+                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'telefono') ?>">
 
-                            <span class="field-error" id="error-telefono"></span>
+                            <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
 
                         </div>
 
 
-                        <!-- =========================
-                             EMPRESA
-                        ========================== -->
+                        <?php if ($esEmpresa): ?>
 
-                        <div class="form-group">
+                            <!-- Un usuario con rol EMPRESA siempre da de
+                                 alta usuarios de su propia empresa y con
+                                 rol USUARIO: no hay nada que elegir, así
+                                 que se envían como campos ocultos. -->
 
-                            <label for="id_empresa">
-                                Empresa
-                            </label>
+                            <input type="hidden" id="id_empresa" name="id_empresa"
+                                value="<?= (int) $_SESSION['id_empresa'] ?>">
 
-                            <select id="id_empresa" name="id_empresa" required>
+                            <input type="hidden" id="id_rol" name="id_rol"
+                                value="<?= $idRolUsuario ?>">
 
-                                <option value="">
-                                    Seleccionar empresa
-                                </option>
+                        <?php else: ?>
 
+                            <!-- =========================
+                                 EMPRESA
+                            ========================== -->
 
-                                <?php foreach ($empresas as $empresa): ?>
+                            <div class="form-group">
 
-                                    <option value="<?= $empresa['id'] ?>">
-                                        <?= htmlspecialchars($empresa['nombre']) ?>
+                                <label for="id_empresa">
+                                    Empresa
+                                </label>
+
+                                <select id="id_empresa" name="id_empresa"
+                                    class="<?= claseErrorCampo($errorFormulario, 'id_empresa') ?>" required>
+
+                                    <option value="">
+                                        Seleccionar empresa
                                     </option>
 
-                                <?php endforeach; ?>
+
+                                    <?php foreach ($empresas as $empresa): ?>
+
+                                        <option value="<?= $empresa['id'] ?>"
+                                            <?= (($datosPrevios['id_empresa'] ?? '') == $empresa['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($empresa['nombre']) ?>
+                                        </option>
+
+                                    <?php endforeach; ?>
 
 
-                            </select>
+                                </select>
 
-                            <span class="field-error" id="error-id_empresa"></span>
+                                <span class="field-error" id="error-id_empresa"><?= mensajeErrorCampo($errorFormulario, 'id_empresa') ?></span>
 
-                        </div>
-
-
-                        <!-- =========================
-                             ROL
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="id_rol">
-                                Rol
-                            </label>
-
-                            <select id="id_rol" name="id_rol" required>
-
-                                <option value="">
-                                    Seleccionar rol
-                                </option>
+                            </div>
 
 
-                                <?php foreach ($roles as $rol): ?>
+                            <!-- =========================
+                                 ROL
+                            ========================== -->
 
-                                    <option value="<?= $rol['id'] ?>">
-                                        <?= htmlspecialchars($rol['nombre']) ?>
+                            <div class="form-group">
+
+                                <label for="id_rol">
+                                    Rol
+                                </label>
+
+                                <select id="id_rol" name="id_rol"
+                                    class="<?= claseErrorCampo($errorFormulario, 'id_rol') ?>" required>
+
+                                    <option value="">
+                                        Seleccionar rol
                                     </option>
 
-                                <?php endforeach; ?>
+
+                                    <?php foreach ($roles as $rol): ?>
+
+                                        <option value="<?= $rol['id'] ?>" data-rol="<?= htmlspecialchars($rol['nombre']) ?>"
+                                            <?= (($datosPrevios['id_rol'] ?? '') == $rol['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($rol['nombre']) ?>
+                                        </option>
+
+                                    <?php endforeach; ?>
 
 
-                            </select>
+                                </select>
 
-                            <span class="field-error" id="error-id_rol"></span>
+                                <span class="field-error" id="error-id_rol"><?= mensajeErrorCampo($errorFormulario, 'id_rol') ?></span>
 
-                        </div>
+                            </div>
+
+                        <?php endif; ?>
 
 
                         <!-- =========================
@@ -331,14 +426,17 @@ if (rolActual() === ROL_EMPRESA) {
                                 Estado
                             </label>
 
-                            <select id="estado" name="estado" required>
+                            <?php $estadoPrevio = $datosPrevios['estado'] ?? 'Activo'; ?>
 
-                                <option value="Activo" selected>Activo</option>
-                                <option value="Inactivo">Inactivo</option>
+                            <select id="estado" name="estado"
+                                class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" required>
+
+                                <option value="Activo" <?= $estadoPrevio === 'Activo' ? 'selected' : '' ?>>Activo</option>
+                                <option value="Inactivo" <?= $estadoPrevio === 'Inactivo' ? 'selected' : '' ?>>Inactivo</option>
 
                             </select>
 
-                            <span class="field-error" id="error-estado"></span>
+                            <span class="field-error" id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
 
                         </div>
 
@@ -350,16 +448,17 @@ if (rolActual() === ROL_EMPRESA) {
                          MOTIVO (SOLO SI INACTIVO)
                     ========================== -->
 
-                    <div class="form-group hidden" id="grupo_motivo_inactivo">
+                    <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
                             Motivo
                         </label>
 
                         <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
-                            placeholder="Explica por qué el usuario se marca como inactivo"></textarea>
+                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>"
+                            placeholder="Explica por qué el usuario se marca como inactivo"><?= valorFormulario($datosPrevios, 'motivo_inactivo') ?></textarea>
 
-                        <span class="field-error" id="error-motivo_inactivo"></span>
+                        <span class="field-error" id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
 
                     </div>
 
@@ -419,6 +518,25 @@ if (rolActual() === ROL_EMPRESA) {
 
 
     <script src="../../js/usuarios.js"></script>
+
+    <?php if (!$esEmpresa): ?>
+
+        <!-- =================================================
+             BLOQUEAR ROL A "USUARIO" SEGÚN LA EMPRESA ELEGIDA
+             =================================================
+             Una empresa solo puede tener un usuario con rol
+             EMPRESA. Si la empresa seleccionada ya tiene uno,
+             el desplegable Rol se fija en "Usuario" y se
+             bloquea (ver bloquearRolSegunEmpresa() en
+             usuarios.js). Los ids vienen ya filtrados por lo
+             que este actor puede ver (ver crear_usuario.php).
+        ================================================== -->
+
+        <script>
+            window.EMPRESAS_CON_ROL_EMPRESA = <?= json_encode($empresasConRolEmpresa) ?>;
+        </script>
+
+    <?php endif; ?>
 
 </body>
 

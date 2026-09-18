@@ -8,6 +8,7 @@ requerirPermiso('empresas');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -61,65 +62,41 @@ if (
     $cif === ''
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Faltan datos obligatorios.
-        </p>
-
-        <p>
-            <a href="editar_empresa.php?id=' . (int) $id . '">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Faltan datos obligatorios.', $_POST, 'editar_empresa.php?id=' . $id);
 
 }
 
-if (!validarNombre($nombre)) {
+if (!validarNombreEmpresa($nombre)) {
 
-    if (preg_match("/^[-']/", $nombre)) {
-        die('El nombre de la empresa debe empezar con una letra.');
+    if (preg_match("/^[-'.]/", $nombre)) {
+        establecerErrorFormulario('El nombre de la empresa debe empezar con una letra.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
     }
 
-    die('El nombre de la empresa no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('El nombre de la empresa no es válido. Solo se permiten letras, números, espacios, guiones, apóstrofes y puntos.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
 
 }
 
 if (!validarCIF($cif)) {
 
-    die('El CIF no es válido.');
+    establecerErrorFormulario('El CIF no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'cif');
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    die('La dirección no es válida.');
+    establecerErrorFormulario('La dirección no es válida.', $_POST, 'editar_empresa.php?id=' . $id, 'direccion');
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'editar_empresa.php?id=' . $id, 'telefono');
 
 }
 
 if ($email !== '' && !validarEmail($email)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El email no es válido.
-        </p>
-
-        <p>
-            <a href="editar_empresa.php?id=' . (int) $id . '">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El email no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'email');
 
 }
 
@@ -199,19 +176,7 @@ $stmt->execute([$cif, $id]);
 
 if ($stmt->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Ya existe otra empresa con ese CIF.
-        </p>
-
-        <p>
-            <a href="editar_empresa.php?id=' . (int) $id . '">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Ya existe otra empresa con ese CIF.', $_POST, 'editar_empresa.php?id=' . $id, 'cif');
 
 }
 

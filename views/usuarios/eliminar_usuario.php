@@ -184,6 +184,26 @@ registrarLog(
     'Se ha eliminado el usuario "' . $usuario['username'] . '".'
 );
 
+if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    echo json_encode([
+        'ok' => true,
+        'tipo' => 'Usuario',
+        'nombre' => $nombreCompleto,
+        'campos' => [
+            'ID' => $usuario['id'],
+            'Username' => '@' . $usuario['username'],
+            'Email' => $usuario['email'],
+            'Empresa' => $usuario['empresa'],
+            'Rol' => $usuario['rol'],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>

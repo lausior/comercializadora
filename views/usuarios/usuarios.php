@@ -791,6 +791,35 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-key"></i>
                                                 </button>
 
+                                                <?php if ($usuario['estado'] === 'Activo'): ?>
+
+                                                    <!-- Desactivar pide motivo, así que abre un
+                                                         modal en vez de ir directo (igual que al
+                                                         crear/editar con estado Inactivo). -->
+
+                                                    <button type="button"
+                                                        class="table-action-button icon-action-button estado-toggle activo"
+                                                        title="Activo — clic para desactivar"
+                                                        onclick="event.stopPropagation(); window.abrirModalDesactivarUsuario(
+        <?= (int) $usuario['id'] ?>,
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                        <i class="bi bi-unlock-fill"></i>
+                                                    </button>
+
+                                                <?php else: ?>
+
+                                                    <!-- Activar no necesita motivo: va directo. -->
+
+                                                    <a href="cambiar_estado_usuario.php?id=<?= (int) $usuario['id'] ?>"
+                                                        class="table-action-button icon-action-button estado-toggle inactivo"
+                                                        title="Inactivo — clic para activar"
+                                                        onclick="event.stopPropagation();">
+                                                        <i class="bi bi-lock-fill"></i>
+                                                    </a>
+
+                                                <?php endif; ?>
+
                                             </div>
 
                                         </td>
@@ -1062,6 +1091,65 @@ $estadosFiltro = ['Activo', 'Inactivo'];
 
 
 <!-- =====================================================
+     MODAL DESACTIVAR USUARIO (PIDE MOTIVO)
+     =====================================================
+     Mismo requisito que en crear_usuario.php/editar_usuario.php:
+     pasar a Inactivo exige indicar un motivo.
+====================================================== -->
+
+<div id="modalDesactivarUsuario" class="modal-overlay" style="display: none;">
+
+    <div class="modal-confirmacion">
+
+        <div class="modal-icon">
+            🔒
+        </div>
+
+        <h2>Desactivar usuario</h2>
+
+        <p>
+            ¿Seguro que quieres desactivar a
+            <strong id="nombreUsuarioDesactivar"></strong>?
+        </p>
+
+        <form id="formDesactivarUsuario" action="cambiar_estado_usuario.php" method="POST" novalidate>
+
+            <input type="hidden" name="id" id="idUsuarioDesactivar">
+
+            <div class="form-group">
+
+                <label for="motivoDesactivarUsuario">
+                    Motivo
+                </label>
+
+                <textarea id="motivoDesactivarUsuario" name="motivo" rows="3"
+                    placeholder="Explica por qué el usuario pasa a inactivo" required></textarea>
+
+                <span class="field-error" id="error-motivoDesactivarUsuario"></span>
+
+            </div>
+
+            <div class="modal-actions">
+
+                <button type="button" class="modal-button modal-button-cancel"
+                    onclick="cerrarModalDesactivarUsuario()">
+                    Cancelar
+                </button>
+
+                <button type="submit" class="modal-button modal-button-delete">
+                    Desactivar usuario
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
      TARJETA DE DETALLE
 ====================================================== -->
 
@@ -1143,7 +1231,8 @@ $estadosFiltro = ['Activo', 'Inactivo'];
 
 <script src="../../js/exportar-pdf.js"></script>
 <script src="../../js/multi-select-filter.js"></script>
-<script src="../../js/usuarios.js"></script>
+    <script src="../../js/notificacion-eliminacion.js"></script>
+    <script src="../../js/usuarios.js"></script>
 <script src="../../js/modal-detalle.js"></script>
 
 </body>

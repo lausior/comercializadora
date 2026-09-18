@@ -167,7 +167,8 @@ require_once __DIR__ . '/../config/permisos.php';
 
                 <div class="submenu" id="ayuda-submenu">
 
-                    <a href="/comercializadora/views/acerca.php" class="submenu-item" title="Acerca de">
+                    <button type="button" class="submenu-item about-menu-trigger" id="abrirInfoSrg"
+                        title="Acerca de">
 
                         <span class="submenu-icon">
                             <i class="bi bi-info-circle"></i>
@@ -177,7 +178,7 @@ require_once __DIR__ . '/../config/permisos.php';
                             Acerca de
                         </span>
 
-                    </a>
+                    </button>
 
 
                     <a href="/comercializadora/views/manual_usuario.php" class="submenu-item" title="Manual de usuario">
@@ -191,6 +192,42 @@ require_once __DIR__ . '/../config/permisos.php';
                         </span>
 
                     </a>
+
+                </div>
+
+                <div class="modal-overlay" id="modalInfoSrg" style="display: none;">
+
+                    <div class="modal-confirmacion about-company-modal" role="dialog" aria-modal="true"
+                        aria-labelledby="tituloInfoSrg">
+
+                        <button type="button" class="modal-detalle-close about-company-close" id="cerrarInfoSrg"
+                            aria-label="Cerrar información de SRG">
+                            ×
+                        </button>
+
+                        <div class="about-company-logo" aria-hidden="true">SRG</div>
+
+                        <h2 id="tituloInfoSrg">SRG</h2>
+
+                        <p class="about-company-description">
+                            Empresa desarrolladora del aplicativo Comparador Eléctrico.
+                        </p>
+
+                        <div class="about-company-links">
+
+                            <a href="https://srg.es" target="_blank" rel="noopener noreferrer">
+                                <span aria-hidden="true">↗</span>
+                                <span>https://srg.es</span>
+                            </a>
+
+                            <a href="mailto:info@srg.es">
+                                <span aria-hidden="true">@</span>
+                                <span>info@srg.es</span>
+                            </a>
+
+                        </div>
+
+                    </div>
 
                 </div>
 

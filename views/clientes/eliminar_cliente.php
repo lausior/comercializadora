@@ -165,6 +165,24 @@ registrarLog(
     'Se ha eliminado el cliente "' . $cliente['nombre'] . ' ' . $cliente['apellidos'] . '".'
 );
 
+if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    echo json_encode([
+        'ok' => true,
+        'tipo' => 'Cliente',
+        'nombre' => $cliente['nombre'] . ' ' . $cliente['apellidos'],
+        'campos' => [
+            'ID' => $cliente['id'],
+            'DNI/NIE' => $cliente['nif'],
+            'Email' => $cliente['email'],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>

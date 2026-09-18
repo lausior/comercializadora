@@ -164,6 +164,24 @@ registrarLog(
     'Se ha eliminado la empresa "' . $empresa['nombre'] . '".'
 );
 
+if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    echo json_encode([
+        'ok' => true,
+        'tipo' => 'Empresa',
+        'nombre' => $empresa['nombre'],
+        'campos' => [
+            'ID' => $empresa['id'],
+            'Código' => $empresa['codigo_empresa'],
+            'CIF' => $empresa['cif'],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>

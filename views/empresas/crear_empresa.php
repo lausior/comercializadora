@@ -6,6 +6,15 @@ require_once '../../config/permisos.php';
 requerirPermiso('empresas');
 
 require_once '../../config/database.php';
+require_once '../../includes/form_flash.php';
+
+
+// =====================================================
+// ERROR PENDIENTE (SI VENIMOS DE guardar_empresa.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
 
 
 // =====================================================
@@ -120,7 +129,10 @@ do {
                          MENSAJE DE ERROR GENERAL
                     ========================== -->
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
 
                     <div class="form-info">
@@ -162,9 +174,11 @@ do {
                                 Nombre
                             </label>
 
-                            <input type="text" id="nombre" name="nombre" required>
+                            <input type="text" id="nombre" name="nombre"
+                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nombre') ?>" required>
 
-                            <span class="field-error" id="error-nombre"></span>
+                            <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
 
                         </div>
 
@@ -179,9 +193,11 @@ do {
                                 CIF
                             </label>
 
-                            <input type="text" id="cif" name="cif" required>
+                            <input type="text" id="cif" name="cif"
+                                class="<?= claseErrorCampo($errorFormulario, 'cif') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'cif') ?>" required>
 
-                            <span class="field-error" id="error-cif"></span>
+                            <span class="field-error" id="error-cif"><?= mensajeErrorCampo($errorFormulario, 'cif') ?></span>
 
                         </div>
 
@@ -196,9 +212,11 @@ do {
                                 Dirección
                             </label>
 
-                            <input type="text" id="direccion" name="direccion">
+                            <input type="text" id="direccion" name="direccion"
+                                class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'direccion') ?>">
 
-                            <span class="field-error" id="error-direccion"></span>
+                            <span class="field-error" id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
 
                         </div>
 
@@ -213,15 +231,19 @@ do {
                                 Teléfono
                             </label>
 
-                            <input type="tel" id="telefono" name="telefono">
+                            <input type="tel" id="telefono" name="telefono"
+                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'telefono') ?>">
 
-                            <span class="field-error" id="error-telefono"></span>
+                            <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
 
                         </div>
 
 
                         <!-- =========================
                              EMAIL
+                             (obligatorio: se reutiliza como
+                             email del primer usuario)
                         ========================== -->
 
                         <div class="form-group">
@@ -230,9 +252,64 @@ do {
                                 Email
                             </label>
 
-                            <input type="email" id="email" name="email">
+                            <input type="email" id="email" name="email"
+                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'email') ?>" required>
 
-                            <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         ACCESO DE LA EMPRESA
+                         =================================================
+                         No es "un usuario que pertenece a la empresa":
+                         es el acceso de la propia empresa (rol EMPRESA),
+                         para no tener que crear la empresa y su login por
+                         separado en dos formularios. Por eso reutiliza el
+                         nombre, el email y el teléfono ya escritos arriba
+                         como datos de la empresa, y aquí solo hace falta
+                         el username — luego, desde ese acceso, la empresa
+                         podrá dar de alta a su equipo (rol Usuario).
+                    ================================================== -->
+
+                    <h2>Acceso de la empresa</h2>
+
+                    <div class="form-info">
+
+                        <p>
+                            Con esto la empresa ya puede acceder: usa su
+                            propio nombre, email y teléfono (los de arriba)
+                            como datos de acceso, con rol Empresa. Desde
+                            ahí podrá dar de alta a su equipo. La
+                            contraseña inicial se genera automáticamente y
+                            deberá cambiarla en su primer acceso.
+                        </p>
+
+                    </div>
+
+                    <div class="form-grid">
+
+
+                        <!-- =========================
+                             USERNAME
+                        ========================== -->
+
+                        <div class="form-group">
+
+                            <label for="usuario_username">
+                                Username
+                            </label>
+
+                            <input type="text" id="usuario_username" name="usuario_username"
+                                class="<?= claseErrorCampo($errorFormulario, 'usuario_username') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'usuario_username') ?>" required>
+
+                            <span class="field-error" id="error-usuario_username"><?= mensajeErrorCampo($errorFormulario, 'usuario_username') ?></span>
 
                         </div>
 
@@ -247,7 +324,7 @@ do {
                     <div class="form-actions">
 
                         <button type="submit" class="config-save-button">
-                            Crear empresa
+                            Crear empresa y su acceso
                         </button>
 
                         <a href="empresas.php" class="config-cancel-button">

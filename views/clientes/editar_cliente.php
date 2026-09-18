@@ -6,6 +6,7 @@ require_once '../../config/permisos.php';
 requerirPermiso('clientes');
 
 require_once '../../config/database.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -77,6 +78,14 @@ if (
     exit;
 
 }
+
+
+// =====================================================
+// ERROR PENDIENTE (SI VENIMOS DE actualizar_cliente.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
 
 ?>
 
@@ -171,7 +180,10 @@ if (
                          MENSAJE DE ERROR GENERAL
                     ========================== -->
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
 
                     <div class="form-grid">
@@ -188,9 +200,10 @@ if (
                             </label>
 
                             <input type="text" id="nombre" name="nombre"
-                                value="<?= htmlspecialchars($cliente['nombre']) ?>" required>
+                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nombre', $cliente['nombre']) ?>" required>
 
-                            <span class="field-error" id="error-nombre"></span>
+                            <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
 
                         </div>
 
@@ -206,9 +219,10 @@ if (
                             </label>
 
                             <input type="text" id="apellidos" name="apellidos"
-                                value="<?= htmlspecialchars($cliente['apellidos']) ?>" required>
+                                class="<?= claseErrorCampo($errorFormulario, 'apellidos') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'apellidos', $cliente['apellidos']) ?>" required>
 
-                            <span class="field-error" id="error-apellidos"></span>
+                            <span class="field-error" id="error-apellidos"><?= mensajeErrorCampo($errorFormulario, 'apellidos') ?></span>
 
                         </div>
 
@@ -224,9 +238,10 @@ if (
                             </label>
 
                             <input type="text" id="nif" name="nif"
-                                value="<?= htmlspecialchars($cliente['nif']) ?>" required>
+                                class="<?= claseErrorCampo($errorFormulario, 'nif') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nif', $cliente['nif']) ?>" required>
 
-                            <span class="field-error" id="error-nif"></span>
+                            <span class="field-error" id="error-nif"><?= mensajeErrorCampo($errorFormulario, 'nif') ?></span>
 
                         </div>
 
@@ -242,9 +257,10 @@ if (
                             </label>
 
                             <input type="text" id="direccion" name="direccion"
-                                value="<?= htmlspecialchars($cliente['direccion'] ?? '') ?>">
+                                class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'direccion', $cliente['direccion'] ?? '') ?>">
 
-                            <span class="field-error" id="error-direccion"></span>
+                            <span class="field-error" id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
 
                         </div>
 
@@ -260,9 +276,10 @@ if (
                             </label>
 
                             <input type="tel" id="telefono" name="telefono"
-                                value="<?= htmlspecialchars($cliente['telefono'] ?? '') ?>">
+                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'telefono', $cliente['telefono'] ?? '') ?>">
 
-                            <span class="field-error" id="error-telefono"></span>
+                            <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
 
                         </div>
 
@@ -278,9 +295,10 @@ if (
                             </label>
 
                             <input type="email" id="email" name="email"
-                                value="<?= htmlspecialchars($cliente['email']) ?>" required>
+                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'email', $cliente['email']) ?>" required>
 
-                            <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
 
                         </div>
 

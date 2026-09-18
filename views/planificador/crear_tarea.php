@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../config/permisos.php';
 requerirPermiso('planificador');
 
 require_once __DIR__ . '/../../includes/fechas.php';
+require_once __DIR__ . '/../../includes/form_flash.php';
 
 
 // =====================================================
@@ -22,6 +23,22 @@ $fechaParam = $_GET['fecha'] ?? '';
 $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
     ? $fechaParam
     : date('Y-m-d');
+
+
+// =====================================================
+// ERROR PENDIENTE (SI VENIMOS DE guardar_tarea.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
+
+
+// =====================================================
+// ÁREAS Y ESTADOS VÁLIDOS
+// =====================================================
+
+$areasValidas   = ['Tarifas', 'Clientes', 'Incidencias', 'Comparador', 'Sistema'];
+$estadosValidos = ['Pendiente', 'En curso', 'Completada'];
 
 ?>
 
@@ -85,7 +102,10 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                 <form action="guardar_tarea.php" method="POST" novalidate>
 
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
 
                     <div class="form-grid">
@@ -97,9 +117,11 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Título
                             </label>
 
-                            <input type="text" id="titulo" name="titulo" required>
+                            <input type="text" id="titulo" name="titulo"
+                                class="<?= claseErrorCampo($errorFormulario, 'titulo') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'titulo') ?>" required>
 
-                            <span class="field-error" id="error-titulo"></span>
+                            <span class="field-error" id="error-titulo"><?= mensajeErrorCampo($errorFormulario, 'titulo') ?></span>
 
                         </div>
 
@@ -110,18 +132,24 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Área
                             </label>
 
-                            <select id="area" name="area" required>
+                            <?php $areaPrevia = $datosPrevios['area'] ?? ''; ?>
+
+                            <select id="area" name="area"
+                                class="<?= claseErrorCampo($errorFormulario, 'area') ?>" required>
 
                                 <option value="">Seleccionar área</option>
-                                <option value="Tarifas">Tarifas</option>
-                                <option value="Clientes">Clientes</option>
-                                <option value="Incidencias">Incidencias</option>
-                                <option value="Comparador">Comparador</option>
-                                <option value="Sistema">Sistema</option>
+
+                                <?php foreach ($areasValidas as $areaOpcion): ?>
+
+                                    <option value="<?= $areaOpcion ?>" <?= $areaPrevia === $areaOpcion ? 'selected' : '' ?>>
+                                        <?= $areaOpcion ?>
+                                    </option>
+
+                                <?php endforeach; ?>
 
                             </select>
 
-                            <span class="field-error" id="error-area"></span>
+                            <span class="field-error" id="error-area"><?= mensajeErrorCampo($errorFormulario, 'area') ?></span>
 
                         </div>
 
@@ -132,9 +160,11 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Fecha
                             </label>
 
-                            <input type="date" id="fecha" name="fecha" value="<?= htmlspecialchars($fechaPrellenada) ?>" required>
+                            <input type="date" id="fecha" name="fecha"
+                                class="<?= claseErrorCampo($errorFormulario, 'fecha') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'fecha', $fechaPrellenada) ?>" required>
 
-                            <span class="field-error" id="error-fecha"></span>
+                            <span class="field-error" id="error-fecha"><?= mensajeErrorCampo($errorFormulario, 'fecha') ?></span>
 
                         </div>
 
@@ -145,9 +175,11 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Hora (opcional)
                             </label>
 
-                            <input type="time" id="hora" name="hora">
+                            <input type="time" id="hora" name="hora"
+                                class="<?= claseErrorCampo($errorFormulario, 'hora') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'hora') ?>">
 
-                            <span class="field-error" id="error-hora"></span>
+                            <span class="field-error" id="error-hora"><?= mensajeErrorCampo($errorFormulario, 'hora') ?></span>
 
                         </div>
 
@@ -158,9 +190,11 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Responsable (opcional)
                             </label>
 
-                            <input type="text" id="responsable" name="responsable" placeholder="Nombre de la persona responsable">
+                            <input type="text" id="responsable" name="responsable"
+                                class="<?= claseErrorCampo($errorFormulario, 'responsable') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'responsable') ?>" placeholder="Nombre de la persona responsable">
 
-                            <span class="field-error" id="error-responsable"></span>
+                            <span class="field-error" id="error-responsable"><?= mensajeErrorCampo($errorFormulario, 'responsable') ?></span>
 
                         </div>
 
@@ -171,15 +205,22 @@ $fechaPrellenada = DateTime::createFromFormat('Y-m-d', $fechaParam)
                                 Estado
                             </label>
 
-                            <select id="estado" name="estado" required>
+                            <?php $estadoPrevio = $datosPrevios['estado'] ?? 'Pendiente'; ?>
 
-                                <option value="Pendiente" selected>Pendiente</option>
-                                <option value="En curso">En curso</option>
-                                <option value="Completada">Completada</option>
+                            <select id="estado" name="estado"
+                                class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" required>
+
+                                <?php foreach ($estadosValidos as $estadoOpcion): ?>
+
+                                    <option value="<?= $estadoOpcion ?>" <?= $estadoPrevio === $estadoOpcion ? 'selected' : '' ?>>
+                                        <?= $estadoOpcion ?>
+                                    </option>
+
+                                <?php endforeach; ?>
 
                             </select>
 
-                            <span class="field-error" id="error-estado"></span>
+                            <span class="field-error" id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
 
                         </div>
 

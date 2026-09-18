@@ -8,6 +8,7 @@ requerirPermiso('clientes');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -45,19 +46,7 @@ if (
     $nif === ''
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Faltan datos obligatorios.
-        </p>
-
-        <p>
-            <a href="crear_cliente.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Faltan datos obligatorios.', $_POST, 'crear_cliente.php');
 
 }
 
@@ -65,56 +54,44 @@ if (
 if (!validarNombre($nombre)) {
 
     if (preg_match("/^[-']/", $nombre)) {
-        die('El nombre debe empezar con una letra.');
+        establecerErrorFormulario('El nombre debe empezar con una letra.', $_POST, 'crear_cliente.php', 'nombre');
     }
 
-    die('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'crear_cliente.php', 'nombre');
 
 }
 
 if (!validarApellidos($apellidos)) {
 
     if (preg_match("/^[-']/", $apellidos)) {
-        die('Los apellidos deben empezar con una letra.');
+        establecerErrorFormulario('Los apellidos deben empezar con una letra.', $_POST, 'crear_cliente.php', 'apellidos');
     }
 
-    die('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'crear_cliente.php', 'apellidos');
 
 }
 
 if (!validarDniNie($nif)) {
 
-    die('El DNI/NIE no es válido.');
+    establecerErrorFormulario('El DNI/NIE no es válido.', $_POST, 'crear_cliente.php', 'nif');
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    die('La dirección no es válida.');
+    establecerErrorFormulario('La dirección no es válida.', $_POST, 'crear_cliente.php', 'direccion');
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'crear_cliente.php', 'telefono');
 
 }
 
 if (!validarEmail($email)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El email no es válido.
-        </p>
-
-        <p>
-            <a href="crear_cliente.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El email no es válido.', $_POST, 'crear_cliente.php', 'email');
 
 }
 
@@ -134,19 +111,7 @@ $stmt->execute([$nif]);
 
 if ($stmt->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Ya existe un cliente con ese DNI/NIE.
-        </p>
-
-        <p>
-            <a href="crear_cliente.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Ya existe un cliente con ese DNI/NIE.', $_POST, 'crear_cliente.php', 'nif');
 
 }
 
@@ -271,7 +236,7 @@ registrarLog(
             </div>
 
 
-            <div class="config-card">
+            <div class="config-card confirmation-card">
 
                 <h2>Cliente creado correctamente</h2>
 

@@ -158,7 +158,7 @@ sort($ipsFiltro);
                     📄 Exportar PDF
                 </button>
 
-                <button class="logs-btn" onclick="location.reload()">
+                <button type="button" class="logs-btn" id="btnActualizarLogs">
                     🔄 Actualizar
                 </button>
 

@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let paginaActual = 1;
 
-    const EMPRESAS_TOTALES = filas.length;
+    let EMPRESAS_TOTALES = filas.length;
 
     // Mismo punto de corte que el @media (max-width: 680px)
     // del CSS que decide entre vista de escritorio y móvil.
@@ -1015,14 +1015,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    window.confirmarEliminarEmpresa = function () {
+    window.confirmarEliminarEmpresa = async function () {
 
         if (empresaEliminarId <= 0) {
             return;
         }
 
-        window.location.href =
-            'eliminar_empresa.php?id=' + encodeURIComponent(empresaEliminarId);
+        const idEliminado = empresaEliminarId;
+
+        try {
+
+            const respuesta = await fetch(
+                'eliminar_empresa.php?id=' + encodeURIComponent(idEliminado) + '&ajax=1',
+                { headers: { Accept: 'application/json' } }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+                throw new Error('No se ha podido eliminar la empresa.');
+            }
+
+            window.cerrarModalEliminarEmpresa();
+
+            const fila = tbody.querySelector(`tr[data-id="${idEliminado}"]`);
+
+            if (fila) {
+                fila.remove();
+                filas = filas.filter(filaActual => filaActual !== fila);
+                EMPRESAS_TOTALES = filas.length;
+                mostrarPagina();
+            }
+
+            mostrarNotificacionEliminacion(datos);
+
+        } catch (error) {
+            window.alert(error.message);
+        }
 
     };
 

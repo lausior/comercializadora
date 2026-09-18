@@ -21,9 +21,17 @@ unset($_SESSION['logo_error']);
 $retencionLogsDias = obtenerRetencionLogsDias($pdo);
 $ultimoBorradoLogs = obtenerUltimoBorradoLogs($pdo);
 
+// El borrado forzado solo afecta a los logs que este rol
+// puede ver (rolesVisiblesEnLogs()): SRG los ve todos, pero
+// NG y EMPRESA no, así que el aviso se ajusta para no dar a
+// entender que se borra la tabla entera.
+$alcanceBorrado = rolActual() === ROL_SRG
+    ? 'TODOS los logs'
+    : 'todos los logs que puedes ver';
+
 $mensajeBorrado = $retencionLogsDias > 0
-    ? '¿Seguro que quieres borrar ahora mismo los logs con más de ' . $retencionLogsDias . ' días de antigüedad?'
-    : 'No hay una retención definida ("Nunca"), así que se borrarán TODOS los logs. ¿Seguro que quieres continuar?';
+    ? '¿Seguro que quieres borrar ahora mismo ' . $alcanceBorrado . ' con más de ' . $retencionLogsDias . ' días de antigüedad?'
+    : 'No hay una retención definida ("Nunca"), así que se borrarán ' . $alcanceBorrado . '. ¿Seguro que quieres continuar?';
 
 ?>
 <!DOCTYPE html>

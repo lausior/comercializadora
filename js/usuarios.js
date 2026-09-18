@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'Solo se permiten letras minúsculas, sin números, espacios ni caracteres especiales.';
         }
 
-        if (texto.length < 3) {
-            return 'Debe tener al menos 3 caracteres.';
+        if (texto.length < 2) {
+            return 'Debe tener al menos 2 caracteres.';
         }
 
         return null;
@@ -346,6 +346,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       00C. BLOQUEAR ROL A "USUARIO" SEGÚN LA EMPRESA ELEGIDA
+       (crear_usuario.php, solo para SRG/NG)
+       =========================================================
+       Una empresa solo puede tener un usuario con rol EMPRESA
+       (su "admin"). Si la empresa elegida ya tiene uno, el
+       desplegable Rol pasa a mostrar únicamente la opción
+       "Usuario" (las demás se ocultan, no solo se deshabilitan,
+       para no dejar un desplegable lleno de opciones en gris) y
+       se fija ese valor. Sin mensaje informativo aparte, para no
+       romper el diseño del formulario. window.EMPRESAS_CON_ROL_EMPRESA
+       lo rellena crear_usuario.php solo cuando aplica.
+    ========================================================= */
+
+    function bloquearRolSegunEmpresa() {
+
+        const empresaSelect = document.getElementById('id_empresa');
+        const rolSelect = document.getElementById('id_rol');
+
+        if (
+            !empresaSelect ||
+            !rolSelect ||
+            empresaSelect.tagName !== 'SELECT' ||
+            rolSelect.tagName !== 'SELECT' ||
+            !Array.isArray(window.EMPRESAS_CON_ROL_EMPRESA)
+        ) {
+            return;
+        }
+
+        const opciones = Array.from(rolSelect.options);
+        const opcionUsuario = opciones.find(opcion => opcion.dataset.rol === 'USUARIO');
+
+        function actualizar() {
+
+            const idEmpresa = Number(empresaSelect.value);
+
+            const empresaYaTieneAdmin =
+                idEmpresa > 0 &&
+                window.EMPRESAS_CON_ROL_EMPRESA.includes(idEmpresa);
+
+            opciones.forEach(opcion => {
+                const ocultar = empresaYaTieneAdmin && opcion !== opcionUsuario;
+                opcion.hidden = ocultar;
+                opcion.disabled = ocultar;
+            });
+
+            if (empresaYaTieneAdmin && opcionUsuario) {
+                rolSelect.value = opcionUsuario.value;
+            }
+
+        }
+
+        empresaSelect.addEventListener('change', actualizar);
+
+        actualizar();
+
+    }
+
+    bloquearRolSegunEmpresa();
+
+
+    /* =========================================================
        01. ELEMENTOS DEL DOM
     ========================================================= */
 
@@ -402,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let paginaActual = 1;
 
-    const USUARIOS_TOTALES = filas.length;
+    let USUARIOS_TOTALES = filas.length;
 
     // Mismo punto de corte que el @media (max-width: 680px)
     // del CSS que decide entre vista de escritorio y móvil.
@@ -1554,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ========================================================= */
 
     window.confirmarEliminarUsuario =
-        function () {
+        async function () {
 
             if (
                 usuarioEliminarId <= 0
@@ -1565,11 +1626,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
 
-            window.location.href =
-                'eliminar_usuario.php?id=' +
-                encodeURIComponent(
-                    usuarioEliminarId
+            const idEliminado = usuarioEliminarId;
+
+            try {
+
+                const respuesta = await fetch(
+                    'eliminar_usuario.php?id=' +
+                    encodeURIComponent(idEliminado) +
+                    '&ajax=1',
+                    { headers: { Accept: 'application/json' } }
                 );
+
+                const datos = await respuesta.json();
+
+                if (!respuesta.ok || !datos.ok) {
+                    throw new Error('No se ha podido eliminar el usuario.');
+                }
+
+                window.cerrarModalEliminar();
+
+                const fila = tbody.querySelector(
+                    `tr[data-id="${idEliminado}"]`
+                );
+
+                if (fila) {
+                    fila.remove();
+                    filas = filas.filter(filaActual => filaActual !== fila);
+                    USUARIOS_TOTALES = filas.length;
+                    mostrarPagina();
+                }
+
+                mostrarNotificacionEliminacion(datos);
+
+            } catch (error) {
+                window.alert(error.message);
+            }
 
         };
 
@@ -1688,6 +1779,119 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (event.key === 'Escape' && usuarioResetPasswordId > 0) {
             window.cerrarModalResetPasswordListado();
+        }
+
+    });
+
+
+    /* =========================================================
+       23B. DESACTIVAR USUARIO DESDE EL LISTADO (PIDE MOTIVO)
+       Mismo patrón que el modal de restablecer contraseña,
+       salvo que aquí sí hay que enviar un dato (el motivo), así
+       que en vez de redirigir con window.location.href se envía
+       un formulario real por POST a cambiar_estado_usuario.php.
+    ========================================================= */
+
+    let usuarioDesactivarAbierto = false;
+
+    const modalDesactivarUsuario = document.getElementById('modalDesactivarUsuario');
+    const nombreUsuarioDesactivar = document.getElementById('nombreUsuarioDesactivar');
+    const idUsuarioDesactivarInput = document.getElementById('idUsuarioDesactivar');
+    const motivoDesactivarUsuario = document.getElementById('motivoDesactivarUsuario');
+    const formDesactivarUsuario = document.getElementById('formDesactivarUsuario');
+
+    window.abrirModalDesactivarUsuario = function (id, nombre) {
+
+        usuarioDesactivarAbierto = true;
+
+        if (idUsuarioDesactivarInput) {
+            idUsuarioDesactivarInput.value = id;
+        }
+
+        if (nombreUsuarioDesactivar) {
+            nombreUsuarioDesactivar.textContent = nombre;
+        }
+
+        if (motivoDesactivarUsuario) {
+            motivoDesactivarUsuario.value = '';
+            motivoDesactivarUsuario.classList.remove('input-error');
+        }
+
+        const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+        if (contenedorError) {
+            contenedorError.textContent = '';
+        }
+
+        if (modalDesactivarUsuario) {
+            modalDesactivarUsuario.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    };
+
+    window.cerrarModalDesactivarUsuario = function () {
+
+        usuarioDesactivarAbierto = false;
+
+        if (modalDesactivarUsuario) {
+            modalDesactivarUsuario.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    if (formDesactivarUsuario && motivoDesactivarUsuario) {
+
+        formDesactivarUsuario.addEventListener('submit', event => {
+
+            if (motivoDesactivarUsuario.value.trim() === '') {
+
+                event.preventDefault();
+
+                motivoDesactivarUsuario.classList.add('input-error');
+
+                const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+                if (contenedorError) {
+                    contenedorError.textContent = 'Indica el motivo por el que el usuario pasa a inactivo.';
+                }
+
+            }
+
+        });
+
+        motivoDesactivarUsuario.addEventListener('input', () => {
+
+            if (motivoDesactivarUsuario.value.trim() !== '') {
+
+                motivoDesactivarUsuario.classList.remove('input-error');
+
+                const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+                if (contenedorError) {
+                    contenedorError.textContent = '';
+                }
+
+            }
+
+        });
+
+    }
+
+    if (modalDesactivarUsuario) {
+
+        modalDesactivarUsuario.addEventListener('click', event => {
+
+            if (event.target === modalDesactivarUsuario) {
+                window.cerrarModalDesactivarUsuario();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && usuarioDesactivarAbierto) {
+            window.cerrarModalDesactivarUsuario();
         }
 
     });

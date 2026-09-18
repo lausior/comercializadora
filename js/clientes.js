@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.querySelectorAll('tr')
     );
 
-    const CLIENTES_TOTALES = filas.length;
+    let CLIENTES_TOTALES = filas.length;
 
     // Mismo punto de corte que el @media (max-width: 680px)
     // del CSS que decide entre vista de escritorio y móvil.
@@ -1079,14 +1079,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
-    window.confirmarEliminarCliente = function () {
+    window.confirmarEliminarCliente = async function () {
 
         if (clienteEliminarId <= 0) {
             return;
         }
 
-        window.location.href =
-            'eliminar_cliente.php?id=' + encodeURIComponent(clienteEliminarId);
+        const idEliminado = clienteEliminarId;
+
+        try {
+
+            const respuesta = await fetch(
+                'eliminar_cliente.php?id=' + encodeURIComponent(idEliminado) + '&ajax=1',
+                { headers: { Accept: 'application/json' } }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+                throw new Error('No se ha podido eliminar el cliente.');
+            }
+
+            window.cerrarModalEliminarCliente();
+
+            const fila = tbody.querySelector(`tr[data-id="${idEliminado}"]`);
+
+            if (fila) {
+                fila.remove();
+                filas = filas.filter(filaActual => filaActual !== fila);
+                CLIENTES_TOTALES = filas.length;
+                mostrarPagina();
+            }
+
+            mostrarNotificacionEliminacion(datos);
+
+        } catch (error) {
+            window.alert(error.message);
+        }
 
     };
 

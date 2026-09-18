@@ -43,6 +43,7 @@ $logoEmpresaSesion = isset($_SESSION['id_empresa'])
     window.BLOQUEO_AUTOMATICO_MINUTOS = <?= (int) $minutosBloqueoAutomatico ?>;
 </script>
 <script src="/comercializadora/js/bloqueo-automatico.js"></script>
+<script src="/comercializadora/js/acerca.js"></script>
 <header class="topbar">
 
     <div class="topbar-left">

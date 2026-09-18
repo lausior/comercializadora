@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnExportarPDF = document.getElementById('btnExportarPDF');
 
+    const btnActualizarLogs = document.getElementById('btnActualizarLogs');
+
     const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
 
     const filtrosColumna = table.querySelectorAll('.column-filter');
@@ -48,6 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleIp = document.getElementById('detalleLogIp');
 
     const sortButtons = table.querySelectorAll('.sort-button');
+
+    if (btnActualizarLogs) {
+
+        btnActualizarLogs.addEventListener('click', () => {
+
+            btnActualizarLogs.disabled = true;
+            btnActualizarLogs.textContent = '🔄 Actualizando...';
+
+            window.location.reload();
+
+        });
+
+    }
 
     /*
     ========================================

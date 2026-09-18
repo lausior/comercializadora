@@ -64,9 +64,62 @@ function validarNombre(string $nombre): bool
 
 /**
  * =====================================================
- * VALIDAR APELLIDOS
+ * VALIDAR CARACTERES DE NOMBRE DE EMPRESA
  * =====================================================
  *
+ * Igual que validarCaracteresNombre(), pero además permite
+ * puntos, para razones sociales como "Sociedad S.L." o
+ * "Comercializadora S.A.".
+ *
+ */
+function validarCaracteresNombreEmpresa(string $texto): bool
+{
+    $texto = trim($texto);
+
+    return preg_match(
+        "/^[\p{L}0-9]+(?:[ '\-.][\p{L}0-9]+)*\.?$/u",
+        $texto
+    ) === 1;
+}
+
+
+/**
+ * =====================================================
+ * VALIDAR NOMBRE DE EMPRESA
+ * =====================================================
+ * Igual que validarNombre(), pero para razones sociales:
+ * permite también números y puntos, y admite nombres más
+ * largos (hasta 150 caracteres, como la columna de la BD).
+ *
+ * Ejemplos válidos:
+ *   Sociedad S.L.
+ *   Comercializadora Eléctrica S.A.
+ *   3M España
+ */
+function validarNombreEmpresa(string $nombre): bool
+{
+    $nombre = trim($nombre);
+
+    if ($nombre === '') {
+        return false;
+    }
+
+    if (mb_strlen($nombre, 'UTF-8') < 2) {
+        return false;
+    }
+
+    if (mb_strlen($nombre, 'UTF-8') > 150) {
+        return false;
+    }
+
+    return validarCaracteresNombreEmpresa($nombre);
+}
+
+
+/**
+ * =====================================================
+ * VALIDAR APELLIDOS
+ * =====================================================
  * Permite:
  * - Letras
  * - Tildes
@@ -74,7 +127,6 @@ function validarNombre(string $nombre): bool
  * - Espacios
  * - Guiones
  * - Apóstrofes
- *
  */
 function validarApellidos(string $apellidos): bool
 {
@@ -105,10 +157,6 @@ function validarApellidos(string $apellidos): bool
  * - 8 números
  * - 1 letra
  * - Letra de control correcta
- *
- * Ejemplo:
- *   12345678Z
- *
  */
 function validarDNI(string $dni): bool
 {
@@ -133,17 +181,10 @@ function validarDNI(string $dni): bool
  * =====================================================
  * VALIDAR NIE
  * =====================================================
- *
  * Comprueba:
  * - X, Y o Z
  * - 7 números
  * - Letra de control correcta
- *
- * Ejemplos:
- *   X1234567L
- *   Y1234567X
- *   Z1234567R
- *
  */
 function validarNIE(string $nie): bool
 {
@@ -187,7 +228,6 @@ function validarNIE(string $nie): bool
  * =====================================================
  * VALIDAR DNI O NIE
  * =====================================================
- *
  */
 function validarDniNie(string $documento): bool
 {
@@ -201,15 +241,10 @@ function validarDniNie(string $documento): bool
  * =====================================================
  * VALIDAR CIF
  * =====================================================
- *
  * Comprueba:
  * - Formato del CIF
  * - Dígito/letra de control
- *
- * Ejemplos:
- *   B12345678
- *   A12345674
- *
+
  */
 function validarCIF(string $cif): bool
 {
@@ -251,8 +286,7 @@ function validarCIF(string $cif): bool
     $digitoControl = (10 - ($suma % 10)) % 10;
 
     /*
-     * Algunos CIF utilizan número como control
-     * y otros utilizan letra.
+     * Algunos CIF utilizan número como control y otros utilizan letra.
      */
 
     $letrasControl = 'JABCDEFGHI';
@@ -281,15 +315,8 @@ function validarCIF(string $cif): bool
  * =====================================================
  * VALIDAR DIRECCIÓN
  * =====================================================
- *
  * La dirección debe permitir números y caracteres
  * habituales de una dirección.
- *
- * Ejemplos:
- *   Calle Mayor, 25
- *   Rúa do Príncipe, 38, 2º B
- *   Avenida de Galicia 14
- *
  */
 function validarDireccion(string $direccion): bool
 {
@@ -348,14 +375,16 @@ function validarEmail(string $email): bool
  * VALIDAR TELÉFONO
  * =====================================================
  *
- * Teléfono español:
- * - 9 dígitos
- * - Comienza por 6, 7, 8 o 9
+ * Admite teléfonos nacionales e internacionales:
+ * - Un "+" inicial opcional (prefijo internacional)
+ * - Números, espacios, guiones y paréntesis
+ * - Entre 7 y 15 dígitos en total (sin contar separadores)
  *
  * Ejemplos:
  *   612345678
- *   698765432
- *   912345678
+ *   912 345 678
+ *   +34 612 345 678
+ *   +1 (555) 123-4567
  *
  */
 function validarTelefono(string $telefono): bool
@@ -366,10 +395,13 @@ function validarTelefono(string $telefono): bool
         return false;
     }
 
-    return preg_match(
-        '/^[6789][0-9]{8}$/',
-        $telefono
-    ) === 1;
+    if (preg_match('/^\+?[0-9\s\-()]+$/', $telefono) !== 1) {
+        return false;
+    }
+
+    $digitos = preg_replace('/\D/', '', $telefono);
+
+    return strlen($digitos) >= 7 && strlen($digitos) <= 15;
 }
 
 
@@ -398,7 +430,7 @@ function validarUsername(string $username): bool
         return false;
     }
 
-    if (mb_strlen($username, 'UTF-8') < 3) {
+    if (mb_strlen($username, 'UTF-8') < 2) {
         return false;
     }
 

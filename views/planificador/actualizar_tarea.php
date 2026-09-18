@@ -7,6 +7,7 @@ requerirPermiso('planificador');
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/logs.php';
+require_once __DIR__ . '/../../includes/form_flash.php';
 
 
 // =====================================================
@@ -41,27 +42,34 @@ $estado      = trim($_POST['estado'] ?? '');
 $areasValidas   = ['Tarifas', 'Clientes', 'Incidencias', 'Comparador', 'Sistema'];
 $estadosValidos = ['Pendiente', 'En curso', 'Completada'];
 
-if (
-    $id <= 0 ||
-    $titulo === '' ||
-    !in_array($area, $areasValidas, true) ||
-    !DateTime::createFromFormat('Y-m-d', $fecha) ||
-    !in_array($estado, $estadosValidos, true)
-) {
+if ($id <= 0) {
 
-    die('
-        <h2>Error</h2>
+    header('Location: planificador.php');
+    exit;
 
-        <p>
-            Todos los campos obligatorios deben estar completos y ser válidos.
-        </p>
+}
 
-        <p>
-            <a href="planificador.php">
-                Volver al planificador
-            </a>
-        </p>
-    ');
+if ($titulo === '') {
+
+    establecerErrorFormulario('El título es obligatorio.', $_POST, 'editar_tarea.php?id=' . $id, 'titulo');
+
+}
+
+if (!in_array($area, $areasValidas, true)) {
+
+    establecerErrorFormulario('Selecciona un área válida.', $_POST, 'editar_tarea.php?id=' . $id, 'area');
+
+}
+
+if (!DateTime::createFromFormat('Y-m-d', $fecha)) {
+
+    establecerErrorFormulario('Selecciona una fecha válida.', $_POST, 'editar_tarea.php?id=' . $id, 'fecha');
+
+}
+
+if (!in_array($estado, $estadosValidos, true)) {
+
+    establecerErrorFormulario('Selecciona un estado válido.', $_POST, 'editar_tarea.php?id=' . $id, 'estado');
 
 }
 

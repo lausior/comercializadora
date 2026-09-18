@@ -88,9 +88,13 @@ $stmtActualizar = $pdo->prepare("
 
 $stmtActualizar->execute([$nuevoEstado, $id]);
 
+// El evento es "Empresa activada"/"Empresa desactivada" (en vez
+// de un único "Estado modificado") para que se pueda filtrar en
+// Logs por activaciones/desactivaciones sin tener que leer la
+// descripción.
 registrarLog(
-    LOG_INFO,
-    'Estado modificado',
+    LOG_INFORMACION,
+    $nuevoEstado === 'Activo' ? 'Empresa activada' : 'Empresa desactivada',
     'La empresa "' . $empresa['nombre'] . '" ha pasado a estado ' . $nuevoEstado . '.'
 );
 

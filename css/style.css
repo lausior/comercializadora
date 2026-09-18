@@ -31,6 +31,9 @@
     --shadow-sm: 0 2px 8px rgba(20, 35, 60, .04);
     --shadow: 0 8px 24px rgba(20, 35, 60, .06);
     --shadow-lg: 0 14px 35px rgba(20, 35, 60, .08);
+    --focus-outline: rgba(23, 105, 224, .18);
+    --focus-ring: 0 0 0 3px rgba(23, 105, 224, .10);
+    --border-hover: #b8c3d2;
     --radius: 12px;
     --radius-sm: 8px;
     --sidebar-width: 196px;
@@ -100,7 +103,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 3px solid rgba(23, 105, 224, .18);
+    outline: 3px solid var(--focus-outline);
     outline-offset: 2px;
 }
 
@@ -271,7 +274,7 @@ textarea:focus-visible {
 .calendar-button:hover,
 .calendar-today:hover {
     background: var(--surface-soft);
-    border-color: #b8c3d2;
+    border-color: var(--border-hover);
     color: var(--ink);
 }
 
@@ -1148,7 +1151,7 @@ textarea:focus-visible {
     outline: none;
     border-color: var(--primary);
     box-shadow:
-        0 0 0 3px rgba(23, 105, 224, .10);
+        var(--focus-ring);
 }
 
 /* =========================================================
@@ -1328,7 +1331,7 @@ textarea:focus-visible {
     outline: none;
     border-color: var(--primary);
     box-shadow:
-        0 0 0 3px rgba(23, 105, 224, .10);
+    var(--focus-ring);
 }
 
 
@@ -1376,6 +1379,21 @@ textarea:focus-visible {
 .config-card {
     margin-bottom: 19px;
     padding: 21px;
+}
+
+.confirmation-card {
+    width: min(100%, 680px);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.confirmation-card .usuario-detalle-grid {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.confirmation-card .form-actions {
+    justify-content: center;
 }
 
 .config-card-header {
@@ -1481,6 +1499,87 @@ textarea:focus-visible {
    debe llevar este margen, o queda descolocada verticalmente. */
 .system-info .config-secondary-button {
     margin-top: 17px;
+}
+
+.about-menu-trigger {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.about-company-logo {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--sidebar);
+    color: #ffffff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.about-company-modal {
+    position: relative;
+    max-width: 430px;
+    padding: 30px;
+}
+
+.about-company-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.about-company-logo {
+    width: 78px;
+    height: 78px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    font-size: 22px;
+    box-shadow: 0 8px 18px rgba(16, 47, 91, .16);
+}
+
+.about-company-modal h2 {
+    margin-bottom: 8px;
+}
+
+.about-company-description {
+    margin-bottom: 20px !important;
+    color: var(--ink-soft) !important;
+    font-size: 13px !important;
+}
+
+.about-company-links {
+    display: grid;
+    gap: 8px;
+    text-align: left;
+}
+
+.about-company-links a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--primary);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.about-company-links a:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.about-company-links a span:first-child {
+    width: 20px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    text-align: center;
 }
 
 
@@ -1989,7 +2088,7 @@ textarea:focus-visible {
     outline: none;
     border-color: var(--primary);
     box-shadow:
-        0 0 0 3px rgba(23, 105, 224, .10);
+    var(--focus-ring);
 }
 
 .clientes-filter-row .filter-actions {
@@ -3012,7 +3111,7 @@ textarea:focus-visible {
     outline: none;
     border-color: var(--primary);
     box-shadow:
-        0 0 0 3px rgba(23, 105, 224, .10);
+    var(--focus-ring);
 }
 
 
@@ -4084,7 +4183,7 @@ select {
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 20px;
+    gap: 0 12px;
 }
 
 .form-group label {
@@ -4125,7 +4224,7 @@ select {
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
-    border-color: #b8c3d2;
+    border-color: var(--border-hover);
 }
 
 .form-group input:focus,
@@ -4134,7 +4233,7 @@ select {
     outline: none;
     border-color: var(--primary);
     box-shadow:
-        0 0 0 3px rgba(23, 105, 224, .10);
+        var(--focus-ring);
     background: #ffffff;
 }
 
@@ -4172,19 +4271,37 @@ select {
     line-height: 1.4;
 }
 
+.form-hint {
+    margin: 4px 0 0;
+    color: var(--text-secondary, #6b7280);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* Un .form-group dentro de un modal de confirmación (p. ej.
+   el motivo al desactivar un usuario) no debe heredar el
+   text-align: center del modal. */
+.modal-confirmacion .form-group {
+    margin-top: 16px;
+    text-align: left;
+}
+
 .form-group input.input-error,
-.form-group select.input-error {
+.form-group select.input-error,
+.form-group textarea.input-error {
     border-color: var(--danger);
     background: var(--danger-soft);
 }
 
 .form-group input.input-error:hover,
-.form-group select.input-error:hover {
+.form-group select.input-error:hover,
+.form-group textarea.input-error:hover {
     border-color: var(--danger);
 }
 
 .form-group input.input-error:focus,
-.form-group select.input-error:focus {
+.form-group select.input-error:focus,
+.form-group textarea.input-error:focus {
     border-color: var(--danger);
     box-shadow:
         0 0 0 3px rgba(180, 35, 49, .12);
@@ -4272,7 +4389,7 @@ select {
 
 .config-cancel-button:hover {
     background: var(--surface-soft);
-    border-color: #b8c3d2;
+    border-color: var(--border-hover);
     color: var(--ink);
 }
 
@@ -4536,6 +4653,49 @@ select {
 
 .modal-button-primary:hover {
     background: var(--primary-dark);
+}
+
+.modal-overlay-notificacion {
+    z-index: 10000;
+}
+
+.modal-eliminacion-exito {
+    max-width: 480px;
+}
+
+.modal-icon-exito {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.eliminacion-datos {
+    display: grid;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 13px 15px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    text-align: left;
+}
+
+.eliminacion-datos div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.eliminacion-datos span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.eliminacion-datos strong {
+    max-width: 65%;
+    color: var(--ink);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    text-align: right;
 }
 
 
@@ -4820,15 +4980,6 @@ body.sidebar-collapsed .menu-item:hover::after {
     }
 
 }
-
-/* =========================================================
-   SIDEBAR - ANCHO
-========================================================= */
-
-:root {
-    --sidebar-width: 196px;
-}
-
 
 /* =========================================================
    SIDEBAR
@@ -5175,10 +5326,10 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
 
 .modal-detalle {
     width: 100%;
-    max-width: 480px;
+    max-width: 640px;
     background: #ffffff;
     border-radius: 12px;
-    padding: 28px;
+    padding: 24px;
     box-shadow:
         0 15px 40px rgba(0, 0, 0, .20);
     animation: modalEntrada .2s ease-out;
@@ -5267,10 +5418,22 @@ body.modal-detalle-arrastrando .modal-detalle {
     color: var(--ink);
 }
 
-.usuario-detalle-grid {
-    display: grid;
+.modal-detalle .usuario-detalle-grid {
+    width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 20px;
+    gap: 16px 24px;
+}
+
+.modal-detalle .usuario-detalle-item strong {
+    overflow-wrap: anywhere;
+}
+
+.usuario-detalle-grid {
+    width: fit-content;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 180px));
+    gap: 16px 8px;
 }
 
 .usuario-detalle-item {
@@ -5320,6 +5483,7 @@ body.modal-detalle-arrastrando .modal-detalle {
 @media (max-width: 560px) {
 
     .usuario-detalle-grid {
+        width: 100%;
         grid-template-columns: 1fr;
     }
 

@@ -8,6 +8,7 @@ requerirPermiso('clientes');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -42,27 +43,21 @@ $nif       = trim($_POST['nif'] ?? '');
 // COMPROBAR CAMPOS OBLIGATORIOS
 // =====================================================
 
+if ($id <= 0) {
+
+    header('Location: clientes.php');
+    exit;
+
+}
+
 if (
-    $id <= 0 ||
     $nombre === '' ||
     $apellidos === '' ||
     $email === '' ||
     $nif === ''
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Todos los campos obligatorios deben estar completos.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Todos los campos obligatorios deben estar completos.', $_POST, 'editar_cliente.php?id=' . $id);
 
 }
 
@@ -70,56 +65,44 @@ if (
 if (!validarNombre($nombre)) {
 
     if (preg_match("/^[-']/", $nombre)) {
-        die('El nombre debe empezar con una letra.');
+        establecerErrorFormulario('El nombre debe empezar con una letra.', $_POST, 'editar_cliente.php?id=' . $id, 'nombre');
     }
 
-    die('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'editar_cliente.php?id=' . $id, 'nombre');
 
 }
 
 if (!validarApellidos($apellidos)) {
 
     if (preg_match("/^[-']/", $apellidos)) {
-        die('Los apellidos deben empezar con una letra.');
+        establecerErrorFormulario('Los apellidos deben empezar con una letra.', $_POST, 'editar_cliente.php?id=' . $id, 'apellidos');
     }
 
-    die('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'editar_cliente.php?id=' . $id, 'apellidos');
 
 }
 
 if (!validarDniNie($nif)) {
 
-    die('El DNI/NIE no es válido.');
+    establecerErrorFormulario('El DNI/NIE no es válido.', $_POST, 'editar_cliente.php?id=' . $id, 'nif');
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    die('La dirección no es válida.');
+    establecerErrorFormulario('La dirección no es válida.', $_POST, 'editar_cliente.php?id=' . $id, 'direccion');
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    die('El teléfono no es válido. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'editar_cliente.php?id=' . $id, 'telefono');
 
 }
 
 if (!validarEmail($email)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El correo electrónico no tiene un formato válido.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El correo electrónico no tiene un formato válido.', $_POST, 'editar_cliente.php?id=' . $id, 'email');
 
 }
 
@@ -199,19 +182,7 @@ $stmtNif->execute([
 
 if ($stmtNif->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Ya existe otro cliente con ese DNI/NIE.
-        </p>
-
-        <p>
-            <a href="javascript:history.back()">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Ya existe otro cliente con ese DNI/NIE.', $_POST, 'editar_cliente.php?id=' . $id, 'nif');
 
 }
 
@@ -342,7 +313,7 @@ registrarLog(
                  MENSAJE DE CONFIRMACIÓN
             ================================================== -->
 
-            <div class="config-card">
+            <div class="config-card confirmation-card">
 
 
                 <h2>

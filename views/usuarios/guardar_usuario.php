@@ -8,6 +8,7 @@ requerirPermiso('usuarios');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
+require_once '../../includes/form_flash.php';
 
 
 // =====================================================
@@ -47,59 +48,66 @@ $estadosValidos = ['Activo', 'Inactivo'];
 // =====================================================
 // VALIDAR FORMATO DE LOS DATOS
 // =====================================================
+//
+// Cualquier dato inválido vuelve al formulario (en vez de
+// dejar al usuario en una página en blanco) con el mensaje
+// de error y lo que ya había escrito, vía
+// establecerErrorFormulario() (ver includes/form_flash.php).
+//
+// =====================================================
 
 if ($nombre !== '' && preg_match("/^[-']/", $nombre)) {
 
-    die('El nombre debe empezar con una letra.');
+    establecerErrorFormulario('El nombre debe empezar con una letra.', $_POST, 'crear_usuario.php', 'nombre');
 
 }
 
 if ($apellidos !== '' && preg_match("/^[-']/", $apellidos)) {
 
-    die('Los apellidos deben empezar con una letra.');
+    establecerErrorFormulario('Los apellidos deben empezar con una letra.', $_POST, 'crear_usuario.php', 'apellidos');
 
 }
 
 if ($nombre !== '' && !validarCaracteresNombre($nombre)) {
 
-    die('El nombre contiene caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('El nombre contiene caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'crear_usuario.php', 'nombre');
 
 }
 
 if ($apellidos !== '' && !validarCaracteresNombre($apellidos)) {
 
-    die('Los apellidos contienen caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.');
+    establecerErrorFormulario('Los apellidos contienen caracteres no permitidos. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'crear_usuario.php', 'apellidos');
 
 }
 
 if (!validarNombre($nombre)) {
 
-    die('El nombre es obligatorio y debe tener entre 2 y 50 caracteres.');
+    establecerErrorFormulario('El nombre es obligatorio y debe tener entre 2 y 50 caracteres.', $_POST, 'crear_usuario.php', 'nombre');
 
 }
 
 if (!validarApellidos($apellidos)) {
 
-    die('Los apellidos son obligatorios y deben tener entre 2 y 100 caracteres.');
+    establecerErrorFormulario('Los apellidos son obligatorios y deben tener entre 2 y 100 caracteres.', $_POST, 'crear_usuario.php', 'apellidos');
 
 }
 
 if (!validarUsername($username)) {
 
-    die('El username solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.');
+    establecerErrorFormulario('El username solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.', $_POST, 'crear_usuario.php', 'username');
 
 }
 
 if (!validarEmail($email)) {
 
-    die('El email contiene caracteres no permitidos o no tiene un formato válido.');
+    establecerErrorFormulario('El email contiene caracteres no permitidos o no tiene un formato válido.', $_POST, 'crear_usuario.php', 'email');
 
 }
 
 // El teléfono es opcional; solo se valida cuando se ha introducido.
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    die('El teléfono contiene caracteres no permitidos. Debe tener 9 dígitos y comenzar por 6, 7, 8 o 9.');
+    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'crear_usuario.php', 'telefono');
 
 }
 
@@ -110,22 +118,31 @@ if ($telefono !== '' && !validarTelefono($telefono)) {
 
 if ($id_empresa <= 0) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Debes seleccionar una empresa válida.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Debes seleccionar una empresa válida.', $_POST, 'crear_usuario.php', 'id_empresa');
 
 }
 
+
+// =====================================================
+// COMPROBAR QUE PUEDE CREAR USUARIOS PARA ESA EMPRESA
+// =====================================================
+//
+// EMPRESA solo puede crear usuarios para su propia
+// empresa. El desplegable de crear_usuario.php ya se lo
+// impide, pero esto es lo que de verdad lo impide si
+// manipula el formulario (ver el mismo patrón en
+// actualizar_usuario.php).
+//
+// =====================================================
+
+if (
+    rolActual() === ROL_EMPRESA &&
+    $id_empresa !== (int) ($_SESSION['id_empresa'] ?? 0)
+) {
+
+    establecerErrorFormulario('No puedes crear usuarios para esa empresa.', $_POST, 'crear_usuario.php', 'id_empresa');
+
+}
 
 // =====================================================
 // VALIDAR ROL
@@ -133,19 +150,7 @@ if ($id_empresa <= 0) {
 
 if ($id_rol <= 0) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Debes seleccionar un rol válido.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Debes seleccionar un rol válido.', $_POST, 'crear_usuario.php', 'id_rol');
 
 }
 
@@ -156,19 +161,7 @@ if ($id_rol <= 0) {
 
 if (!in_array($estado, $estadosValidos, true)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El estado seleccionado no es válido.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El estado seleccionado no es válido.', $_POST, 'crear_usuario.php', 'estado');
 
 }
 
@@ -179,19 +172,7 @@ if (!in_array($estado, $estadosValidos, true)) {
 
 if ($estado === 'Inactivo' && $motivoInactivo === '') {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            Indica el motivo por el que el usuario se marca como inactivo.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('Indica el motivo por el que el usuario se marca como inactivo.', $_POST, 'crear_usuario.php', 'motivo_inactivo');
 
 }
 
@@ -199,19 +180,7 @@ if (
     mb_strlen($motivoInactivo, 'UTF-8') > 500
 ) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El motivo de inactividad no puede superar los 500 caracteres.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El motivo de inactividad no puede superar los 500 caracteres.', $_POST, 'crear_usuario.php', 'motivo_inactivo');
 
 }
 
@@ -231,19 +200,7 @@ $stmt->execute([$username]);
 
 if ($stmt->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El username ya existe.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El username ya existe.', $_POST, 'crear_usuario.php', 'username');
 
 }
 
@@ -263,19 +220,7 @@ $stmt->execute([$email]);
 
 if ($stmt->fetch()) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El email ya está registrado.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El email ya está registrado.', $_POST, 'crear_usuario.php', 'email');
 
 }
 
@@ -285,7 +230,7 @@ if ($stmt->fetch()) {
 // =====================================================
 
 $stmt = $pdo->prepare("
-    SELECT id
+    SELECT id, creado_por
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -293,21 +238,33 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$id_empresa]);
 
-if (!$stmt->fetch()) {
+$empresaSeleccionada = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    die('
-        <h2>Error</h2>
+if (!$empresaSeleccionada) {
 
-        <p>
-            La empresa seleccionada no existe.
-        </p>
+    establecerErrorFormulario('La empresa seleccionada no existe.', $_POST, 'crear_usuario.php', 'id_empresa');
 
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+}
+
+
+// =====================================================
+// COMPROBAR QUE NG PUEDE CREAR USUARIOS PARA ESA EMPRESA
+// =====================================================
+//
+// NG solo puede crear usuarios para las empresas que ha
+// creado él mismo (mismo criterio que puedeVerEmpresa()
+// en el resto de la app). SRG no tiene restricción.
+//
+// =====================================================
+
+if (
+    rolActual() === ROL_NG &&
+    !puedeVerEmpresa(
+        $empresaSeleccionada['creado_por'] !== null ? (int) $empresaSeleccionada['creado_por'] : null
+    )
+) {
+
+    establecerErrorFormulario('No puedes crear usuarios para esa empresa.', $_POST, 'crear_usuario.php', 'id_empresa');
 
 }
 
@@ -317,7 +274,7 @@ if (!$stmt->fetch()) {
 // =====================================================
 
 $stmt = $pdo->prepare("
-    SELECT id
+    SELECT id, nombre
     FROM roles
     WHERE id = ?
     LIMIT 1
@@ -325,30 +282,89 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$id_rol]);
 
-if (!$stmt->fetch()) {
+$rolSeleccionado = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    die('
-        <h2>Error</h2>
+if (!$rolSeleccionado) {
 
-        <p>
-            El rol seleccionado no existe.
-        </p>
-
-        <p>
-            <a href="crear_usuario.php">
-                Volver al formulario
-            </a>
-        </p>
-    ');
+    establecerErrorFormulario('El rol seleccionado no existe.', $_POST, 'crear_usuario.php', 'id_rol');
 
 }
 
 
 // =====================================================
-// GENERAR CONTRASEÑA TEMPORAL
+// COMPROBAR QUE PUEDE ASIGNAR ESE ROL
+// =====================================================
+//
+// EMPRESA no elige rol en el formulario: todo lo que crea
+// es rol USUARIO (equipo simple). NG no puede crear otro
+// SRG.
+//
 // =====================================================
 
-$passwordTemporal = bin2hex(random_bytes(4));
+if (
+    rolActual() === ROL_EMPRESA &&
+    $rolSeleccionado['nombre'] !== ROL_USUARIO
+) {
+
+    establecerErrorFormulario('No puedes asignar ese rol.', $_POST, 'crear_usuario.php', 'id_rol');
+
+}
+
+if (
+    rolActual() === ROL_NG &&
+    $rolSeleccionado['nombre'] === ROL_SRG
+) {
+
+    establecerErrorFormulario('No puedes asignar ese rol.', $_POST, 'crear_usuario.php', 'id_rol');
+
+}
+
+
+// =====================================================
+// UNA EMPRESA SOLO PUEDE TENER UN USUARIO CON ROL EMPRESA
+// =====================================================
+//
+// Si la empresa elegida ya tiene un usuario con rol
+// EMPRESA, el desplegable Rol de crear_usuario.php ya se
+// bloquea en USUARIO (ver el <script> de esa página), pero
+// esto es lo que de verdad lo impide si se manipula el
+// formulario.
+//
+// =====================================================
+
+if ($rolSeleccionado['nombre'] === ROL_EMPRESA) {
+
+    $stmtEmpresaYaTieneAdmin = $pdo->prepare("
+        SELECT id
+        FROM usuarios
+        WHERE id_empresa = ?
+            AND id_rol = (SELECT id FROM roles WHERE nombre = ? LIMIT 1)
+        LIMIT 1
+    ");
+
+    $stmtEmpresaYaTieneAdmin->execute([$id_empresa, ROL_EMPRESA]);
+
+    if ($stmtEmpresaYaTieneAdmin->fetch()) {
+
+        establecerErrorFormulario('Esa empresa ya tiene un usuario con rol Empresa. El nuevo usuario debe ser Usuario.', $_POST, 'crear_usuario.php', 'id_rol');
+
+    }
+
+}
+
+
+// =====================================================
+// CONTRASEÑA INICIAL
+// =====================================================
+//
+// Misma contraseña inicial fija que resetear_password.php,
+// para que todo el mundo sepa con cuál acceder la primera
+// vez. cambiar_password la obliga a cambiarla nada más
+// entrar.
+//
+// =====================================================
+
+$passwordTemporal = '123456';
 
 $passwordHash = password_hash(
     $passwordTemporal,
@@ -535,3 +551,129 @@ $usuarioAcceso =
     $usuario['username'];
 
 ?>
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Usuario creado - Comparador Eléctrico</title>
+
+    <link rel="stylesheet" href="../../css/style.css">
+
+</head>
+
+<body>
+
+    <?php include '../../templates/header.php'; ?>
+
+    <div class="app-container">
+
+        <?php include '../../templates/sidebar.php'; ?>
+
+        <main class="main-content">
+
+            <div class="page-header">
+
+                <div>
+                    <h1>Usuarios</h1>
+                    <p>Usuario creado correctamente</p>
+                </div>
+
+            </div>
+
+            <div class="config-card confirmation-card">
+
+                <h2>Usuario creado</h2>
+
+                <div class="form-info">
+                    <p>
+                        El usuario
+                        <strong><?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?></strong>
+                        se ha creado correctamente.
+                    </p>
+                </div>
+
+                <div class="usuario-detalle">
+
+                    <div class="usuario-detalle-grid">
+
+                        <div class="usuario-detalle-item">
+                            <span>ID de usuario</span>
+                            <strong><?= htmlspecialchars($usuario['id'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Username</span>
+                            <strong><?= htmlspecialchars($usuario['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Email</span>
+                            <strong><?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Empresa</span>
+                            <strong><?= htmlspecialchars($usuario['empresa'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Rol</span>
+                            <strong><?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Estado</span>
+                            <strong><?= htmlspecialchars($usuario['estado'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <?php if ($usuario['estado'] === 'Inactivo'): ?>
+
+                            <div class="usuario-detalle-item">
+                                <span>Motivo</span>
+                                <strong><?= htmlspecialchars($usuario['motivo_inactivo'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                        <?php endif; ?>
+
+                        <div class="usuario-detalle-item">
+                            <span>Acceso inicial</span>
+                            <strong><?= htmlspecialchars($usuarioAcceso, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Contraseña temporal</span>
+                            <strong><?= htmlspecialchars($passwordTemporal, ENT_QUOTES, 'UTF-8') ?></strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <a href="crear_usuario.php" class="config-save-button">
+                        + Añadir usuario
+                    </a>
+
+                    <a href="usuarios.php" class="config-cancel-button">
+                        Volver a usuarios
+                    </a>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <?php include '../../templates/footer.php'; ?>
+
+</body>
+
+</html>

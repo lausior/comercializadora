@@ -5,6 +5,16 @@ session_start();
 require_once '../../config/permisos.php';
 requerirPermiso('clientes');
 
+require_once '../../includes/form_flash.php';
+
+
+// =====================================================
+// ERROR PENDIENTE (SI VENIMOS DE guardar_cliente.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
+
 ?>
 
 <!DOCTYPE html>
@@ -91,7 +101,10 @@ requerirPermiso('clientes');
                          MENSAJE DE ERROR GENERAL
                     ========================== -->
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
 
                     <div class="form-grid">
@@ -107,9 +120,11 @@ requerirPermiso('clientes');
                                 Nombre
                             </label>
 
-                            <input type="text" id="nombre" name="nombre" required>
+                            <input type="text" id="nombre" name="nombre"
+                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nombre') ?>" required>
 
-                            <span class="field-error" id="error-nombre"></span>
+                            <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
 
                         </div>
 
@@ -124,9 +139,11 @@ requerirPermiso('clientes');
                                 Apellidos
                             </label>
 
-                            <input type="text" id="apellidos" name="apellidos" required>
+                            <input type="text" id="apellidos" name="apellidos"
+                                class="<?= claseErrorCampo($errorFormulario, 'apellidos') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'apellidos') ?>" required>
 
-                            <span class="field-error" id="error-apellidos"></span>
+                            <span class="field-error" id="error-apellidos"><?= mensajeErrorCampo($errorFormulario, 'apellidos') ?></span>
 
                         </div>
 
@@ -141,9 +158,11 @@ requerirPermiso('clientes');
                                 DNI/NIE
                             </label>
 
-                            <input type="text" id="nif" name="nif" required>
+                            <input type="text" id="nif" name="nif"
+                                class="<?= claseErrorCampo($errorFormulario, 'nif') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nif') ?>" required>
 
-                            <span class="field-error" id="error-nif"></span>
+                            <span class="field-error" id="error-nif"><?= mensajeErrorCampo($errorFormulario, 'nif') ?></span>
 
                         </div>
 
@@ -158,9 +177,11 @@ requerirPermiso('clientes');
                                 Dirección
                             </label>
 
-                            <input type="text" id="direccion" name="direccion">
+                            <input type="text" id="direccion" name="direccion"
+                                class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'direccion') ?>">
 
-                            <span class="field-error" id="error-direccion"></span>
+                            <span class="field-error" id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
 
                         </div>
 
@@ -175,9 +196,11 @@ requerirPermiso('clientes');
                                 Teléfono
                             </label>
 
-                            <input type="tel" id="telefono" name="telefono">
+                            <input type="tel" id="telefono" name="telefono"
+                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'telefono') ?>">
 
-                            <span class="field-error" id="error-telefono"></span>
+                            <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
 
                         </div>
 
@@ -192,9 +215,11 @@ requerirPermiso('clientes');
                                 Email
                             </label>
 
-                            <input type="email" id="email" name="email" required>
+                            <input type="email" id="email" name="email"
+                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'email') ?>" required>
 
-                            <span class="field-error" id="error-email"></span>
+                            <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
 
                         </div>
 

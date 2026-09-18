@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../config/permisos.php';
 requerirPermiso('planificador');
 
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/form_flash.php';
 
 
 // =====================================================
@@ -95,6 +96,14 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
 
 }
 
+
+// =====================================================
+// ERROR PENDIENTE (SI VENIMOS DE actualizar_tarea.php)
+// =====================================================
+
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
+
 ?>
 
 <!DOCTYPE html>
@@ -157,7 +166,10 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                 <form action="actualizar_tarea.php" method="POST" novalidate>
 
 
-                    <div class="form-error-general" id="form-error-general" role="alert" style="display: none;"></div>
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
                     <input type="hidden" name="id" value="<?= (int) $tarea['id'] ?>">
 
@@ -171,9 +183,11 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Título
                             </label>
 
-                            <input type="text" id="titulo" name="titulo" value="<?= htmlspecialchars($tarea['titulo'], ENT_QUOTES, 'UTF-8') ?>" required>
+                            <input type="text" id="titulo" name="titulo"
+                                class="<?= claseErrorCampo($errorFormulario, 'titulo') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'titulo', $tarea['titulo']) ?>" required>
 
-                            <span class="field-error" id="error-titulo"></span>
+                            <span class="field-error" id="error-titulo"><?= mensajeErrorCampo($errorFormulario, 'titulo') ?></span>
 
                         </div>
 
@@ -184,11 +198,14 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Área
                             </label>
 
-                            <select id="area" name="area" required>
+                            <?php $areaPrevia = $datosPrevios['area'] ?? $tarea['area']; ?>
+
+                            <select id="area" name="area"
+                                class="<?= claseErrorCampo($errorFormulario, 'area') ?>" required>
 
                                 <?php foreach (['Tarifas', 'Clientes', 'Incidencias', 'Comparador', 'Sistema'] as $areaOpcion): ?>
 
-                                    <option value="<?= $areaOpcion ?>" <?= $tarea['area'] === $areaOpcion ? 'selected' : '' ?>>
+                                    <option value="<?= $areaOpcion ?>" <?= $areaPrevia === $areaOpcion ? 'selected' : '' ?>>
                                         <?= $areaOpcion ?>
                                     </option>
 
@@ -196,7 +213,7 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
 
                             </select>
 
-                            <span class="field-error" id="error-area"></span>
+                            <span class="field-error" id="error-area"><?= mensajeErrorCampo($errorFormulario, 'area') ?></span>
 
                         </div>
 
@@ -207,9 +224,11 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Fecha
                             </label>
 
-                            <input type="date" id="fecha" name="fecha" value="<?= htmlspecialchars($tarea['fecha']) ?>" required>
+                            <input type="date" id="fecha" name="fecha"
+                                class="<?= claseErrorCampo($errorFormulario, 'fecha') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'fecha', $tarea['fecha']) ?>" required>
 
-                            <span class="field-error" id="error-fecha"></span>
+                            <span class="field-error" id="error-fecha"><?= mensajeErrorCampo($errorFormulario, 'fecha') ?></span>
 
                         </div>
 
@@ -220,9 +239,11 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Hora (opcional)
                             </label>
 
-                            <input type="time" id="hora" name="hora" value="<?= $tarea['hora'] ? substr($tarea['hora'], 0, 5) : '' ?>">
+                            <input type="time" id="hora" name="hora"
+                                class="<?= claseErrorCampo($errorFormulario, 'hora') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'hora', $tarea['hora'] ? substr($tarea['hora'], 0, 5) : '') ?>">
 
-                            <span class="field-error" id="error-hora"></span>
+                            <span class="field-error" id="error-hora"><?= mensajeErrorCampo($errorFormulario, 'hora') ?></span>
 
                         </div>
 
@@ -233,9 +254,11 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Responsable (opcional)
                             </label>
 
-                            <input type="text" id="responsable" name="responsable" value="<?= htmlspecialchars($tarea['responsable'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Nombre de la persona responsable">
+                            <input type="text" id="responsable" name="responsable"
+                                class="<?= claseErrorCampo($errorFormulario, 'responsable') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'responsable', $tarea['responsable'] ?? '') ?>" placeholder="Nombre de la persona responsable">
 
-                            <span class="field-error" id="error-responsable"></span>
+                            <span class="field-error" id="error-responsable"><?= mensajeErrorCampo($errorFormulario, 'responsable') ?></span>
 
                         </div>
 
@@ -246,11 +269,14 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
                                 Estado
                             </label>
 
-                            <select id="estado" name="estado" required>
+                            <?php $estadoPrevio = $datosPrevios['estado'] ?? $tarea['estado']; ?>
+
+                            <select id="estado" name="estado"
+                                class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" required>
 
                                 <?php foreach (['Pendiente', 'En curso', 'Completada'] as $estadoOpcion): ?>
 
-                                    <option value="<?= $estadoOpcion ?>" <?= $tarea['estado'] === $estadoOpcion ? 'selected' : '' ?>>
+                                    <option value="<?= $estadoOpcion ?>" <?= $estadoPrevio === $estadoOpcion ? 'selected' : '' ?>>
                                         <?= $estadoOpcion ?>
                                     </option>
 
@@ -258,7 +284,7 @@ if (!puedeVerTarea($tarea['creado_por'] !== null ? (int) $tarea['creado_por'] : 
 
                             </select>
 
-                            <span class="field-error" id="error-estado"></span>
+                            <span class="field-error" id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
 
                         </div>
 

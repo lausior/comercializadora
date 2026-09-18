@@ -12,7 +12,11 @@ TIPOS DE EVENTO
 Creamos unas constantes para representar los diferentes tipos de logs que puede guardar nuestra aplicación.
 */
 
-define('LOG_INFO', 'Información');
+// LOG_INFO NO se usa como nombre porque ya existe como constante
+// nativa de PHP (nivel de syslog, valor entero 6): definirla de
+// nuevo aquí como string provocaba el warning "Constant LOG_INFO
+// already defined" cada vez que se cargaba este archivo.
+define('LOG_INFORMACION', 'Información');
 define('LOG_EXITO', 'Éxito');
 define('LOG_ADVERTENCIA', 'Advertencia');
 define('LOG_ERROR', 'Error');
@@ -161,10 +165,40 @@ function marcarUltimoBorradoLogs(PDO $pdo): void
 
 /**
  * Borra los logs con más de $dias días de antigüedad.
+ *
+ * $rolesVisibles limita el borrado a los logs de esos roles
+ * (mismo criterio que rolesVisiblesEnLogs(), en
+ * config/permisos.php): así, cuando EMPRESA fuerza el
+ * borrado, solo se borran los logs que él mismo puede ver
+ * (EMPRESA y USUARIO), y NG/SRG conservan los suyos. Con
+ * null (valor por defecto) no se filtra por rol, para no
+ * tocar el borrado automático por retención
+ * (comprobarYBorrarLogsAntiguos()), que es global.
+ *
  * Devuelve el número de filas borradas.
  */
-function borrarLogsMasAntiguosQue(PDO $pdo, int $dias): int
+function borrarLogsMasAntiguosQue(PDO $pdo, int $dias, ?array $rolesVisibles = null): int
 {
+    if ($rolesVisibles !== null) {
+
+        if (empty($rolesVisibles)) {
+            return 0;
+        }
+
+        $marcadores = implode(',', array_fill(0, count($rolesVisibles), '?'));
+
+        $stmt = $pdo->prepare("
+            DELETE FROM logs
+            WHERE fecha_hora < (NOW() - INTERVAL ? DAY)
+                AND rol IN ($marcadores)
+        ");
+
+        $stmt->execute(array_merge([$dias], $rolesVisibles));
+
+        return $stmt->rowCount();
+
+    }
+
     $stmt = $pdo->prepare("
         DELETE FROM logs
         WHERE fecha_hora < (NOW() - INTERVAL :dias DAY)
@@ -177,11 +211,32 @@ function borrarLogsMasAntiguosQue(PDO $pdo, int $dias): int
 
 
 /**
- * Borra TODOS los logs sin excepción.
+ * Borra TODOS los logs sin excepción (o, si se pasa
+ * $rolesVisibles, todos los logs de esos roles — ver el
+ * mismo criterio en borrarLogsMasAntiguosQue()).
  * Devuelve el número de filas borradas.
  */
-function borrarTodosLosLogs(PDO $pdo): int
+function borrarTodosLosLogs(PDO $pdo, ?array $rolesVisibles = null): int
 {
+    if ($rolesVisibles !== null) {
+
+        if (empty($rolesVisibles)) {
+            return 0;
+        }
+
+        $marcadores = implode(',', array_fill(0, count($rolesVisibles), '?'));
+
+        $stmtContar = $pdo->prepare("SELECT COUNT(*) FROM logs WHERE rol IN ($marcadores)");
+        $stmtContar->execute($rolesVisibles);
+        $filas = (int) $stmtContar->fetchColumn();
+
+        $stmtBorrar = $pdo->prepare("DELETE FROM logs WHERE rol IN ($marcadores)");
+        $stmtBorrar->execute($rolesVisibles);
+
+        return $filas;
+
+    }
+
     $filas = (int) $pdo->query("SELECT COUNT(*) FROM logs")->fetchColumn();
 
     $pdo->exec("DELETE FROM logs");
