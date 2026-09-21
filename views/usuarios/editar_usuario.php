@@ -29,19 +29,24 @@ $idUsuario = (int) $_GET['id'];
 
 $stmtUsuario = $pdo->prepare("
     SELECT
-        id,
-        username,
-        nombre,
-        apellidos,
-        email,
-        telefono,
-        id_empresa,
-        id_rol,
-        estado,
-        motivo_inactivo,
-        creado_por
-    FROM usuarios
-    WHERE id = ?
+        u.id,
+        u.username,
+        u.nombre,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.id_empresa,
+        u.id_rol,
+        u.estado,
+        u.motivo_inactivo,
+        u.creado_por,
+        r.nombre AS rol
+    FROM usuarios u
+
+    INNER JOIN roles r
+        ON r.id = u.id_rol
+
+    WHERE u.id = ?
 ");
 
 $stmtUsuario->execute([$idUsuario]);
@@ -92,55 +97,56 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 // =====================================================
 //
 // Un usuario con rol EMPRESA no puede mover a su gente de
-// empresa (siempre es la misma) ni cambiarle el rol, así
-// que ninguno de los dos campos se muestra: se envían
-// como campos ocultos con el valor actual (ver el mismo
-// criterio en crear_usuario.php).
+// empresa (siempre es la misma) ni cambiarle el rol. Lo
+// mismo aplica a NG con su propio equipo (rol USUARIO de
+// NG Asesores): desde la sección Usuarios, NG solo gestiona
+// su propia empresa. Así que en ninguno de los dos casos se
+// muestran esos campos: se envían ocultos con el valor
+// actual (ver el mismo criterio en crear_usuario.php).
 //
 // =====================================================
 
-$esEmpresa = rolActual() === ROL_EMPRESA;
-
-if (!$esEmpresa) {
+$empresaYRolFijos = in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true);
 
 
-    // =====================================================
-    // OBTENER EMPRESAS
-    // =====================================================
+// =====================================================
+// ¿EL USUARIO EDITADO ES LA CUENTA DE ACCESO DE SU EMPRESA?
+// =====================================================
+//
+// El usuario con rol EMPRESA no es "un usuario más": es el
+// login de la propia empresa, creado junto a ella reutilizando
+// su nombre, email y teléfono (ver guardar_empresa.php). Esos
+// tres campos ya tienen una única fuente de verdad en la tabla
+// empresas, así que aquí se muestran de solo lectura — para
+// cambiarlos hay que editar la empresa. El username sí es
+// propio del acceso (no existe en empresas), así que se puede
+// modificar con normalidad.
+//
+// =====================================================
 
-    // SRG puede reasignar el usuario a cualquier empresa.
-    // El resto de roles solo puede editar usuarios de su
-    // propia empresa (ya comprobado arriba), así que el
-    // desplegable solo le ofrece esa misma empresa.
+$usuarioEsCuentaEmpresa = $usuario['rol'] === ROL_EMPRESA;
 
-    if (rolActual() === ROL_SRG) {
-
-        $stmtEmpresas = $pdo->query("
-            SELECT id, nombre
-            FROM empresas
-            ORDER BY nombre
-        ");
-
-        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-    } else {
-
-        $stmtEmpresas = $pdo->prepare("
-            SELECT id, nombre
-            FROM empresas
-            WHERE id = ?
-        ");
-
-        $stmtEmpresas->execute([$usuario['id_empresa']]);
-
-        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-    }
+if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
 
 
     // =====================================================
-    // OBTENER ROLES
+    // OBTENER EMPRESAS Y ROLES
     // =====================================================
+    //
+    // Solo SRG llega hasta aquí (EMPRESA y NG ya tienen la
+    // empresa y el rol fijos, ver arriba), así que puede
+    // reasignar el usuario a cualquier empresa y cualquier
+    // rol.
+    //
+    // =====================================================
+
+    $stmtEmpresas = $pdo->query("
+        SELECT id, nombre
+        FROM empresas
+        ORDER BY nombre
+    ");
+
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
 
     $stmtRoles = $pdo->query("
         SELECT id, nombre
@@ -149,18 +155,6 @@ if (!$esEmpresa) {
     ");
 
     $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
-
-    // Igual que en crear_usuario.php: nadie puede asignar un
-    // rol más privilegiado que el suyo propio.
-
-    if (rolActual() === ROL_NG) {
-
-        $roles = array_values(array_filter(
-            $roles,
-            fn(array $r): bool => $r['nombre'] !== ROL_SRG
-        ));
-
-    }
 
 
     // =====================================================
@@ -321,57 +315,84 @@ if (!$esEmpresa) {
                     </div>
 
 
+                    <?php if ($usuarioEsCuentaEmpresa): ?>
+
+                        <div class="form-info">
+                            <p>
+                                Este usuario es el acceso de la empresa: su
+                                nombre, email, teléfono, empresa y rol son
+                                los datos de la propia empresa y se editan
+                                desde <a href="../empresas/editar_empresa.php?id=<?= (int) $usuario['id_empresa'] ?>">su ficha</a>.
+                                Aquí solo se puede modificar el username de
+                                acceso y el estado.
+                            </p>
+                        </div>
+
+                    <?php endif; ?>
+
+
                     <div class="form-grid">
 
 
+                    <?php if ($usuarioEsCuentaEmpresa): ?>
 
-                    <!-- =========================
-                         NOMBRE
-                    ========================== -->
+                        <!-- Nombre, apellidos, email y teléfono pertenecen
+                             a la empresa (ver guardar_empresa.php): no se
+                             muestran aquí. actualizar_usuario.php ignora
+                             igualmente cualquier valor que llegara para
+                             ellos y conserva el que ya había en la BD. -->
 
-                    <div class="form-group">
+                    <?php else: ?>
 
-                        <label for="nombre">
-                            Nombre
-                        </label>
+                        <!-- =========================
+                             NOMBRE
+                        ========================== -->
 
-                        <input
-                            type="text"
-                            id="nombre"
-                            name="nombre"
-                            class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
-                            value="<?= valorFormulario($datosPrevios, 'nombre', $usuario['nombre']) ?>"
-                            required
-                        >
+                        <div class="form-group">
 
-                        <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
+                            <label for="nombre">
+                                Nombre
+                            </label>
 
-                    </div>
+                            <input
+                                type="text"
+                                id="nombre"
+                                name="nombre"
+                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'nombre', $usuario['nombre']) ?>"
+                                required
+                            >
+
+                            <span class="field-error" id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
+
+                        </div>
 
 
 
-                    <!-- =========================
-                         APELLIDOS
-                    ========================== -->
+                        <!-- =========================
+                             APELLIDOS
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="apellidos">
-                            Apellidos
-                        </label>
+                            <label for="apellidos">
+                                Apellidos
+                            </label>
 
-                        <input
-                            type="text"
-                            id="apellidos"
-                            name="apellidos"
-                            class="<?= claseErrorCampo($errorFormulario, 'apellidos') ?>"
-                            value="<?= valorFormulario($datosPrevios, 'apellidos', $usuario['apellidos']) ?>"
-                            required
-                        >
+                            <input
+                                type="text"
+                                id="apellidos"
+                                name="apellidos"
+                                class="<?= claseErrorCampo($errorFormulario, 'apellidos') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'apellidos', $usuario['apellidos']) ?>"
+                                required
+                            >
 
-                        <span class="field-error" id="error-apellidos"><?= mensajeErrorCampo($errorFormulario, 'apellidos') ?></span>
+                            <span class="field-error" id="error-apellidos"><?= mensajeErrorCampo($errorFormulario, 'apellidos') ?></span>
 
-                    </div>
+                        </div>
+
+                    <?php endif; ?>
 
 
 
@@ -399,61 +420,67 @@ if (!$esEmpresa) {
                     </div>
 
 
+                    <?php if (!$usuarioEsCuentaEmpresa): ?>
 
-                    <!-- =========================
-                         EMAIL
-                    ========================== -->
+                        <!-- =========================
+                             EMAIL
+                        ========================== -->
 
-                    <div class="form-group">
+                        <div class="form-group">
 
-                        <label for="email">
-                            Email
-                        </label>
+                            <label for="email">
+                                Email
+                            </label>
 
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
-                            value="<?= valorFormulario($datosPrevios, 'email', $usuario['email']) ?>"
-                            required
-                        >
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'email', $usuario['email']) ?>"
+                                required
+                            >
 
-                        <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
+                            <span class="field-error" id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
 
-                    </div>
-
-
-
-                    <!-- =========================
-                         TELEFONO
-                    ========================== -->
-
-                    <div class="form-group">
-
-                        <label for="telefono">
-                            Teléfono
-                        </label>
-
-                        <input
-                            type="tel"
-                            id="telefono"
-                            name="telefono"
-                            class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
-                            value="<?= valorFormulario($datosPrevios, 'telefono', $usuario['telefono'] ?? '') ?>"
-                        >
-
-                        <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
-
-                    </div>
+                        </div>
 
 
 
-                    <?php if ($esEmpresa): ?>
+                        <!-- =========================
+                             TELEFONO
+                        ========================== -->
 
-                        <!-- Un usuario con rol EMPRESA no puede cambiar
-                             la empresa ni el rol de su gente: se envían
-                             como campos ocultos con el valor actual. -->
+                        <div class="form-group">
+
+                            <label for="telefono">
+                                Teléfono
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="telefono"
+                                name="telefono"
+                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
+                                value="<?= valorFormulario($datosPrevios, 'telefono', $usuario['telefono'] ?? '') ?>"
+                            >
+
+                            <span class="field-error" id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
+
+                        </div>
+
+                    <?php endif; ?>
+
+
+
+                    <?php if ($empresaYRolFijos || $usuarioEsCuentaEmpresa): ?>
+
+                        <!-- Un usuario con rol EMPRESA (o NG, para su
+                             propio equipo) no puede cambiar la empresa ni
+                             el rol de su gente, y tampoco se puede cambiar
+                             la empresa/rol de LA cuenta EMPRESA desde
+                             aquí: se envían como campos ocultos con el
+                             valor actual. -->
 
                         <input
                             type="hidden"
@@ -742,7 +769,7 @@ if (!$esEmpresa) {
 
     <script src="../../js/usuarios.js"></script>
 
-    <?php if (!$esEmpresa): ?>
+    <?php if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa): ?>
 
         <!-- Igual que en crear_usuario.php: bloquea el desplegable
              Rol en "Usuario" si la empresa elegida ya tiene un

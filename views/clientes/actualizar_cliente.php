@@ -50,6 +50,13 @@ if ($id <= 0) {
 
 }
 
+// Se acumulan TODOS los errores encontrados en vez de
+// cortar en el primero: así se avisa de todo lo que falla
+// en un único intento (mismo criterio que
+// guardar_empresa.php/guardar_usuario.php).
+
+$errores = [];
+
 if (
     $nombre === '' ||
     $apellidos === '' ||
@@ -57,52 +64,53 @@ if (
     $nif === ''
 ) {
 
-    establecerErrorFormulario('Todos los campos obligatorios deben estar completos.', $_POST, 'editar_cliente.php?id=' . $id);
+    $errores[] = ['mensaje' => 'Todos los campos obligatorios deben estar completos.', 'campo' => null];
 
 }
 
-
 if (!validarNombre($nombre)) {
 
-    if (preg_match("/^[-']/", $nombre)) {
-        establecerErrorFormulario('El nombre debe empezar con una letra.', $_POST, 'editar_cliente.php?id=' . $id, 'nombre');
-    }
-
-    establecerErrorFormulario('El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'editar_cliente.php?id=' . $id, 'nombre');
+    $errores[] = [
+        'mensaje' => preg_match("/^[-']/", $nombre)
+            ? 'El nombre debe empezar con una letra.'
+            : 'El nombre no es válido. Solo se permiten letras, espacios, guiones y apóstrofes.',
+        'campo' => 'nombre',
+    ];
 
 }
 
 if (!validarApellidos($apellidos)) {
 
-    if (preg_match("/^[-']/", $apellidos)) {
-        establecerErrorFormulario('Los apellidos deben empezar con una letra.', $_POST, 'editar_cliente.php?id=' . $id, 'apellidos');
-    }
-
-    establecerErrorFormulario('Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.', $_POST, 'editar_cliente.php?id=' . $id, 'apellidos');
+    $errores[] = [
+        'mensaje' => preg_match("/^[-']/", $apellidos)
+            ? 'Los apellidos deben empezar con una letra.'
+            : 'Los apellidos no son válidos. Solo se permiten letras, espacios, guiones y apóstrofes.',
+        'campo' => 'apellidos',
+    ];
 
 }
 
 if (!validarDniNie($nif)) {
 
-    establecerErrorFormulario('El DNI/NIE no es válido.', $_POST, 'editar_cliente.php?id=' . $id, 'nif');
+    $errores[] = ['mensaje' => 'El DNI/NIE no es válido.', 'campo' => 'nif'];
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    establecerErrorFormulario('La dirección no es válida.', $_POST, 'editar_cliente.php?id=' . $id, 'direccion');
+    $errores[] = ['mensaje' => 'La dirección no es válida.', 'campo' => 'direccion'];
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'editar_cliente.php?id=' . $id, 'telefono');
+    $errores[] = ['mensaje' => 'El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', 'campo' => 'telefono'];
 
 }
 
 if (!validarEmail($email)) {
 
-    establecerErrorFormulario('El correo electrónico no tiene un formato válido.', $_POST, 'editar_cliente.php?id=' . $id, 'email');
+    $errores[] = ['mensaje' => 'El correo electrónico no tiene un formato válido.', 'campo' => 'email'];
 
 }
 
@@ -182,7 +190,21 @@ $stmtNif->execute([
 
 if ($stmtNif->fetch()) {
 
-    establecerErrorFormulario('Ya existe otro cliente con ese DNI/NIE.', $_POST, 'editar_cliente.php?id=' . $id, 'nif');
+    $errores[] = ['mensaje' => 'Ya existe otro cliente con ese DNI/NIE.', 'campo' => 'nif'];
+
+}
+
+
+// =====================================================
+// SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
+// =====================================================
+
+if (!empty($errores)) {
+
+    $mensajes = array_unique(array_column($errores, 'mensaje'));
+    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
+
+    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'editar_cliente.php?id=' . $id, $primerCampo);
 
 }
 
@@ -304,6 +326,10 @@ registrarLog(
 
                 <div class="page-header-actions">
 
+                    <a href="crear_cliente.php" class="config-save-button">
+                        + Añadir cliente
+                    </a>
+
                 </div>
 
             </div>
@@ -316,12 +342,7 @@ registrarLog(
             <div class="config-card confirmation-card">
 
 
-                <h2>
-                    Cliente actualizado
-                </h2>
-
-
-                <div class="form-info">
+                <div class="form-info registration-success">
 
                     <p>
 
@@ -347,11 +368,6 @@ registrarLog(
                     <div class="usuario-detalle-grid">
 
                         <div class="usuario-detalle-item">
-                            <span>ID de cliente</span>
-                            <strong><?= htmlspecialchars($cliente['id']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
                             <span>Nombre</span>
                             <strong><?= htmlspecialchars($cliente['nombre']) ?></strong>
                         </div>
@@ -359,6 +375,16 @@ registrarLog(
                         <div class="usuario-detalle-item">
                             <span>Apellidos</span>
                             <strong><?= htmlspecialchars($cliente['apellidos']) ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>ID de cliente</span>
+                            <strong><?= htmlspecialchars($cliente['id']) ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>DNI/NIE</span>
+                            <strong><?= htmlspecialchars($cliente['nif']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">
@@ -376,11 +402,6 @@ registrarLog(
                             <strong><?= htmlspecialchars($cliente['email']) ?></strong>
                         </div>
 
-                        <div class="usuario-detalle-item">
-                            <span>DNI/NIE</span>
-                            <strong><?= htmlspecialchars($cliente['nif']) ?></strong>
-                        </div>
-
                     </div>
 
                 </div>
@@ -393,8 +414,8 @@ registrarLog(
                 <div class="form-actions">
 
 
-                    <a href="crear_cliente.php" class="config-save-button">
-                        + Nuevo cliente
+                    <a href="editar_cliente.php?id=<?= (int) $cliente['id'] ?>" class="config-save-button">
+                        Editar
                     </a>
 
 

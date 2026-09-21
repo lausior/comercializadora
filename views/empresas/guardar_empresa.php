@@ -27,12 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // RECOGER DATOS DEL FORMULARIO
 // =====================================================
 
-$codigoEmpresa = trim($_POST['codigo_empresa'] ?? '');
-$nombre        = trim($_POST['nombre'] ?? '');
-$cif           = trim($_POST['cif'] ?? '');
-$direccion     = trim($_POST['direccion'] ?? '');
-$telefono      = trim($_POST['telefono'] ?? '');
-$email         = trim($_POST['email'] ?? '');
+$codigoEmpresa   = trim($_POST['codigo_empresa'] ?? '');
+$nombre          = trim($_POST['nombre'] ?? '');
+$cif             = trim($_POST['cif'] ?? '');
+$direccion       = trim($_POST['direccion'] ?? '');
+$telefono        = trim($_POST['telefono'] ?? '');
+$email           = trim($_POST['email'] ?? '');
+$estado          = trim($_POST['estado'] ?? '');
+$motivoInactivo  = trim($_POST['motivo_inactivo'] ?? '');
+
+$estadosValidos = ['Activo', 'Inactivo'];
 
 // Acceso de la empresa (rol EMPRESA): no es un usuario
 // aparte que "pertenece" a la empresa, es el login de la
@@ -48,6 +52,17 @@ $usuarioUsername = trim($_POST['usuario_username'] ?? '');
 // =====================================================
 // VALIDACIONES
 // =====================================================
+//
+// Se acumulan TODOS los errores encontrados (formato y
+// duplicados) en vez de cortar en el primero: así, si el
+// CIF no es válido Y el username ya existe, se avisa de
+// las dos cosas a la vez en el primer intento, en lugar de
+// obligar a corregir una, reenviar, y solo entonces
+// enterarse de la siguiente.
+//
+// =====================================================
+
+$errores = [];
 
 if (
     $codigoEmpresa === '' ||
@@ -56,47 +71,60 @@ if (
     $email === ''
 ) {
 
-    establecerErrorFormulario('Faltan datos obligatorios.', $_POST, 'crear_empresa.php');
+    $errores[] = ['mensaje' => 'Faltan datos obligatorios.', 'campo' => null];
 
 }
 
 if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
 
-    establecerErrorFormulario('El código de empresa no es válido.', $_POST, 'crear_empresa.php');
+    $errores[] = ['mensaje' => 'El código de empresa no es válido.', 'campo' => null];
 
 }
 
 if (!validarNombreEmpresa($nombre)) {
 
-    if (preg_match("/^[-'.]/", $nombre)) {
-        establecerErrorFormulario('El nombre de la empresa debe empezar con una letra.', $_POST, 'crear_empresa.php', 'nombre');
-    }
-
-    establecerErrorFormulario('El nombre de la empresa no es válido. Solo se permiten letras, números, espacios, guiones, apóstrofes y puntos.', $_POST, 'crear_empresa.php', 'nombre');
+    $errores[] = [
+        'mensaje' => preg_match("/^[-'.]/", $nombre)
+            ? 'El nombre de la empresa debe empezar con una letra.'
+            : 'El nombre de la empresa no es válido. Solo se permiten letras, números, espacios, guiones, apóstrofes y puntos.',
+        'campo' => 'nombre',
+    ];
 
 }
 
 if (!validarCIF($cif)) {
 
-    establecerErrorFormulario('El CIF no es válido.', $_POST, 'crear_empresa.php', 'cif');
+    $errores[] = ['mensaje' => 'El CIF no es válido.', 'campo' => 'cif'];
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    establecerErrorFormulario('La dirección no es válida.', $_POST, 'crear_empresa.php', 'direccion');
+    $errores[] = ['mensaje' => 'La dirección no es válida.', 'campo' => 'direccion'];
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'crear_empresa.php', 'telefono');
+    $errores[] = ['mensaje' => 'El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', 'campo' => 'telefono'];
 
 }
 
 if (!validarEmail($email)) {
 
-    establecerErrorFormulario('El email no es válido.', $_POST, 'crear_empresa.php', 'email');
+    $errores[] = ['mensaje' => 'El email no es válido.', 'campo' => 'email'];
+
+}
+
+if (!in_array($estado, $estadosValidos, true)) {
+
+    $errores[] = ['mensaje' => 'El estado seleccionado no es válido.', 'campo' => 'estado'];
+
+}
+
+if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
+
+    $errores[] = ['mensaje' => 'El motivo de inactividad no puede superar los 500 caracteres.', 'campo' => 'motivo_inactivo'];
 
 }
 
@@ -113,7 +141,7 @@ if (!validarEmail($email)) {
 
 if (!validarUsername($usuarioUsername)) {
 
-    establecerErrorFormulario('El username del usuario solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.', $_POST, 'crear_empresa.php', 'usuario_username');
+    $errores[] = ['mensaje' => 'El username del usuario solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.', 'campo' => 'usuario_username'];
 
 }
 
@@ -133,7 +161,7 @@ $stmtUsername->execute([$usuarioUsername]);
 
 if ($stmtUsername->fetch()) {
 
-    establecerErrorFormulario('El username ya existe.', $_POST, 'crear_empresa.php', 'usuario_username');
+    $errores[] = ['mensaje' => 'El username ya existe.', 'campo' => 'usuario_username'];
 
 }
 
@@ -154,7 +182,67 @@ $stmtEmailUsuario->execute([$email]);
 
 if ($stmtEmailUsuario->fetch()) {
 
-    establecerErrorFormulario('Ese email ya está registrado como email de acceso de otro usuario.', $_POST, 'crear_empresa.php', 'email');
+    $errores[] = ['mensaje' => 'Ese email ya está registrado como email de acceso de otro usuario.', 'campo' => 'email'];
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE EL CIF NO EXISTE
+// =====================================================
+
+$stmt = $pdo->prepare("
+    SELECT id
+    FROM empresas
+    WHERE cif = ?
+    LIMIT 1
+");
+
+$stmt->execute([$cif]);
+
+if ($stmt->fetch()) {
+
+    $errores[] = ['mensaje' => 'Ya existe una empresa con ese CIF.', 'campo' => 'cif'];
+
+}
+
+
+// =====================================================
+// COMPROBAR QUE EL CÓDIGO DE EMPRESA SIGUE LIBRE
+// =====================================================
+//
+// Se generó al cargar el formulario (ver crear_empresa.php);
+// se vuelve a comprobar aquí por si, entretanto, otra
+// empresa se ha creado con el mismo código.
+//
+// =====================================================
+
+$stmtCodigo = $pdo->prepare("
+    SELECT id
+    FROM empresas
+    WHERE codigo_empresa = ?
+    LIMIT 1
+");
+
+$stmtCodigo->execute([$codigoEmpresa]);
+
+if ($stmtCodigo->fetch()) {
+
+    $errores[] = ['mensaje' => 'El código de empresa ya no está disponible, vuelve a intentarlo.', 'campo' => null];
+
+}
+
+
+// =====================================================
+// SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
+// =====================================================
+
+if (!empty($errores)) {
+
+    $mensajes = array_unique(array_column($errores, 'mensaje'));
+    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
+
+    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'crear_empresa.php', $primerCampo);
 
 }
 
@@ -182,52 +270,6 @@ if ($idRolEmpresa <= 0) {
 
 
 // =====================================================
-// COMPROBAR QUE EL CIF NO EXISTE
-// =====================================================
-
-$stmt = $pdo->prepare("
-    SELECT id
-    FROM empresas
-    WHERE cif = ?
-    LIMIT 1
-");
-
-$stmt->execute([$cif]);
-
-if ($stmt->fetch()) {
-
-    establecerErrorFormulario('Ya existe una empresa con ese CIF.', $_POST, 'crear_empresa.php', 'cif');
-
-}
-
-
-// =====================================================
-// COMPROBAR QUE EL CÓDIGO DE EMPRESA SIGUE LIBRE
-// =====================================================
-//
-// Se generó al cargar el formulario (ver crear_empresa.php);
-// se vuelve a comprobar aquí por si, entretanto, otra
-// empresa se ha creado con el mismo código.
-//
-// =====================================================
-
-$stmtCodigo = $pdo->prepare("
-    SELECT id
-    FROM empresas
-    WHERE codigo_empresa = ?
-    LIMIT 1
-");
-
-$stmtCodigo->execute([$codigoEmpresa]);
-
-if ($stmtCodigo->fetch()) {
-
-    establecerErrorFormulario('El código de empresa ya no está disponible, vuelve a intentarlo.', $_POST, 'crear_empresa.php');
-
-}
-
-
-// =====================================================
 // INSERTAR EMPRESA Y SU ACCESO (MISMA TRANSACCIÓN)
 // =====================================================
 //
@@ -249,6 +291,8 @@ try {
             direccion,
             telefono,
             email,
+            estado,
+            motivo_inactivo,
             creado_por
         )
         VALUES (
@@ -258,18 +302,22 @@ try {
             :direccion,
             :telefono,
             :email,
+            :estado,
+            :motivo_inactivo,
             :creado_por
         )
     ");
 
     $stmt->execute([
-        ':codigo_empresa' => $codigoEmpresa,
-        ':nombre'         => $nombre,
-        ':cif'            => $cif,
-        ':direccion'      => $direccion !== '' ? $direccion : null,
-        ':telefono'       => $telefono !== '' ? $telefono : null,
-        ':email'          => $email !== '' ? $email : null,
-        ':creado_por'     => $_SESSION['id_usuario'],
+        ':codigo_empresa'   => $codigoEmpresa,
+        ':nombre'           => $nombre,
+        ':cif'              => $cif,
+        ':direccion'        => $direccion !== '' ? $direccion : null,
+        ':telefono'         => $telefono !== '' ? $telefono : null,
+        ':email'            => $email !== '' ? $email : null,
+        ':estado'           => $estado,
+        ':motivo_inactivo'  => $estado === 'Inactivo' ? $motivoInactivo : null,
+        ':creado_por'       => $_SESSION['id_usuario'],
     ]);
 
     $idEmpresa = $pdo->lastInsertId();
@@ -350,7 +398,8 @@ $stmtDatos = $pdo->prepare("
         direccion,
         telefono,
         email,
-        estado
+        estado,
+        motivo_inactivo
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -435,6 +484,10 @@ registrarLog(
 
                 <div class="page-header-actions">
 
+                    <a href="crear_empresa.php" class="config-save-button">
+                        + Añadir empresa
+                    </a>
+
                     <div class="page-date">
                         11 septiembre 2026
                     </div>
@@ -446,9 +499,7 @@ registrarLog(
 
             <div class="config-card confirmation-card">
 
-                <h2>Empresa creada correctamente</h2>
-
-                <div class="form-info">
+                <div class="form-info registration-success">
 
                     <p>
 
@@ -464,6 +515,8 @@ registrarLog(
 
                 </div>
 
+
+                <h2 class="confirmation-section-title">Datos de la empresa</h2>
 
                 <div class="usuario-detalle">
 
@@ -504,17 +557,48 @@ registrarLog(
                             <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado') ?></strong>
                         </div>
 
-                        <div class="usuario-detalle-item">
+                        <div class="usuario-detalle-item empresa-estado-item">
                             <span>Estado</span>
-                            <strong><?= htmlspecialchars($empresa['estado']) ?></strong>
+                            <strong class="<?= $empresa['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
+                                <?= htmlspecialchars($empresa['estado']) ?>
+                            </strong>
                         </div>
+
+                        <?php if ($empresa['estado'] === 'Inactivo'): ?>
+
+                            <div class="usuario-detalle-item empresa-motivo-item">
+                                <span>Motivo</span>
+                                <strong><?= htmlspecialchars($empresa['motivo_inactivo'] ?: '-') ?></strong>
+                            </div>
+
+                        <?php endif; ?>
 
                     </div>
 
                 </div>
 
 
-                <h2>Acceso de la empresa</h2>
+                <div class="access-section">
+
+                    <h2 class="confirmation-section-title">Datos del login</h2>
+
+                <div class="usuario-detalle">
+
+                    <div class="usuario-detalle-grid">
+
+                        <div class="usuario-detalle-item">
+                            <span>Username</span>
+                            <strong><?= htmlspecialchars($usuarioAcceso) ?></strong>
+                        </div>
+
+                        <div class="usuario-detalle-item">
+                            <span>Contraseña</span>
+                            <strong>Pendiente de cambio</strong>
+                        </div>
+
+                    </div>
+
+                </div>
 
                 <div class="form-info">
 
@@ -525,39 +609,13 @@ registrarLog(
 
                 </div>
 
-                <div class="usuario-detalle">
-
-                    <div class="usuario-detalle-grid">
-
-                        <div class="usuario-detalle-item">
-                            <span>Usuario de acceso</span>
-                            <strong><?= htmlspecialchars($usuarioAcceso) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Nombre</span>
-                            <strong><?= htmlspecialchars($usuarioCreado['nombre']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Email</span>
-                            <strong><?= htmlspecialchars($usuarioCreado['email']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Rol</span>
-                            <strong>Empresa</strong>
-                        </div>
-
-                    </div>
-
                 </div>
 
 
                 <div class="form-actions">
 
-                    <a href="crear_empresa.php" class="config-save-button">
-                        + Añadir empresa
+                    <a href="editar_empresa.php?id=<?= (int) $empresa['id'] ?>" class="config-save-button">
+                        Editar
                     </a>
 
                     <a href="empresas.php" class="config-cancel-button">

@@ -10,6 +10,47 @@ require_once '../../includes/logs.php';
 
 
 // =====================================================
+// RESPUESTA DE ERROR (HTML O JSON SEGÚN LA PETICIÓN)
+// =====================================================
+//
+// Si la petición viene por AJAX (ajax=1, ver clientes.js), un
+// error a mitad de proceso no puede devolver HTML: el fetch()
+// del listado espera JSON y su .json() rompería con
+// "unexpected token '<'" al recibirlo (por ejemplo, al hacer
+// doble clic y reenviar el borrado del mismo cliente).
+//
+// =====================================================
+
+function responderErrorEliminarCliente(string $mensaje): void
+{
+    if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+
+        header('Content-Type: application/json; charset=UTF-8');
+
+        echo json_encode([
+            'ok' => false,
+            'error' => $mensaje,
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+
+    }
+
+    die('
+        <h2>Error</h2>
+
+        <p>' . htmlspecialchars($mensaje) . '</p>
+
+        <p>
+            <a href="clientes.php">
+                Volver a clientes
+            </a>
+        </p>
+    ');
+}
+
+
+// =====================================================
 // COMPROBAR QUE SE HA RECIBIDO UN ID
 // =====================================================
 
@@ -20,19 +61,7 @@ $id = isset($_GET['id'])
 
 if ($id <= 0) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El cliente seleccionado no es válido.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    responderErrorEliminarCliente('El cliente seleccionado no es válido.');
 
 }
 
@@ -64,19 +93,7 @@ $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
 if (!$cliente) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            El cliente que intentas eliminar no existe.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    responderErrorEliminarCliente('El cliente que intentas eliminar no existe.');
 
 }
 
@@ -87,19 +104,7 @@ if (!$cliente) {
 
 if (!puedeVerCliente($cliente['creado_por'] !== null ? (int) $cliente['creado_por'] : null)) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No tienes permiso para eliminar este cliente.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    responderErrorEliminarCliente('No tienes permiso para eliminar este cliente.');
 
 }
 
@@ -120,19 +125,7 @@ try {
 
 } catch (PDOException $e) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No se ha podido eliminar el cliente.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    responderErrorEliminarCliente('No se ha podido eliminar el cliente.');
 
 }
 
@@ -143,19 +136,7 @@ try {
 
 if ($stmtEliminar->rowCount() !== 1) {
 
-    die('
-        <h2>Error</h2>
-
-        <p>
-            No se ha podido eliminar el cliente.
-        </p>
-
-        <p>
-            <a href="clientes.php">
-                Volver a clientes
-            </a>
-        </p>
-    ');
+    responderErrorEliminarCliente('No se ha podido eliminar el cliente.');
 
 }
 
@@ -271,8 +252,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                 </h2>
 
 
-                <div class="form-info">
-
+                <div class="form-info registration-success">
 
                     <p>
 
@@ -285,6 +265,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                         ha sido eliminado correctamente.
 
                     </p>
+
+                </div>
+
+
+                <div class="form-info">
 
 
                     <p>

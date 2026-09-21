@@ -22,22 +22,100 @@ window.mostrarNotificacionEliminacion = function (datos) {
     const titulo = document.createElement('h2');
     titulo.textContent = `${datos.tipo} eliminado correctamente`;
 
-    const texto = document.createElement('p');
-    texto.textContent = `Se ha eliminado ${datos.tipo.toLowerCase()} ${datos.nombre}.`;
+    tarjeta.append(icono, titulo);
 
-    const lista = document.createElement('div');
-    lista.className = 'eliminacion-datos';
+    // =========================================================
+    // MENSAJE DE CONFIRMACIÓN (TABLETA VERDE)
+    // =========================================================
+    // Mismo estilo que usan las tarjetas de crear/actualizar
+    // (.form-info.registration-success), reutilizado aquí.
 
-    Object.entries(datos.campos || {}).forEach(([etiqueta, valor]) => {
-        const fila = document.createElement('div');
-        const etiquetaElemento = document.createElement('span');
-        const valorElemento = document.createElement('strong');
+    const mensaje = document.createElement('div');
+    mensaje.className = 'form-info registration-success eliminacion-mensaje';
 
-        etiquetaElemento.textContent = etiqueta;
-        valorElemento.textContent = valor || 'No indicado';
-        fila.append(etiquetaElemento, valorElemento);
-        lista.append(fila);
-    });
+    const mensajeTexto = document.createElement('p');
+    mensajeTexto.textContent = `Se ha eliminado ${datos.tipo.toLowerCase()} ${datos.nombre}.`;
+    mensaje.append(mensajeTexto);
+
+    tarjeta.append(mensaje);
+
+    // =========================================================
+    // SECCIONES (Datos de la empresa / Datos del login...)
+    // =========================================================
+    // Formato nuevo, con separación + título + grid de 2 columnas
+    // por sección. Si el backend todavía envía el formato plano
+    // antiguo (datos.campos), se mantiene como alternativa.
+
+    if (Array.isArray(datos.secciones) && datos.secciones.length > 0) {
+
+        const contenedorSecciones = document.createElement('div');
+        contenedorSecciones.className = 'eliminacion-secciones';
+
+        datos.secciones.forEach(seccion => {
+
+            const tituloSeccion = document.createElement('p');
+            tituloSeccion.className = 'eliminacion-seccion-titulo';
+            tituloSeccion.textContent = seccion.titulo;
+
+            const detalle = document.createElement('div');
+            detalle.className = 'usuario-detalle';
+
+            const grid = document.createElement('div');
+            grid.className = 'usuario-detalle-grid';
+
+            (seccion.campos || []).forEach(([etiqueta, valor]) => {
+
+                const item = document.createElement('div');
+                item.className = 'usuario-detalle-item';
+
+                if (etiqueta !== null) {
+
+                    const etiquetaElemento = document.createElement('span');
+                    const valorElemento = document.createElement('strong');
+
+                    etiquetaElemento.textContent = etiqueta;
+                    valorElemento.textContent = valor || 'No indicado';
+
+                    if (etiqueta === 'Estado') {
+                        valorElemento.classList.add(
+                            valor === 'Activo' ? 'text-success' : 'text-danger'
+                        );
+                    }
+
+                    item.append(etiquetaElemento, valorElemento);
+
+                }
+
+                grid.append(item);
+
+            });
+
+            detalle.append(grid);
+            contenedorSecciones.append(tituloSeccion, detalle);
+
+        });
+
+        tarjeta.append(contenedorSecciones);
+
+    } else if (datos.campos) {
+
+        const lista = document.createElement('div');
+        lista.className = 'eliminacion-datos';
+
+        Object.entries(datos.campos).forEach(([etiqueta, valor]) => {
+            const fila = document.createElement('div');
+            const etiquetaElemento = document.createElement('span');
+            const valorElemento = document.createElement('strong');
+
+            etiquetaElemento.textContent = etiqueta;
+            valorElemento.textContent = valor || 'No indicado';
+            fila.append(etiquetaElemento, valorElemento);
+            lista.append(fila);
+        });
+
+        tarjeta.append(lista);
+
+    }
 
     const acciones = document.createElement('div');
     acciones.className = 'modal-actions';
@@ -49,7 +127,7 @@ window.mostrarNotificacionEliminacion = function (datos) {
     cerrar.addEventListener('click', cerrarNotificacion);
 
     acciones.append(cerrar);
-    tarjeta.append(icono, titulo, texto, lista, acciones);
+    tarjeta.append(acciones);
     overlay.append(tarjeta);
     document.body.append(overlay);
     document.body.classList.add('modal-abierto');

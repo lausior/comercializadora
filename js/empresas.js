@@ -39,14 +39,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validarCif(valor) {
 
-        const texto = valor.trim();
+        const texto = valor.trim().toUpperCase();
 
         if (texto === '') {
             return 'Este campo es obligatorio.';
         }
 
-        if (!/^[A-Za-z0-9]{9}$/.test(texto)) {
-            return 'Introduce un CIF/NIF válido (9 caracteres).';
+        // Mismo formato y dígito/letra de control que valida
+        // validarCIF() en includes/validaciones.php, para que
+        // un CIF con formato inválido no llegue a enviarse al
+        // servidor y descubrirse solo allí (obligando a otra
+        // vuelta si además había otro error en el formulario).
+
+        const coincide = texto.match(/^([ABCDEFGHJNPQRSUVW])([0-9]{7})([0-9A-J])$/);
+
+        if (!coincide) {
+            return 'Introduce un CIF válido.';
+        }
+
+        const [, letraInicial, numeros, control] = coincide;
+
+        let suma = 0;
+
+        for (let i = 0; i < 7; i++) {
+
+            const numero = Number(numeros[i]);
+
+            if (i % 2 === 0) {
+
+                let resultado = numero * 2;
+
+                if (resultado >= 10) {
+                    resultado = Math.floor(resultado / 10) + (resultado % 10);
+                }
+
+                suma += resultado;
+
+            } else {
+
+                suma += numero;
+
+            }
+
+        }
+
+        const digitoControl = (10 - (suma % 10)) % 10;
+
+        const letrasControl = 'JABCDEFGHI';
+        const controlNumerico = String(digitoControl);
+        const controlAlfabetico = letrasControl[digitoControl];
+
+        let esValido;
+
+        if (['A', 'B', 'E', 'H'].includes(letraInicial)) {
+            esValido = control === controlNumerico;
+        } else if (['K', 'P', 'Q', 'S'].includes(letraInicial)) {
+            esValido = control === controlAlfabetico;
+        } else {
+            esValido = control === controlNumerico || control === controlAlfabetico;
+        }
+
+        if (!esValido) {
+            return 'Introduce un CIF válido.';
         }
 
         return null;
@@ -100,13 +154,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+    function validarEstadoEmpresa(valor) {
+
+        if (!valor || valor.trim() === '') {
+            return 'Debes seleccionar una opción.';
+        }
+
+        return null;
+
+    }
+
+    function validarMotivoInactivoEmpresa(valor) {
+
+        const estado = document.getElementById('estado');
+
+        return null;
+
+    }
+
+    function validarUsuarioUsername(valor) {
+
+        const texto = valor.trim();
+
+        if (texto === '') {
+            return 'Este campo es obligatorio.';
+        }
+
+        if (!/^[a-z]+$/.test(texto)) {
+            return 'Solo se permiten letras minúsculas, sin números, espacios ni caracteres especiales.';
+        }
+
+        if (texto.length < 2) {
+            return 'Debe tener al menos 2 caracteres.';
+        }
+
+        return null;
+
+    }
+
     const VALIDADORES_EMPRESA = {
         codigo_empresa: validarCodigoEmpresa,
         nombre: validarNombreEmpresa,
         cif: validarCif,
         direccion: validarDireccionEmpresa,
         telefono: validarTelefonoEmpresa,
-        email: validarEmailEmpresa
+        email: validarEmailEmpresa,
+        estado: validarEstadoEmpresa,
+        motivo_inactivo: validarMotivoInactivoEmpresa,
+        usuario_username: validarUsuarioUsername
     };
 
     function validarCampoEmpresa(input) {
@@ -271,6 +366,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     inicializarValidacionFormularioEmpresa();
+
+
+    /* =========================================================
+       00B. MOTIVO DE INACTIVO
+       El textarea solo se muestra (y solo hace falta
+       rellenarlo) cuando el estado elegido es "Inactivo".
+    ========================================================= */
+
+    function actualizarVisibilidadMotivoInactivoEmpresa() {
+
+        const estado = document.getElementById('estado');
+        const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
+
+        if (!estado || !grupoMotivo) {
+            return;
+        }
+
+        grupoMotivo.classList.toggle('hidden', estado.value !== 'Inactivo');
+
+    }
+
+    const estadoEmpresaSelect = document.getElementById('estado');
+
+    if (estadoEmpresaSelect) {
+
+        actualizarVisibilidadMotivoInactivoEmpresa();
+
+        estadoEmpresaSelect.addEventListener('change', () => {
+
+            actualizarVisibilidadMotivoInactivoEmpresa();
+
+            const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
+            const motivo = document.getElementById('motivo_inactivo');
+
+            if (grupoMotivo && grupoMotivo.classList.contains('hidden') && motivo) {
+                motivo.classList.remove('input-error');
+                const contenedorError = document.getElementById('error-motivo_inactivo');
+                if (contenedorError) {
+                    contenedorError.textContent = '';
+                }
+            }
+
+        });
+
+    }
 
 
     /* =========================================================
@@ -867,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleTelefono = document.getElementById('detalleEmpresaTelefono');
     const detalleEmail = document.getElementById('detalleEmpresaEmail');
     const detalleEstado = document.getElementById('detalleEmpresaEstado');
+    const detalleMotivo = document.getElementById('detalleEmpresaMotivo');
+    const detalleMotivoItem = document.getElementById('detalleEmpresaMotivoItem');
     const btnDetalleEditar = document.getElementById('btnDetalleEditarEmpresa');
     const btnDetalleEliminar = document.getElementById('btnDetalleEliminarEmpresa');
 
@@ -885,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (detalleCodigo) {
-            detalleCodigo.textContent = 'Código ' + (fila.dataset.codigo || '');
+            detalleCodigo.textContent = fila.dataset.codigo || '—';
         }
 
         if (detalleCif) {
@@ -906,6 +1048,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (detalleEstado) {
             detalleEstado.textContent = fila.dataset.estado || '—';
+            detalleEstado.classList.toggle('text-success', fila.dataset.estado === 'Activo');
+            detalleEstado.classList.toggle('text-danger', fila.dataset.estado === 'Inactivo');
+        }
+
+        if (detalleMotivo) {
+            detalleMotivo.textContent = fila.dataset.motivo || '-';
+        }
+
+        if (detalleMotivoItem) {
+            detalleMotivoItem.classList.toggle('hidden', fila.dataset.estado !== 'Inactivo');
         }
 
         if (btnDetalleEditar) {
@@ -1015,13 +1167,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+    let empresaEliminarEnCurso = false;
+
     window.confirmarEliminarEmpresa = async function () {
 
-        if (empresaEliminarId <= 0) {
+        if (empresaEliminarId <= 0 || empresaEliminarEnCurso) {
             return;
         }
 
         const idEliminado = empresaEliminarId;
+
+        empresaEliminarEnCurso = true;
 
         try {
 
@@ -1033,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const datos = await respuesta.json();
 
             if (!respuesta.ok || !datos.ok) {
-                throw new Error('No se ha podido eliminar la empresa.');
+                throw new Error(datos.error || 'No se ha podido eliminar la empresa.');
             }
 
             window.cerrarModalEliminarEmpresa();
@@ -1051,6 +1207,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             window.alert(error.message);
+        } finally {
+            empresaEliminarEnCurso = false;
         }
 
     };
@@ -1073,6 +1231,192 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (event.key === 'Escape' && empresaEliminarId > 0) {
             window.cerrarModalEliminarEmpresa();
+        }
+
+    });
+
+
+    /* =========================================================
+       17B. DESACTIVAR EMPRESA DESDE EL LISTADO (PIDE MOTIVO)
+       Mismo patrón que el modal de desactivar usuario: al
+       llevarse el motivo, se envía un formulario real por POST
+       a cambiar_estado_empresa.php en vez de ir directo.
+    ========================================================= */
+
+    let empresaDesactivarAbierto = false;
+
+    const modalDesactivarEmpresa = document.getElementById('modalDesactivarEmpresa');
+    const nombreEmpresaDesactivar = document.getElementById('nombreEmpresaDesactivar');
+    const idEmpresaDesactivarInput = document.getElementById('idEmpresaDesactivar');
+    const motivoDesactivarEmpresa = document.getElementById('motivoDesactivarEmpresa');
+    const formDesactivarEmpresa = document.getElementById('formDesactivarEmpresa');
+
+    window.abrirModalDesactivarEmpresa = function (id, nombre) {
+
+        empresaDesactivarAbierto = true;
+
+        if (idEmpresaDesactivarInput) {
+            idEmpresaDesactivarInput.value = id;
+        }
+
+        if (nombreEmpresaDesactivar) {
+            nombreEmpresaDesactivar.textContent = nombre;
+        }
+
+        if (motivoDesactivarEmpresa) {
+            motivoDesactivarEmpresa.value = '';
+            motivoDesactivarEmpresa.classList.remove('input-error');
+        }
+
+        const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
+        if (contenedorError) {
+            contenedorError.textContent = '';
+        }
+
+        if (modalDesactivarEmpresa) {
+            modalDesactivarEmpresa.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    };
+
+    window.cerrarModalDesactivarEmpresa = function () {
+
+        empresaDesactivarAbierto = false;
+
+        if (modalDesactivarEmpresa) {
+            modalDesactivarEmpresa.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    if (formDesactivarEmpresa && motivoDesactivarEmpresa) {
+
+        formDesactivarEmpresa.addEventListener('submit', event => {
+
+            if (motivoDesactivarEmpresa.value.trim() === '') {
+
+                event.preventDefault();
+
+                motivoDesactivarEmpresa.classList.add('input-error');
+
+                const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
+                if (contenedorError) {
+                    contenedorError.textContent = 'Indica el motivo por el que la empresa pasa a inactiva.';
+                }
+
+            }
+
+        });
+
+        motivoDesactivarEmpresa.addEventListener('input', () => {
+
+            if (motivoDesactivarEmpresa.value.trim() !== '') {
+
+                motivoDesactivarEmpresa.classList.remove('input-error');
+
+                const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
+                if (contenedorError) {
+                    contenedorError.textContent = '';
+                }
+
+            }
+
+        });
+
+    }
+
+    if (modalDesactivarEmpresa) {
+
+        modalDesactivarEmpresa.addEventListener('click', event => {
+
+            if (event.target === modalDesactivarEmpresa) {
+                window.cerrarModalDesactivarEmpresa();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && empresaDesactivarAbierto) {
+            window.cerrarModalDesactivarEmpresa();
+        }
+
+    });
+
+
+    /* =========================================================
+       17C. RESTABLECER CONTRASEÑA DEL USUARIO DE LA EMPRESA
+       Mismo patrón que el modal de eliminación: un único
+       modal reutilizado por todas las filas, con el id del
+       usuario objetivo guardado en una variable hasta que
+       se confirma o se cancela. Reutiliza el mismo endpoint
+       que el listado de usuarios (resetear_password.php),
+       ya que lo que se restablece es la contraseña del
+       usuario de acceso de la empresa, no la empresa en sí.
+    ========================================================= */
+
+    let empresaResetPasswordUsuarioId = 0;
+
+    const modalResetPasswordEmpresa = document.getElementById('modalResetPasswordEmpresa');
+    const nombreEmpresaResetPassword = document.getElementById('nombreEmpresaResetPassword');
+
+    window.abrirModalResetPasswordEmpresa = function (idUsuario, nombre) {
+
+        empresaResetPasswordUsuarioId = Number(idUsuario);
+
+        if (nombreEmpresaResetPassword) {
+            nombreEmpresaResetPassword.textContent = nombre;
+        }
+
+        if (modalResetPasswordEmpresa) {
+            modalResetPasswordEmpresa.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+        }
+
+    };
+
+    window.cerrarModalResetPasswordEmpresa = function () {
+
+        empresaResetPasswordUsuarioId = 0;
+
+        if (modalResetPasswordEmpresa) {
+            modalResetPasswordEmpresa.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+    };
+
+    window.confirmarResetPasswordEmpresa = function () {
+
+        if (empresaResetPasswordUsuarioId <= 0) {
+            return;
+        }
+
+        window.location.href =
+            '../usuarios/resetear_password.php?id=' + encodeURIComponent(empresaResetPasswordUsuarioId);
+
+    };
+
+    if (modalResetPasswordEmpresa) {
+
+        modalResetPasswordEmpresa.addEventListener('click', event => {
+
+            if (event.target === modalResetPasswordEmpresa) {
+                window.cerrarModalResetPasswordEmpresa();
+            }
+
+        });
+
+    }
+
+    document.addEventListener('keydown', event => {
+
+        if (event.key === 'Escape' && empresaResetPasswordUsuarioId > 0) {
+            window.cerrarModalResetPasswordEmpresa();
         }
 
     });

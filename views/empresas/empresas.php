@@ -13,20 +13,31 @@ require_once '../../includes/filtro_multiselect.php';
 // OBTENER EMPRESAS DE LA BASE DE DATOS
 // =====================================================
 
-$stmtEmpresas = $pdo->query("
+$stmtEmpresas = $pdo->prepare("
     SELECT
-        id,
-        codigo_empresa,
-        nombre,
-        cif,
-        direccion,
-        telefono,
-        email,
-        estado,
-        creado_por
-    FROM empresas
-    ORDER BY nombre
+        e.id,
+        e.codigo_empresa,
+        e.nombre,
+        e.cif,
+        e.direccion,
+        e.telefono,
+        e.email,
+        e.estado,
+        e.motivo_inactivo,
+        e.creado_por,
+        u.id AS usuario_id,
+        u.nombre AS usuario_nombre,
+        u.apellidos AS usuario_apellidos
+    FROM empresas e
+
+    LEFT JOIN usuarios u
+        ON u.id_empresa = e.id
+        AND u.id_rol = (SELECT id FROM roles WHERE nombre = :rol_empresa)
+
+    ORDER BY e.nombre
 ");
+
+$stmtEmpresas->execute([':rol_empresa' => ROL_EMPRESA]);
 
 $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
 
@@ -414,7 +425,9 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                                         data-direccion="<?= htmlspecialchars($empresa['direccion'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-telefono="<?= htmlspecialchars($empresa['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-email="<?= htmlspecialchars($empresa['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                        data-estado="<?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>">
+                                        data-estado="<?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-motivo="<?= htmlspecialchars($empresa['motivo_inactivo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-usuario-id="<?= (int) ($empresa['usuario_id'] ?? 0) ?>">
 
                                         <td>
 
@@ -466,6 +479,49 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
 
+
+                                                <?php if (!empty($empresa['usuario_id'])): ?>
+
+                                                    <button type="button" class="table-action-button icon-action-button"
+                                                        title="Restablecer contraseña"
+                                                        onclick="event.stopPropagation(); window.abrirModalResetPasswordEmpresa(
+        <?= (int) $empresa['usuario_id'] ?>,
+        '<?= htmlspecialchars(trim($empresa['usuario_nombre'] . ' ' . $empresa['usuario_apellidos']), ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                        <i class="bi bi-key"></i>
+                                                    </button>
+
+                                                <?php endif; ?>
+
+
+                                                <?php if ($empresa['estado'] === 'Activo'): ?>
+
+                                                    <!-- Desactivar pide motivo, así que abre un
+                                                         modal en vez de ir directo (igual que en
+                                                         el listado de usuarios). -->
+
+                                                    <button type="button"
+                                                        class="table-action-button icon-action-button estado-toggle activo"
+                                                        title="Activo — clic para desactivar"
+                                                        onclick="event.stopPropagation(); window.abrirModalDesactivarEmpresa(
+        <?= (int) $empresa['id'] ?>,
+        '<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                        <i class="bi bi-unlock-fill"></i>
+                                                    </button>
+
+                                                <?php else: ?>
+
+                                                    <!-- Activar no necesita motivo: va directo. -->
+
+                                                    <a href="cambiar_estado_empresa.php?id=<?= (int) $empresa['id'] ?>"
+                                                        class="table-action-button icon-action-button estado-toggle inactivo"
+                                                        title="Inactivo — clic para activar"
+                                                        onclick="event.stopPropagation();">
+                                                        <i class="bi bi-lock-fill"></i>
+                                                    </a>
+
+                                                <?php endif; ?>
 
 
                                                 <button type="button" class="table-action-button icon-action-button danger"
@@ -568,7 +624,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
             </p>
 
             <p class="modal-warning">
-                Esta acción no se puede deshacer.
+                Se eliminará también su usuario de acceso asociado. Esta acción no se puede deshacer.
             </p>
 
             <div class="modal-actions">
@@ -579,6 +635,116 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                 <button type="button" class="modal-button modal-button-delete" onclick="confirmarEliminarEmpresa()">
                     Eliminar empresa
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL DESACTIVAR EMPRESA (PIDE MOTIVO)
+         =====================================================
+         Mismo requisito que en crear_empresa.php: pasar a
+         Inactivo exige indicar un motivo. Al desactivar aquí
+         también se desactiva el usuario de acceso de la
+         empresa (ver cambiar_estado_empresa.php), igual que al
+         desactivar ese usuario desde Usuarios se desactiva la
+         empresa.
+    ====================================================== -->
+
+    <div id="modalDesactivarEmpresa" class="modal-overlay" style="display: none;">
+
+        <div class="modal-confirmacion">
+
+            <div class="modal-icon">
+                🔒
+            </div>
+
+            <h2>Desactivar empresa</h2>
+
+            <p>
+                ¿Seguro que quieres desactivar
+                <strong id="nombreEmpresaDesactivar"></strong>?
+            </p>
+
+            <p class="modal-warning">
+                También se desactivará su usuario de acceso asociado.
+            </p>
+
+            <form id="formDesactivarEmpresa" action="cambiar_estado_empresa.php" method="POST" novalidate>
+
+                <input type="hidden" name="id" id="idEmpresaDesactivar">
+
+                <div class="form-group">
+
+                    <label for="motivoDesactivarEmpresa">
+                        Motivo
+                    </label>
+
+                    <textarea id="motivoDesactivarEmpresa" name="motivo" rows="3"
+                        placeholder="Explica por qué la empresa pasa a inactiva" required></textarea>
+
+                    <span class="field-error" id="error-motivoDesactivarEmpresa"></span>
+
+                </div>
+
+                <div class="modal-actions">
+
+                    <button type="button" class="modal-button modal-button-cancel"
+                        onclick="cerrarModalDesactivarEmpresa()">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="modal-button modal-button-delete">
+                        Desactivar empresa
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MODAL RESTABLECER CONTRASEÑA (USUARIO DE LA EMPRESA)
+    ====================================================== -->
+
+    <div id="modalResetPasswordEmpresa" class="modal-overlay" style="display: none;">
+
+        <div class="modal-confirmacion">
+
+            <div class="modal-icon">
+                🔑
+            </div>
+
+            <h2>Restablecer contraseña</h2>
+
+            <p>
+                ¿Seguro que quieres restablecer la contraseña de
+                <strong id="nombreEmpresaResetPassword"></strong>
+                a la contraseña inicial?
+            </p>
+
+            <p class="modal-warning">
+                El usuario deberá cambiarla en su próximo acceso.
+            </p>
+
+            <div class="modal-actions">
+
+                <button type="button" class="modal-button modal-button-cancel"
+                    onclick="cerrarModalResetPasswordEmpresa()">
+                    Cancelar
+                </button>
+
+                <button type="button" class="modal-button modal-button-primary"
+                    onclick="confirmarResetPasswordEmpresa()">
+                    Restablecer contraseña
                 </button>
 
             </div>
@@ -602,7 +768,6 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                 <div class="modal-detalle-titulo">
                     <h2 id="detalleEmpresaNombre"></h2>
-                    <span id="detalleEmpresaCodigo"></span>
                 </div>
 
                 <button type="button" class="modal-detalle-close" onclick="cerrarModalDetalleEmpresa()"
@@ -615,13 +780,13 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
             <div class="usuario-detalle-grid">
 
                 <div class="usuario-detalle-item">
-                    <span>CIF</span>
-                    <strong id="detalleEmpresaCif"></strong>
+                    <span>Código</span>
+                    <strong id="detalleEmpresaCodigo"></strong>
                 </div>
 
                 <div class="usuario-detalle-item">
-                    <span>Teléfono</span>
-                    <strong id="detalleEmpresaTelefono"></strong>
+                    <span>CIF</span>
+                    <strong id="detalleEmpresaCif"></strong>
                 </div>
 
                 <div class="usuario-detalle-item">
@@ -630,13 +795,25 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                 </div>
 
                 <div class="usuario-detalle-item">
+                    <span>Teléfono</span>
+                    <strong id="detalleEmpresaTelefono"></strong>
+                </div>
+
+                <div class="usuario-detalle-item">
                     <span>Email</span>
                     <strong id="detalleEmpresaEmail"></strong>
                 </div>
 
+                <div class="usuario-detalle-item"></div>
+
                 <div class="usuario-detalle-item">
                     <span>Estado</span>
                     <strong id="detalleEmpresaEstado"></strong>
+                </div>
+
+                <div class="usuario-detalle-item" id="detalleEmpresaMotivoItem">
+                    <span>Motivo</span>
+                    <strong id="detalleEmpresaMotivo"></strong>
                 </div>
 
             </div>

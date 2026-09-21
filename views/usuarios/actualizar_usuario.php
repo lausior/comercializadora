@@ -52,11 +52,6 @@ $estado = trim($_POST['estado'] ?? '');
 
 $motivoInactivo = trim($_POST['motivo_inactivo'] ?? '');
 
-
-// =====================================================
-// COMPROBAR CAMPOS OBLIGATORIOS
-// =====================================================
-
 $estadosValidos = ['Activo', 'Inactivo'];
 
 if ($id <= 0) {
@@ -66,46 +61,28 @@ if ($id <= 0) {
 
 }
 
-if (
-    $username === '' ||
-    $nombre === '' ||
-    $apellidos === '' ||
-    $email === '' ||
-    $idEmpresa <= 0 ||
-    $idRol <= 0 ||
-    !in_array($estado, $estadosValidos, true)
-) {
-
-    establecerErrorFormulario('Todos los campos obligatorios deben estar completos.', $_POST, 'editar_usuario.php?id=' . $id);
-
-}
-
-if ($estado === 'Inactivo' && $motivoInactivo === '') {
-
-    establecerErrorFormulario('Indica el motivo por el que el usuario se marca como inactivo.', $_POST, 'editar_usuario.php?id=' . $id, 'motivo_inactivo');
-
-}
-
-
-// =====================================================
-// COMPROBAR FORMATO DEL EMAIL
-// =====================================================
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-
-    establecerErrorFormulario('El correo electrónico no tiene un formato válido.', $_POST, 'editar_usuario.php?id=' . $id, 'email');
-
-}
-
 
 // =====================================================
 // COMPROBAR QUE EL USUARIO EXISTA
 // =====================================================
 
 $stmtUsuario = $pdo->prepare("
-    SELECT id, id_empresa, id_rol, creado_por
-    FROM usuarios
-    WHERE id = ?
+    SELECT
+        u.id,
+        u.nombre,
+        u.apellidos,
+        u.email,
+        u.telefono,
+        u.id_empresa,
+        u.id_rol,
+        u.creado_por,
+        r.nombre AS rol
+    FROM usuarios u
+
+    INNER JOIN roles r
+        ON r.id = u.id_rol
+
+    WHERE u.id = ?
 ");
 
 $stmtUsuario->execute([$id]);
@@ -128,6 +105,74 @@ if (!$usuarioExiste) {
             </a>
         </p>
     ');
+
+}
+
+
+// =====================================================
+// CUENTA EMPRESA: NOMBRE, EMAIL Y TELÉFONO NO SON EDITABLES
+// =====================================================
+//
+// Esos tres campos pertenecen a la empresa (se copiaron de
+// ahí al crearla, ver guardar_empresa.php) y ahí es donde
+// hay que cambiarlos; editar_usuario.php ya los muestra de
+// solo lectura, pero esto es lo que de verdad lo impide,
+// por si se manipula el formulario a mano. El username sí
+// es propio del acceso y se puede modificar con normalidad.
+//
+// =====================================================
+
+if ($usuarioExiste['rol'] === ROL_EMPRESA) {
+
+    $nombre    = $usuarioExiste['nombre'];
+    $apellidos = $usuarioExiste['apellidos'];
+    $email     = $usuarioExiste['email'];
+    $telefono  = $usuarioExiste['telefono'] ?? '';
+
+}
+
+
+// =====================================================
+// COMPROBAR CAMPOS OBLIGATORIOS
+// =====================================================
+//
+// Se acumulan TODOS los errores encontrados en vez de
+// cortar en el primero: así se avisa de todo lo que falla
+// en un único intento (mismo criterio que
+// guardar_empresa.php/guardar_usuario.php).
+//
+// =====================================================
+
+$errores = [];
+
+if (
+    $username === '' ||
+    $nombre === '' ||
+    ($apellidos === '' && $usuarioExiste['rol'] !== ROL_EMPRESA) ||
+    $email === '' ||
+    $idEmpresa <= 0 ||
+    $idRol <= 0 ||
+    !in_array($estado, $estadosValidos, true)
+) {
+
+    $errores[] = ['mensaje' => 'Todos los campos obligatorios deben estar completos.', 'campo' => null];
+
+}
+
+if ($estado === 'Inactivo' && $motivoInactivo === '') {
+
+    $errores[] = ['mensaje' => 'Indica el motivo por el que el usuario se marca como inactivo.', 'campo' => 'motivo_inactivo'];
+
+}
+
+
+// =====================================================
+// COMPROBAR FORMATO DEL EMAIL
+// =====================================================
+
+if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+    $errores[] = ['mensaje' => 'El correo electrónico no tiene un formato válido.', 'campo' => 'email'];
 
 }
 
@@ -172,7 +217,7 @@ if (
     $idEmpresa !== (int) $usuarioExiste['id_empresa']
 ) {
 
-    establecerErrorFormulario('No puedes cambiar la empresa de este usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'id_empresa');
+    $errores[] = ['mensaje' => 'No puedes cambiar la empresa de este usuario.', 'campo' => 'id_empresa'];
 
 }
 
@@ -195,7 +240,7 @@ $stmtUsername->execute([
 
 if ($stmtUsername->fetch()) {
 
-    establecerErrorFormulario('El username ya está siendo utilizado por otro usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'username');
+    $errores[] = ['mensaje' => 'El username ya está siendo utilizado por otro usuario.', 'campo' => 'username'];
 
 }
 
@@ -218,7 +263,7 @@ $stmtEmail->execute([
 
 if ($stmtEmail->fetch()) {
 
-    establecerErrorFormulario('El email ya está siendo utilizado por otro usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'email');
+    $errores[] = ['mensaje' => 'El email ya está siendo utilizado por otro usuario.', 'campo' => 'email'];
 
 }
 
@@ -227,22 +272,27 @@ if ($stmtEmail->fetch()) {
 // COMPROBAR QUE LA EMPRESA EXISTA
 // =====================================================
 
-$stmtEmpresa = $pdo->prepare("
-    SELECT
-        id,
-        nombre
-    FROM empresas
-    WHERE id = ?
-");
+$empresa = null;
 
-$stmtEmpresa->execute([$idEmpresa]);
+if ($idEmpresa > 0) {
 
-$empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
+    $stmtEmpresa = $pdo->prepare("
+        SELECT
+            id,
+            nombre
+        FROM empresas
+        WHERE id = ?
+    ");
 
+    $stmtEmpresa->execute([$idEmpresa]);
 
-if (!$empresa) {
+    $empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
 
-    establecerErrorFormulario('La empresa seleccionada no existe.', $_POST, 'editar_usuario.php?id=' . $id, 'id_empresa');
+    if (!$empresa) {
+
+        $errores[] = ['mensaje' => 'La empresa seleccionada no existe.', 'campo' => 'id_empresa'];
+
+    }
 
 }
 
@@ -251,22 +301,27 @@ if (!$empresa) {
 // COMPROBAR QUE EL ROL EXISTA
 // =====================================================
 
-$stmtRol = $pdo->prepare("
-    SELECT
-        id,
-        nombre
-    FROM roles
-    WHERE id = ?
-");
+$rol = null;
 
-$stmtRol->execute([$idRol]);
+if ($idRol > 0) {
 
-$rol = $stmtRol->fetch(PDO::FETCH_ASSOC);
+    $stmtRol = $pdo->prepare("
+        SELECT
+            id,
+            nombre
+        FROM roles
+        WHERE id = ?
+    ");
 
+    $stmtRol->execute([$idRol]);
 
-if (!$rol) {
+    $rol = $stmtRol->fetch(PDO::FETCH_ASSOC);
 
-    establecerErrorFormulario('El rol seleccionado no existe.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
+    if (!$rol) {
+
+        $errores[] = ['mensaje' => 'El rol seleccionado no existe.', 'campo' => 'id_rol'];
+
+    }
 
 }
 
@@ -275,28 +330,20 @@ if (!$rol) {
 // COMPROBAR QUE PUEDE ASIGNAR ESE ROL
 // =====================================================
 //
-// EMPRESA no elige rol en el formulario: el campo no se
-// muestra, así que no puede cambiar el rol del usuario
-// (el desplegable normal ya no se lo deja elegir, pero
-// esto es lo que de verdad lo impide).
+// Ni EMPRESA ni NG eligen rol en el formulario para su
+// propio equipo: el campo no se muestra, así que no pueden
+// cambiar el rol del usuario (el desplegable normal ya no
+// se lo deja elegir, pero esto es lo que de verdad lo
+// impide).
 //
 // =====================================================
 
 if (
-    rolActual() === ROL_EMPRESA &&
+    in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true) &&
     $idRol !== (int) $usuarioExiste['id_rol']
 ) {
 
-    establecerErrorFormulario('No puedes cambiar el rol de este usuario.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
-
-}
-
-if (
-    rolActual() === ROL_NG &&
-    $rol['nombre'] === ROL_SRG
-) {
-
-    establecerErrorFormulario('No puedes asignar ese rol.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
+    $errores[] = ['mensaje' => 'No puedes cambiar el rol de este usuario.', 'campo' => 'id_rol'];
 
 }
 
@@ -311,7 +358,7 @@ if (
 //
 // =====================================================
 
-if ($rol['nombre'] === ROL_EMPRESA) {
+if ($rol && $rol['nombre'] === ROL_EMPRESA) {
 
     $stmtEmpresaYaTieneAdmin = $pdo->prepare("
         SELECT id
@@ -326,9 +373,23 @@ if ($rol['nombre'] === ROL_EMPRESA) {
 
     if ($stmtEmpresaYaTieneAdmin->fetch()) {
 
-        establecerErrorFormulario('Esa empresa ya tiene un usuario con rol Empresa.', $_POST, 'editar_usuario.php?id=' . $id, 'id_rol');
+        $errores[] = ['mensaje' => 'Esa empresa ya tiene un usuario con rol Empresa.', 'campo' => 'id_rol'];
 
     }
+
+}
+
+
+// =====================================================
+// SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
+// =====================================================
+
+if (!empty($errores)) {
+
+    $mensajes = array_unique(array_column($errores, 'mensaje'));
+    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
+
+    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'editar_usuario.php?id=' . $id, $primerCampo);
 
 }
 
@@ -412,6 +473,7 @@ $stmtDatos = $pdo->prepare("
         u.estado,
         u.motivo_inactivo,
         e.nombre AS empresa,
+        e.codigo_empresa,
         r.nombre AS rol
     FROM usuarios u
 
@@ -466,6 +528,25 @@ registrarLog(
 $nombreCompleto =
     $usuario['nombre'] . ' ' . $usuario['apellidos'];
 
+// El usuario con rol EMPRESA es el acceso de la propia
+// empresa: en su tarjeta de confirmación solo tiene sentido
+// mostrar el username, el usuario de acceso completo
+// (codigo_empresa-id-username, el mismo formato que se
+// escribe en login.php) y el estado — el resto de datos
+// (nombre, email, teléfono, empresa, rol...) son los de la
+// empresa y ya se muestran en su propia tarjeta.
+$usuarioEsCuentaEmpresa = $usuario['rol'] === ROL_EMPRESA;
+
+// Igual que arriba, pero para el rol USUARIO: su tarjeta se
+// organiza en "Datos del usuario" / "Datos del login" en vez
+// del listado plano que usan SRG y NG.
+$esRolUsuario = $usuario['rol'] === ROL_USUARIO;
+
+$usuarioAcceso =
+    $usuario['codigo_empresa'] . '-' .
+    $usuario['id'] . '-' .
+    $usuario['username'];
+
 
 // =====================================================
 // CALCULAR INICIALES
@@ -501,7 +582,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
 } else {
 
-    $estadoPassword = 'Contraseña establecida';
+    $estadoPassword = 'Cambiada';
 
 }
 
@@ -575,6 +656,10 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                 <div class="page-header-actions">
 
+                    <a href="crear_usuario.php" class="config-save-button">
+                        + Añadir usuario
+                    </a>
+
                 </div>
 
             </div>
@@ -587,12 +672,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
             <div class="config-card confirmation-card">
 
 
-                <h2>
-                    Usuario actualizado
-                </h2>
-
-
-                <div class="form-info">
+                <div class="form-info registration-success">
 
                     <p>
 
@@ -617,193 +697,25 @@ if ((int) $usuario['cambiar_password'] === 1) {
                      INFORMACIÓN DEL USUARIO
                 ================================================== -->
 
-                <div class="usuario-detalle">
+                <?php if ($usuarioEsCuentaEmpresa): ?>
 
 
+                    <div class="usuario-detalle">
+
+                        <div class="usuario-detalle-grid">
 
 
-                    <!-- =================================================
-                         DATOS
-                    ================================================== -->
-
-                    <div class="usuario-detalle-grid">
-
-
-                        <!-- ID -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                ID de usuario
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['id'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- NOMBRE -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Nombre
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['nombre'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- APELLIDOS -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Apellidos
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['apellidos'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- USERNAME -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Username
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['username'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- EMAIL -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Email
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['email'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- TELEFONO -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Teléfono
-                            </span>
-
-                            <strong>
-
-                                <?php if (!empty($usuario['telefono'])): ?>
-
-                                    <?= htmlspecialchars(
-                                        $usuario['telefono'],
-                                        ENT_QUOTES,
-                                        'UTF-8'
-                                    ) ?>
-
-                                <?php else: ?>
-
-                                    No indicado
-
-                                <?php endif; ?>
-
-                            </strong>
-
-                        </div>
-
-
-                        <!-- EMPRESA -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Empresa
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['empresa'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <!-- ESTADO -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Estado
-                            </span>
-
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['estado'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
-
-                        </div>
-
-
-                        <?php if ($usuario['estado'] === 'Inactivo'): ?>
-
-                            <!-- MOTIVO -->
+                            <!-- USERNAME -->
 
                             <div class="usuario-detalle-item">
 
                                 <span>
-                                    Motivo
+                                    Username
                                 </span>
 
                                 <strong>
                                     <?= htmlspecialchars(
-                                        $usuario['motivo_inactivo'],
+                                        $usuario['username'],
                                         ENT_QUOTES,
                                         'UTF-8'
                                     ) ?>
@@ -811,47 +723,391 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                             </div>
 
-                        <?php endif; ?>
+
+                            <!-- USUARIO DE ACCESO (LOGIN) -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Usuario de acceso (login)
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuarioAcceso,
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
 
 
-                        <!-- ROL -->
+                            <!-- ESTADO -->
 
-                        <div class="usuario-detalle-item">
+                            <div class="usuario-detalle-item">
 
-                            <span>
-                                Rol
-                            </span>
+                                <span>
+                                    Estado
+                                </span>
 
-                            <strong>
-                                <?= htmlspecialchars(
-                                    $usuario['rol'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                ) ?>
-                            </strong>
+                                <strong class="<?= $usuario['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
+                                    <?= htmlspecialchars(
+                                        $usuario['estado'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <?php if ($usuario['estado'] === 'Inactivo'): ?>
+
+                                <!-- MOTIVO -->
+
+                                <div class="usuario-detalle-item">
+
+                                    <span>
+                                        Motivo
+                                    </span>
+
+                                    <strong>
+                                        <?= htmlspecialchars(
+                                            $usuario['motivo_inactivo'],
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>
+                                    </strong>
+
+                                </div>
+
+                            <?php endif; ?>
+
 
                         </div>
-
-
-                        <!-- CONTRASEÑA -->
-
-                        <div class="usuario-detalle-item">
-
-                            <span>
-                                Contraseña
-                            </span>
-
-                            <strong>
-                                Se ha mantenido sin cambios
-                            </strong>
-
-                        </div>
-
 
                     </div>
 
 
-                </div>
+                <?php elseif ($esRolUsuario): ?>
+
+
+                    <h2 class="confirmation-section-title">Datos del usuario</h2>
+
+                    <div class="usuario-detalle">
+
+                        <div class="usuario-detalle-grid">
+
+                            <div class="usuario-detalle-item">
+                                <span>ID</span>
+                                <strong><?= htmlspecialchars($usuario['id'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <div class="usuario-detalle-item">
+                                <span>Username</span>
+                                <strong><?= htmlspecialchars($usuario['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <div class="usuario-detalle-item">
+                                <span>Email</span>
+                                <strong><?= htmlspecialchars($usuario['email'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <div class="usuario-detalle-item">
+                                <span>Teléfono</span>
+                                <strong><?= htmlspecialchars($usuario['telefono'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <div class="usuario-detalle-item">
+                                <span>Rol</span>
+                                <strong><?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                            <div class="usuario-detalle-item">
+                                <span>Empresa</span>
+                                <strong><?= htmlspecialchars($usuario['empresa'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="access-section">
+
+                        <h2 class="confirmation-section-title">Datos del login</h2>
+
+                        <div class="usuario-detalle">
+
+                            <div class="usuario-detalle-grid">
+
+                                <div class="usuario-detalle-item">
+                                    <span>Username</span>
+                                    <strong><?= htmlspecialchars($usuarioAcceso, ENT_QUOTES, 'UTF-8') ?></strong>
+                                </div>
+
+                                <div class="usuario-detalle-item">
+                                    <span>Contraseña</span>
+                                    <strong><?= htmlspecialchars($estadoPassword, ENT_QUOTES, 'UTF-8') ?></strong>
+                                </div>
+
+                                <div class="usuario-detalle-item">
+                                    <span>Estado</span>
+                                    <strong class="<?= $usuario['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
+                                        <?= htmlspecialchars($usuario['estado'], ENT_QUOTES, 'UTF-8') ?>
+                                    </strong>
+                                </div>
+
+                                <?php if ($usuario['estado'] === 'Inactivo'): ?>
+
+                                    <div class="usuario-detalle-item">
+                                        <span>Motivo</span>
+                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                    </div>
+
+                                <?php endif; ?>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                <?php else: ?>
+
+
+                    <div class="usuario-detalle">
+
+                        <div class="usuario-detalle-grid">
+
+
+                            <!-- ID -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    ID de usuario
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['id'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- NOMBRE -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Nombre
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['nombre'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- APELLIDOS -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Apellidos
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['apellidos'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- USERNAME -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Username
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['username'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- EMAIL -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Email
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['email'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- TELEFONO -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Teléfono
+                                </span>
+
+                                <strong>
+
+                                    <?php if (!empty($usuario['telefono'])): ?>
+
+                                        <?= htmlspecialchars(
+                                            $usuario['telefono'],
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>
+
+                                    <?php else: ?>
+
+                                        No indicado
+
+                                    <?php endif; ?>
+
+                                </strong>
+
+                            </div>
+
+
+                            <!-- EMPRESA -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Empresa
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['empresa'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- ESTADO -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Estado
+                                </span>
+
+                                <strong class="<?= $usuario['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
+                                    <?= htmlspecialchars(
+                                        $usuario['estado'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <?php if ($usuario['estado'] === 'Inactivo'): ?>
+
+                                <!-- MOTIVO -->
+
+                                <div class="usuario-detalle-item">
+
+                                    <span>
+                                        Motivo
+                                    </span>
+
+                                    <strong>
+                                        <?= htmlspecialchars(
+                                            $usuario['motivo_inactivo'],
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        ) ?>
+                                    </strong>
+
+                                </div>
+
+                            <?php endif; ?>
+
+
+                            <!-- ROL -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Rol
+                                </span>
+
+                                <strong>
+                                    <?= htmlspecialchars(
+                                        $usuario['rol'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
+                                    ) ?>
+                                </strong>
+
+                            </div>
+
+
+                            <!-- CONTRASEÑA -->
+
+                            <div class="usuario-detalle-item">
+
+                                <span>
+                                    Contraseña
+                                </span>
+
+                                <strong>
+                                    Se ha mantenido sin cambios
+                                </strong>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+
+                <?php endif; ?>
 
 
                 <!-- =================================================
@@ -862,10 +1118,10 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
 
                     <a
-                        href="crear_usuario.php"
+                        href="editar_usuario.php?id=<?= (int) $usuario['id'] ?>"
                         class="config-save-button"
                     >
-                        + Añadir usuario
+                        Editar
                     </a>
 
 

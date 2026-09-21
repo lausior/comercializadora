@@ -1,6 +1,320 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
+       00. VALIDACIÓN DE FORMULARIOS DE CLIENTE
+       (crear_cliente.php / editar_cliente.php)
+       Se coloca ANTES del "return" del punto 02 porque esas
+       páginas no tienen tabla de clientes y el script cortaría
+       aquí su ejecución si se pusiera más abajo.
+    ========================================================= */
+
+    function validarNombreApellidosCliente(valor) {
+
+        const texto = valor.trim();
+
+        if (texto === '') {
+            return 'Este campo es obligatorio.';
+        }
+
+        if (/^[-']/.test(texto)) {
+            return 'Debe empezar con una letra.';
+        }
+
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'\- ]*[A-Za-zÀ-ÖØ-öø-ÿ])?$/.test(texto)) {
+            return 'Solo se permiten letras, espacios, guiones y apóstrofos.';
+        }
+
+        if (texto.length < 2) {
+            return 'Debe tener al menos 2 caracteres.';
+        }
+
+        return null;
+
+    }
+
+    function validarNifCliente(valor) {
+
+        const texto = valor.trim().toUpperCase();
+
+        if (texto === '') {
+            return 'Este campo es obligatorio.';
+        }
+
+        // Mismo algoritmo que validarDNI()/validarNIE() en
+        // includes/validaciones.php: letra de control calculada
+        // a partir del número, no solo el formato.
+
+        const letrasControl = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
+        const dni = texto.match(/^([0-9]{8})([A-Z])$/);
+        const nie = texto.match(/^([XYZ])([0-9]{7})([A-Z])$/);
+
+        let numero = null;
+        let letra = null;
+
+        if (dni) {
+
+            numero = Number(dni[1]);
+            letra = dni[2];
+
+        } else if (nie) {
+
+            const prefijos = { X: '0', Y: '1', Z: '2' };
+            numero = Number(prefijos[nie[1]] + nie[2]);
+            letra = nie[3];
+
+        } else {
+
+            return 'Introduce un DNI o NIE válido.';
+
+        }
+
+        if (letra !== letrasControl[numero % 23]) {
+            return 'Introduce un DNI o NIE válido.';
+        }
+
+        return null;
+
+    }
+
+    function validarDireccionCliente(valor) {
+
+        const texto = valor.trim();
+
+        // La dirección es opcional
+        if (texto === '') {
+            return null;
+        }
+
+        if (texto.length < 3) {
+            return 'Debe tener al menos 3 caracteres.';
+        }
+
+        if (texto.length > 150) {
+            return 'No puede superar los 150 caracteres.';
+        }
+
+        if (!/^[\p{L}\p{N}\s.,'ºª°/-]+$/u.test(texto)) {
+            return 'Contiene caracteres no permitidos.';
+        }
+
+        return null;
+
+    }
+
+    function validarTelefonoCliente(valor) {
+
+        const texto = valor.trim();
+
+        // El teléfono es opcional
+        if (texto === '') {
+            return null;
+        }
+
+        if (!/^\+?[0-9\s\-()]+$/.test(texto)) {
+            return 'Solo números, espacios, guiones, paréntesis y un "+" inicial.';
+        }
+
+        const digitos = texto.replace(/\D/g, '');
+
+        if (digitos.length < 7 || digitos.length > 15) {
+            return 'Introduce un teléfono válido (nacional o internacional).';
+        }
+
+        return null;
+
+    }
+
+    function validarEmailCliente(valor) {
+
+        const texto = valor.trim();
+
+        if (texto === '') {
+            return 'Este campo es obligatorio.';
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) {
+            return 'Introduce un email con un formato válido.';
+        }
+
+        return null;
+
+    }
+
+    const VALIDADORES_CLIENTE = {
+        nombre: validarNombreApellidosCliente,
+        apellidos: validarNombreApellidosCliente,
+        nif: validarNifCliente,
+        direccion: validarDireccionCliente,
+        telefono: validarTelefonoCliente,
+        email: validarEmailCliente
+    };
+
+    function validarCampoCliente(input) {
+
+        const validador = VALIDADORES_CLIENTE[input.name];
+
+        if (!validador) {
+            return true;
+        }
+
+        const error = validador(input.value);
+        const contenedorError = document.getElementById('error-' + input.name);
+
+        if (error) {
+
+            input.classList.add('input-error');
+
+            if (contenedorError) {
+                contenedorError.textContent = error;
+            }
+
+            return false;
+
+        }
+
+        input.classList.remove('input-error');
+
+        if (contenedorError) {
+            contenedorError.textContent = '';
+        }
+
+        return true;
+
+    }
+
+    function mostrarMensajeGeneralCliente(formulario, mensaje) {
+
+        const contenedor = formulario.querySelector('#form-error-general');
+
+        if (!contenedor) {
+            return;
+        }
+
+        contenedor.textContent = mensaje;
+        contenedor.style.display = 'block';
+
+    }
+
+    function ocultarMensajeGeneralCliente(formulario) {
+
+        const contenedor = formulario.querySelector('#form-error-general');
+
+        if (!contenedor) {
+            return;
+        }
+
+        contenedor.textContent = '';
+        contenedor.style.display = 'none';
+
+    }
+
+    function quedanCamposInvalidosCliente(formulario) {
+
+        return Object.keys(VALIDADORES_CLIENTE).some(nombreCampo => {
+
+            const input = formulario.querySelector('#' + nombreCampo);
+
+            if (!input) {
+                return false;
+            }
+
+            return VALIDADORES_CLIENTE[nombreCampo](input.value) !== null;
+
+        });
+
+    }
+
+    function inicializarValidacionFormularioCliente() {
+
+        const formulario = document.querySelector('.config-card form');
+
+        if (!formulario) {
+            return;
+        }
+
+        Object.keys(VALIDADORES_CLIENTE).forEach(nombreCampo => {
+
+            const input = formulario.querySelector('#' + nombreCampo);
+
+            if (!input) {
+                return;
+            }
+
+            input.addEventListener('blur', () => {
+                validarCampoCliente(input);
+            });
+
+            input.addEventListener('input', () => {
+
+                const validador = VALIDADORES_CLIENTE[input.name];
+                const error = validador(input.value);
+
+                if (!error) {
+                    input.classList.remove('input-error');
+                    const contenedorError = document.getElementById('error-' + input.name);
+                    if (contenedorError) {
+                        contenedorError.textContent = '';
+                    }
+                }
+
+                if (!quedanCamposInvalidosCliente(formulario)) {
+                    ocultarMensajeGeneralCliente(formulario);
+                }
+
+            });
+
+        });
+
+        formulario.addEventListener('submit', (event) => {
+
+            let formularioValido = true;
+
+            Object.keys(VALIDADORES_CLIENTE).forEach(nombreCampo => {
+
+                const input = formulario.querySelector('#' + nombreCampo);
+
+                if (!input) {
+                    return;
+                }
+
+                const campoValido = validarCampoCliente(input);
+
+                if (!campoValido) {
+                    formularioValido = false;
+                }
+
+            });
+
+            if (!formularioValido) {
+
+                event.preventDefault();
+
+                mostrarMensajeGeneralCliente(
+                    formulario,
+                    'Hay campos obligatorios sin completar o con un formato incorrecto. Revisa los campos marcados en rojo.'
+                );
+
+                const mensajeGeneral = formulario.querySelector('#form-error-general');
+
+                if (mensajeGeneral) {
+                    mensajeGeneral.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+            } else {
+
+                ocultarMensajeGeneralCliente(formulario);
+
+            }
+
+        });
+
+    }
+
+    inicializarValidacionFormularioCliente();
+
+
+    /* =========================================================
        01. ELEMENTOS DEL DOM
        Referencias a los elementos que el script necesita
        leer o modificar.
@@ -1079,13 +1393,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
+    let clienteEliminarEnCurso = false;
+
     window.confirmarEliminarCliente = async function () {
 
-        if (clienteEliminarId <= 0) {
+        if (clienteEliminarId <= 0 || clienteEliminarEnCurso) {
             return;
         }
 
         const idEliminado = clienteEliminarId;
+
+        clienteEliminarEnCurso = true;
 
         try {
 
@@ -1097,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const datos = await respuesta.json();
 
             if (!respuesta.ok || !datos.ok) {
-                throw new Error('No se ha podido eliminar el cliente.');
+                throw new Error(datos.error || 'No se ha podido eliminar el cliente.');
             }
 
             window.cerrarModalEliminarCliente();
@@ -1115,6 +1433,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             window.alert(error.message);
+        } finally {
+            clienteEliminarEnCurso = false;
         }
 
     };

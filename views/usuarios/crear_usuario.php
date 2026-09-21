@@ -23,15 +23,20 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 //
 // Un usuario con rol EMPRESA solo puede dar de alta
 // usuarios de su propia empresa y con rol USUARIO (equipo
-// simple), así que ni la empresa ni el rol se muestran
-// como campos del formulario: se fijan directamente al
-// guardar (ver guardar_usuario.php).
+// simple). Lo mismo aplica a NG con SU propia empresa (NG
+// Asesores): desde la sección Usuarios, NG solo da de alta
+// a su propio equipo interno (rol USUARIO) — para el resto
+// de empresas (sus clientes), el acceso ya se crea junto a
+// la empresa (ver guardar_empresa.php). Así que en ninguno
+// de los dos casos se muestran la empresa ni el rol como
+// campos del formulario: se fijan directamente al guardar
+// (ver guardar_usuario.php).
 //
 // =====================================================
 
-$esEmpresa = rolActual() === ROL_EMPRESA;
+$empresaYRolFijos = in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true);
 
-if ($esEmpresa) {
+if ($empresaYRolFijos) {
 
     $stmtRolUsuario = $pdo->prepare("
         SELECT id
@@ -48,51 +53,22 @@ if ($esEmpresa) {
 
 
     // =====================================================
-    // OBTENER EMPRESAS
+    // OBTENER EMPRESAS Y ROLES
     // =====================================================
     //
-    // NG solo para las empresas que ha creado él mismo
-    // (igual que en el resto de la app, ver
-    // puedeVerEmpresa() en permisos.php). SRG puede elegir
-    // cualquiera.
+    // Solo SRG llega hasta aquí (EMPRESA y NG ya tienen la
+    // empresa y el rol fijos, ver arriba), así que puede
+    // elegir cualquier empresa y cualquier rol.
     //
     // =====================================================
 
-    if (rolActual() === ROL_NG) {
+    $stmtEmpresas = $pdo->query("
+        SELECT id, nombre
+        FROM empresas
+        ORDER BY nombre
+    ");
 
-        $stmtEmpresas = $pdo->prepare("
-            SELECT id, nombre
-            FROM empresas
-            WHERE creado_por = ?
-            ORDER BY nombre
-        ");
-
-        $stmtEmpresas->execute([$_SESSION['id_usuario']]);
-
-        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-    } else {
-
-        $stmtEmpresas = $pdo->query("
-            SELECT id, nombre
-            FROM empresas
-            ORDER BY nombre
-        ");
-
-        $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
-
-    }
-
-
-    // =====================================================
-    // OBTENER ROLES
-    // =====================================================
-    //
-    // Nadie puede crear un usuario con un rol más
-    // privilegiado que el suyo propio: NG no puede crear
-    // otro SRG.
-    //
-    // =====================================================
+    $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
 
     $stmtRoles = $pdo->query("
         SELECT id, nombre
@@ -101,15 +77,6 @@ if ($esEmpresa) {
     ");
 
     $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
-
-    if (rolActual() === ROL_NG) {
-
-        $roles = array_values(array_filter(
-            $roles,
-            fn(array $r): bool => $r['nombre'] !== ROL_SRG
-        ));
-
-    }
 
 
     // =====================================================
@@ -329,12 +296,13 @@ if ($esEmpresa) {
                         </div>
 
 
-                        <?php if ($esEmpresa): ?>
+                        <?php if ($empresaYRolFijos): ?>
 
-                            <!-- Un usuario con rol EMPRESA siempre da de
-                                 alta usuarios de su propia empresa y con
-                                 rol USUARIO: no hay nada que elegir, así
-                                 que se envían como campos ocultos. -->
+                            <!-- Un usuario con rol EMPRESA (o NG, para su
+                                 propia empresa) siempre da de alta usuarios
+                                 de su propia empresa y con rol USUARIO: no
+                                 hay nada que elegir, así que se envían como
+                                 campos ocultos. -->
 
                             <input type="hidden" id="id_empresa" name="id_empresa"
                                 value="<?= (int) $_SESSION['id_empresa'] ?>">
@@ -519,7 +487,7 @@ if ($esEmpresa) {
 
     <script src="../../js/usuarios.js"></script>
 
-    <?php if (!$esEmpresa): ?>
+    <?php if (!$empresaYRolFijos): ?>
 
         <!-- =================================================
              BLOQUEAR ROL A "USUARIO" SEGÚN LA EMPRESA ELEGIDA

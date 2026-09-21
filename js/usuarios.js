@@ -127,6 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validarCampoUsuario(input) {
 
+        // Campos de solo lectura (nombre, email, teléfono de la
+        // cuenta EMPRESA) u ocultos (apellidos, en esa misma
+        // cuenta): no se pueden editar aquí, así que tampoco se
+        // validan — su valor ya viene válido de la base de datos.
+        if (input.readOnly || input.closest('.form-group')?.classList.contains('hidden')) {
+            return true;
+        }
+
         const validador = VALIDADORES_USUARIO[input.name];
 
         if (!validador) {
@@ -191,6 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = formulario.querySelector('#' + nombreCampo);
 
             if (!input) {
+                return false;
+            }
+
+            if (input.readOnly || input.closest('.form-group')?.classList.contains('hidden')) {
                 return false;
             }
 
@@ -1438,6 +1450,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (detalleEstado) {
             detalleEstado.textContent = fila.dataset.estado || '—';
+            detalleEstado.classList.toggle('text-success', fila.dataset.estado === 'Activo');
+            detalleEstado.classList.toggle('text-danger', fila.dataset.estado === 'Inactivo');
         }
 
         if (detallePasswordEstado) {
@@ -1493,9 +1507,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const id = usuarioDetalleActual.id;
             const nombre = usuarioDetalleActual.nombre;
+            const rol = usuarioDetalleActual.rol;
 
             window.cerrarModalDetalleUsuario();
-            window.abrirModalEliminar(id, nombre);
+            window.abrirModalEliminar(id, nombre, rol);
 
         });
 
@@ -1543,6 +1558,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'nombreUsuarioEliminar'
         );
 
+    const avisoEmpresaEliminar =
+        document.getElementById(
+            'avisoEmpresaEliminar'
+        );
+
 
     /* =========================================================
        18. ABRIR MODAL
@@ -1551,7 +1571,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.abrirModalEliminar =
         function (
             id,
-            nombre
+            nombre,
+            rol
         ) {
 
             usuarioEliminarId =
@@ -1564,6 +1585,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 nombreUsuarioEliminar.textContent =
                     nombre;
+
+            }
+
+
+            if (
+                avisoEmpresaEliminar
+            ) {
+
+                avisoEmpresaEliminar.style.display =
+                    rol === 'EMPRESA' ? 'block' : 'none';
 
             }
 
@@ -1614,11 +1645,14 @@ document.addEventListener('DOMContentLoaded', () => {
        20. CONFIRMAR ELIMINACIÓN
     ========================================================= */
 
+    let usuarioEliminarEnCurso = false;
+
     window.confirmarEliminarUsuario =
         async function () {
 
             if (
-                usuarioEliminarId <= 0
+                usuarioEliminarId <= 0 ||
+                usuarioEliminarEnCurso
             ) {
 
                 return;
@@ -1627,6 +1661,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
             const idEliminado = usuarioEliminarId;
+
+            usuarioEliminarEnCurso = true;
 
             try {
 
@@ -1640,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const datos = await respuesta.json();
 
                 if (!respuesta.ok || !datos.ok) {
-                    throw new Error('No se ha podido eliminar el usuario.');
+                    throw new Error(datos.error || 'No se ha podido eliminar el usuario.');
                 }
 
                 window.cerrarModalEliminar();
@@ -1660,6 +1696,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (error) {
                 window.alert(error.message);
+            } finally {
+                usuarioEliminarEnCurso = false;
             }
 
         };

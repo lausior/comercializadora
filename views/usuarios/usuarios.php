@@ -777,7 +777,8 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                                     title="Eliminar"
                                                     onclick="event.stopPropagation(); window.abrirModalEliminar(
         <?= (int) $usuario['id'] ?>,
-        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>',
+        '<?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?>'
     )">
                                                     <i class="bi bi-trash3"></i>
                                                 </button>
@@ -1015,6 +1016,10 @@ $estadosFiltro = ['Activo', 'Inactivo'];
         <p>
             ¿Estás seguro de que quieres eliminar al usuario
             <strong id="nombreUsuarioEliminar"></strong>?
+        </p>
+
+        <p class="modal-warning" id="avisoEmpresaEliminar" style="display: none;">
+            Es el usuario de acceso de la empresa: se eliminará también la empresa asociada.
         </p>
 
         <p class="modal-warning">

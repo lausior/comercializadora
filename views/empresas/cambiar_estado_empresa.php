@@ -12,8 +12,17 @@ require_once '../../includes/logs.php';
 // =====================================================
 // COMPROBAR ID DE LA EMPRESA
 // =====================================================
+//
+// Activar llega por GET (enlace directo, sin motivo).
+// Desactivar llega por POST (el modal de empresas.js envía
+// el id junto con el motivo), así que hay que aceptar el id
+// en cualquiera de los dos.
+//
+// =====================================================
 
-$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$id = isset($_POST['id'])
+    ? (int) $_POST['id']
+    : (isset($_GET['id']) ? (int) $_GET['id'] : 0);
 
 if ($id <= 0) {
 
@@ -80,13 +89,89 @@ if (!puedeVerEmpresa($empresa['creado_por'] !== null ? (int) $empresa['creado_po
 
 $nuevoEstado = $empresa['estado'] === 'Activo' ? 'Inactivo' : 'Activo';
 
+
+// =====================================================
+// SI PASA A INACTIVO, EXIGIR MOTIVO
+// =====================================================
+//
+// Mismo requisito que en crear_empresa.php: desactivar una
+// empresa exige indicar el motivo. El modal del listado (ver
+// empresas.js) lo envía por POST; si se llega aquí sin él
+// (por ejemplo, manipulando la URL a mano), se corta en vez
+// de desactivar sin motivo.
+//
+// =====================================================
+
+$motivo = trim($_POST['motivo'] ?? '');
+
+if ($nuevoEstado === 'Inactivo') {
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $motivo === '') {
+
+        die('
+            <h2>Error</h2>
+
+            <p>
+                Indica el motivo por el que la empresa pasa a inactiva.
+            </p>
+
+            <p>
+                <a href="empresas.php">
+                    Volver a empresas
+                </a>
+            </p>
+        ');
+
+    }
+
+    if (mb_strlen($motivo, 'UTF-8') > 500) {
+
+        die('
+            <h2>Error</h2>
+
+            <p>
+                El motivo de inactividad no puede superar los 500 caracteres.
+            </p>
+
+            <p>
+                <a href="empresas.php">
+                    Volver a empresas
+                </a>
+            </p>
+        ');
+
+    }
+
+}
+
 $stmtActualizar = $pdo->prepare("
     UPDATE empresas
-    SET estado = ?
+    SET estado = ?, motivo_inactivo = ?
     WHERE id = ?
 ");
 
-$stmtActualizar->execute([$nuevoEstado, $id]);
+$stmtActualizar->execute([
+    $nuevoEstado,
+    $nuevoEstado === 'Inactivo' ? $motivo : null,
+    $id,
+]);
+
+// El usuario de acceso de la empresa (rol EMPRESA) representa
+// su login: su estado debe mantenerse sincronizado con el
+// estado mostrado en el listado de usuarios, igual que al
+// revés (ver cambiar_estado_usuario.php).
+$pdo->prepare("
+    UPDATE usuarios u
+    INNER JOIN roles r ON r.id = u.id_rol
+    SET u.estado = ?, u.motivo_inactivo = ?
+    WHERE u.id_empresa = ?
+        AND r.nombre = ?
+")->execute([
+    $nuevoEstado,
+    $nuevoEstado === 'Inactivo' ? $motivo : null,
+    $id,
+    ROL_EMPRESA,
+]);
 
 // El evento es "Empresa activada"/"Empresa desactivada" (en vez
 // de un único "Estado modificado") para que se pueda filtrar en
@@ -95,7 +180,8 @@ $stmtActualizar->execute([$nuevoEstado, $id]);
 registrarLog(
     LOG_INFORMACION,
     $nuevoEstado === 'Activo' ? 'Empresa activada' : 'Empresa desactivada',
-    'La empresa "' . $empresa['nombre'] . '" ha pasado a estado ' . $nuevoEstado . '.'
+    'La empresa "' . $empresa['nombre'] . '" ha pasado a estado ' . $nuevoEstado
+        . ($nuevoEstado === 'Inactivo' ? '. Motivo: ' . $motivo : '') . '.'
 );
 
 header('Location: empresas.php');

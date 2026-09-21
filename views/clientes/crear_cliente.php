@@ -262,6 +262,8 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
     <?php include '../../templates/footer.php'; ?>
 
 
+    <script src="../../js/clientes.js"></script>
+
 </body>
 
 </html>

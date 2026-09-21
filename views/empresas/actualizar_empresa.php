@@ -33,6 +33,8 @@ $cif           = trim($_POST['cif'] ?? '');
 $direccion     = trim($_POST['direccion'] ?? '');
 $telefono      = trim($_POST['telefono'] ?? '');
 $email         = trim($_POST['email'] ?? '');
+$estado        = trim($_POST['estado'] ?? '');
+$motivoInactivo = trim($_POST['motivo_inactivo'] ?? '');
 
 
 // =====================================================
@@ -97,6 +99,18 @@ if ($telefono !== '' && !validarTelefono($telefono)) {
 if ($email !== '' && !validarEmail($email)) {
 
     establecerErrorFormulario('El email no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'email');
+
+}
+
+if (!in_array($estado, ['Activo', 'Inactivo'], true)) {
+
+    establecerErrorFormulario('El estado seleccionado no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'estado');
+
+}
+
+if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
+
+    establecerErrorFormulario('El motivo de inactividad no puede superar los 500 caracteres.', $_POST, 'editar_empresa.php?id=' . $id, 'motivo_inactivo');
 
 }
 
@@ -192,7 +206,9 @@ $stmt = $pdo->prepare("
         cif = :cif,
         direccion = :direccion,
         telefono = :telefono,
-        email = :email
+        email = :email,
+        estado = :estado,
+        motivo_inactivo = :motivo_inactivo
     WHERE id = :id
 ");
 
@@ -202,7 +218,22 @@ $stmt->execute([
     ':direccion'      => $direccion !== '' ? $direccion : null,
     ':telefono'       => $telefono !== '' ? $telefono : null,
     ':email'          => $email !== '' ? $email : null,
+    ':estado'         => $estado,
+    ':motivo_inactivo' => $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
     ':id'             => $id,
+]);
+
+$pdo->prepare("
+    UPDATE usuarios u
+    INNER JOIN roles r ON r.id = u.id_rol
+    SET u.estado = ?, u.motivo_inactivo = ?
+    WHERE u.id_empresa = ?
+        AND r.nombre = ?
+")->execute([
+    $estado,
+    $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+    $id,
+    ROL_EMPRESA,
 ]);
 
 $stmtDatos = $pdo->prepare("
@@ -214,7 +245,8 @@ $stmtDatos = $pdo->prepare("
         direccion,
         telefono,
         email,
-        estado
+        estado,
+        motivo_inactivo
     FROM empresas
     WHERE id = ?
     LIMIT 1
@@ -281,13 +313,19 @@ registrarLog(
                     <p>Empresa actualizada correctamente</p>
                 </div>
 
+                <div class="page-header-actions">
+
+                    <a href="crear_empresa.php" class="config-save-button">
+                        + Añadir empresa
+                    </a>
+
+                </div>
+
             </div>
 
             <div class="config-card confirmation-card">
 
-                <h2>Empresa actualizada</h2>
-
-                <div class="form-info">
+                <div class="form-info registration-success">
                     <p>
                         La empresa
                         <strong><?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
@@ -334,10 +372,21 @@ registrarLog(
                             <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
                         </div>
 
-                        <div class="usuario-detalle-item">
+                        <div class="usuario-detalle-item empresa-estado-item">
                             <span>Estado</span>
-                            <strong><?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?></strong>
+                            <strong class="<?= $empresa['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
+                                <?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>
+                            </strong>
                         </div>
+
+                        <?php if ($empresa['estado'] === 'Inactivo'): ?>
+
+                            <div class="usuario-detalle-item empresa-motivo-item">
+                                <span>Motivo</span>
+                                <strong><?= htmlspecialchars($empresa['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+
+                        <?php endif; ?>
 
                     </div>
 
@@ -346,7 +395,7 @@ registrarLog(
                 <div class="form-actions">
 
                     <a href="editar_empresa.php?id=<?= (int) $empresa['id'] ?>" class="config-save-button">
-                        Seguir editando
+                        Editar
                     </a>
 
                     <a href="empresas.php" class="config-cancel-button">

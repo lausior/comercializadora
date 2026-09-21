@@ -1394,8 +1394,53 @@ textarea:focus-visible {
     margin-left: auto;
 }
 
+.confirmation-card .empresa-estado-item {
+    grid-column: 1;
+}
+
+.confirmation-card .empresa-motivo-item {
+    grid-column: 2;
+}
+
 .confirmation-card .form-actions {
     justify-content: center;
+}
+
+.confirmation-card .access-section {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+
+.confirmation-card .confirmation-section-title {
+    margin-bottom: 22px;
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.deletion-confirmation-card {
+    position: relative;
+}
+
+.deletion-confirmation-card h2[data-drag-handle] {
+    cursor: grab;
+    user-select: none;
+}
+
+.deletion-confirmation-card.is-dragging h2[data-drag-handle] {
+    cursor: grabbing;
+}
+
+.deletion-confirmation-card .confirmation-section-label {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
 }
 
 .config-card-header {
@@ -4335,6 +4380,16 @@ select {
     margin-top: 3px;
 }
 
+.registration-success {
+    border-color: var(--success);
+    background: var(--success-soft);
+}
+
+.registration-success p {
+    color: var(--success);
+    font-weight: 600;
+}
+
 
 /* =========================================================
    ACCIONES FORMULARIO
@@ -4574,7 +4629,8 @@ select {
 
 .modal-warning {
     font-size: 13px !important;
-    color: #999 !important;
+    color: var(--danger) !important;
+    font-weight: 600;
 }
 
 
@@ -4698,6 +4754,30 @@ select {
     font-size: 12px;
     overflow-wrap: anywhere;
     text-align: right;
+}
+
+.eliminacion-mensaje {
+    text-align: left;
+}
+
+.eliminacion-secciones {
+    text-align: left;
+}
+
+.eliminacion-seccion-titulo {
+    margin-top: 18px;
+    margin-bottom: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.eliminacion-secciones .usuario-detalle-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 
