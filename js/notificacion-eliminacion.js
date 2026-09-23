@@ -15,14 +15,12 @@ window.mostrarNotificacionEliminacion = function (datos) {
     tarjeta.setAttribute('role', 'alertdialog');
     tarjeta.setAttribute('aria-modal', 'true');
 
-    const icono = document.createElement('div');
-    icono.className = 'modal-icon modal-icon-exito';
-    icono.textContent = '✓';
-
-    const titulo = document.createElement('h2');
-    titulo.textContent = `${datos.tipo} eliminado correctamente`;
-
-    tarjeta.append(icono, titulo);
+    // Sin icono ni título propios (antes "✓" + "Xxx eliminado
+    // correctamente"): la tableta verde de abajo ya deja claro
+    // qué se ha eliminado, así que ese encabezado sobraba. Como
+    // ya no hay un <h2> que la etiquete, el alertdialog usa esa
+    // misma frase como aria-label.
+    tarjeta.setAttribute('aria-label', `Se ha eliminado ${datos.tipo.toLowerCase()} ${datos.nombre}.`);
 
     // =========================================================
     // MENSAJE DE CONFIRMACIÓN (TABLETA VERDE)

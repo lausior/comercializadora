@@ -77,6 +77,8 @@ $stmtCliente = $pdo->prepare("
         apellidos,
         nif,
         email,
+        telefono,
+        direccion,
         creado_por
     FROM clientes
     WHERE id = ?
@@ -154,10 +156,17 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
         'ok' => true,
         'tipo' => 'Cliente',
         'nombre' => $cliente['nombre'] . ' ' . $cliente['apellidos'],
-        'campos' => [
-            'ID' => $cliente['id'],
-            'DNI/NIE' => $cliente['nif'],
-            'Email' => $cliente['email'],
+        'secciones' => [
+            [
+                'titulo' => 'Datos del cliente',
+                'campos' => [
+                    ['ID de cliente', $cliente['id']],
+                    ['DNI/NIE', $cliente['nif']],
+                    ['Email', $cliente['email']],
+                    ['Teléfono', $cliente['telefono']],
+                    ['Dirección', $cliente['direccion']],
+                ],
+            ],
         ],
     ], JSON_UNESCAPED_UNICODE);
 
@@ -300,6 +309,28 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                         <strong>
                             <?= htmlspecialchars($cliente['email']) ?>
+                        </strong>
+
+                    </p>
+
+
+                    <p>
+
+                        Teléfono:
+
+                        <strong>
+                            <?= htmlspecialchars($cliente['telefono'] ?? 'No indicado') ?>
+                        </strong>
+
+                    </p>
+
+
+                    <p>
+
+                        Dirección:
+
+                        <strong>
+                            <?= htmlspecialchars($cliente['direccion'] ?? 'No indicado') ?>
                         </strong>
 
                     </p>

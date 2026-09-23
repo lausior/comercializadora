@@ -296,7 +296,7 @@ do {
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo
+                            Motivo (opcional)
                         </label>
 
                         <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
@@ -326,11 +326,7 @@ do {
                     <div class="form-info">
 
                         <p>
-                            Con esto la empresa ya puede acceder: usa su
-                            propio nombre, email y teléfono (los de arriba)
-                            como datos de acceso, con rol Empresa. Desde
-                            ahí podrá dar de alta a su equipo. La
-                            contraseña inicial se genera automáticamente y
+                            La contraseña inicial se genera automáticamente y
                             deberá cambiarla en su primer acceso.
                         </p>
 

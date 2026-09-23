@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/recordarme.php';
 
 
 // =====================================================
@@ -140,6 +141,11 @@ $stmtActualizar->execute([
     ':password' => $passwordHash,
     ':id'       => $id,
 ]);
+
+// Con la contraseña ya restablecida, cualquier "Recordarme"
+// que tuviera este usuario deja de valer, en todos sus
+// dispositivos.
+olvidarTodosLosTokensDeUsuario($pdo, $id);
 
 registrarLog(
     LOG_ADVERTENCIA,

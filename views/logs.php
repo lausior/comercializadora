@@ -158,10 +158,6 @@ sort($ipsFiltro);
                     📄 Exportar PDF
                 </button>
 
-                <button type="button" class="logs-btn" id="btnActualizarLogs">
-                    🔄 Actualizar
-                </button>
-
             </div>
 
         </div>

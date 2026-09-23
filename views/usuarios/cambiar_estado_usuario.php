@@ -99,14 +99,14 @@ $nuevoEstado = $usuario['estado'] === 'Activo' ? 'Inactivo' : 'Activo';
 
 
 // =====================================================
-// SI PASA A INACTIVO, EXIGIR MOTIVO
+// SI PASA A INACTIVO, EL MOTIVO ES OPCIONAL
 // =====================================================
 //
-// Mismo requisito que en crear_usuario.php/editar_usuario.php:
-// desactivar a alguien exige indicar el motivo. El modal del
-// listado (ver usuarios.js) lo envía por POST; si se llega
-// aquí sin él (por ejemplo, manipulando la URL a mano), se
-// corta en vez de desactivar sin motivo.
+// El modal del listado (ver usuarios.js) sigue enviándose por
+// POST con el motivo si se ha escrito; si se llega aquí sin
+// pasar por POST (por ejemplo, manipulando la URL a mano), se
+// corta igualmente, para que desactivar siga exigiendo el
+// modal de confirmación.
 //
 // =====================================================
 
@@ -114,13 +114,13 @@ $motivo = trim($_POST['motivo'] ?? '');
 
 if ($nuevoEstado === 'Inactivo') {
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $motivo === '') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
         die('
             <h2>Error</h2>
 
             <p>
-                Indica el motivo por el que el usuario pasa a inactivo.
+                Solicitud no válida.
             </p>
 
             <p>
@@ -158,25 +158,27 @@ $stmtActualizar = $pdo->prepare("
     WHERE id = ?
 ");
 
+$motivoGuardado = $nuevoEstado === 'Inactivo' && $motivo !== '' ? $motivo : null;
+
 $stmtActualizar->execute([
     $nuevoEstado,
-    $nuevoEstado === 'Inactivo' ? $motivo : null,
+    $motivoGuardado,
     $id,
 ]);
 
 // El usuario con rol EMPRESA representa el acceso de su empresa.
-// Su estado debe mantenerse sincronizado con el estado mostrado
-// en el listado de empresas; los usuarios normales no cambian
-// el estado global de la empresa.
+// Su estado (y motivo) debe mantenerse sincronizado con lo que
+// se muestra en el listado de empresas; los usuarios normales
+// no cambian el estado global de la empresa.
 if ($usuario['rol'] === ROL_EMPRESA) {
 
     $stmtEmpresa = $pdo->prepare("
         UPDATE empresas
-        SET estado = ?
+        SET estado = ?, motivo_inactivo = ?
         WHERE id = ?
     ");
 
-    $stmtEmpresa->execute([$nuevoEstado, $usuario['id_empresa']]);
+    $stmtEmpresa->execute([$nuevoEstado, $motivoGuardado, $usuario['id_empresa']]);
 
 }
 
@@ -188,7 +190,7 @@ registrarLog(
     LOG_INFORMACION,
     $nuevoEstado === 'Activo' ? 'Usuario activado' : 'Usuario desactivado',
     'El usuario "' . $usuario['username'] . '" ha pasado a estado ' . $nuevoEstado
-        . ($nuevoEstado === 'Inactivo' ? '. Motivo: ' . $motivo : '') . '.'
+        . ($motivoGuardado !== null ? '. Motivo: ' . $motivoGuardado : '') . '.'
 );
 
 header('Location: usuarios.php');

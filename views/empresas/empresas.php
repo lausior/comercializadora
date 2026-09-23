@@ -68,6 +68,18 @@ $totalEmpresas = count($empresas);
 
 
 // =====================================================
+// ESTADÍSTICAS
+// =====================================================
+
+$empresasActivas = count(array_filter(
+    $empresas,
+    fn(array $empresa): bool => $empresa['estado'] === 'Activo'
+));
+
+$empresasInactivas = $totalEmpresas - $empresasActivas;
+
+
+// =====================================================
 // VALORES DISTINTOS PARA LOS DESPLEGABLES DE FILTRO
 // =====================================================
 //
@@ -155,6 +167,83 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                 </div>
 
             </div>
+
+
+            <!-- =================================================
+                 RESUMEN
+            ================================================== -->
+
+            <section class="dashboard-cards">
+
+                <!-- TOTAL EMPRESAS -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon blue">
+                        🏢
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Total empresas
+                        </span>
+
+                        <strong>
+                            <?= $totalEmpresas ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMPRESAS ACTIVAS -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon green">
+                        ✓
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Empresas activas
+                        </span>
+
+                        <strong>
+                            <?= $empresasActivas ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMPRESAS INACTIVAS -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon orange">
+                        ◷
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Empresas inactivas
+                        </span>
+
+                        <strong>
+                            <?= $empresasInactivas ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
 
 
             <!-- =====================================================
@@ -471,7 +560,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                                             <div class="user-actions">
 
-                                                
+
 
                                                 <button type="button" class="table-action-button icon-action-button list-edit"
                                                     title="Editar"
@@ -479,12 +568,19 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
 
+                                                <button type="button" class="table-action-button icon-action-button danger"
+                                                    title="Eliminar" onclick="event.stopPropagation(); abrirModalEliminarEmpresa(
+        <?= (int) $empresa['id'] ?>,
+        '<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>'
+    )">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+
 
                                                 <?php if (!empty($empresa['usuario_id'])): ?>
 
                                                     <button type="button" class="table-action-button icon-action-button"
-                                                        title="Restablecer contraseña"
-                                                        onclick="event.stopPropagation(); window.abrirModalResetPasswordEmpresa(
+                                                        title="Restablecer contraseña" onclick="event.stopPropagation(); window.abrirModalResetPasswordEmpresa(
         <?= (int) $empresa['usuario_id'] ?>,
         '<?= htmlspecialchars(trim($empresa['usuario_nombre'] . ' ' . $empresa['usuario_apellidos']), ENT_QUOTES, 'UTF-8') ?>'
     )">
@@ -502,8 +598,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                                                     <button type="button"
                                                         class="table-action-button icon-action-button estado-toggle activo"
-                                                        title="Activo — clic para desactivar"
-                                                        onclick="event.stopPropagation(); window.abrirModalDesactivarEmpresa(
+                                                        title="Activo — clic para desactivar" onclick="event.stopPropagation(); window.abrirModalDesactivarEmpresa(
         <?= (int) $empresa['id'] ?>,
         '<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>'
     )">
@@ -516,21 +611,14 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                                                     <a href="cambiar_estado_empresa.php?id=<?= (int) $empresa['id'] ?>"
                                                         class="table-action-button icon-action-button estado-toggle inactivo"
-                                                        title="Inactivo — clic para activar"
-                                                        onclick="event.stopPropagation();">
+                                                        title="Inactivo — clic para activar" onclick="event.stopPropagation();">
                                                         <i class="bi bi-lock-fill"></i>
                                                     </a>
 
                                                 <?php endif; ?>
 
 
-                                                <button type="button" class="table-action-button icon-action-button danger"
-                                                    title="Eliminar" onclick="event.stopPropagation(); abrirModalEliminarEmpresa(
-        <?= (int) $empresa['id'] ?>,
-        '<?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?>'
-    )">
-                                                    <i class="bi bi-trash3"></i>
-                                                </button>
+
 
                                             </div>
 
@@ -610,17 +698,14 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
     <div id="modalEliminarEmpresa" class="modal-overlay" style="display: none;">
 
-        <div class="modal-confirmacion">
+        <div class="modal-confirmacion deletion-modal">
 
-            <div class="modal-icon">
-                ⚠
-            </div>
+            <div class="modal-icon" aria-hidden="true"><i class="bi bi-trash3"></i></div>
 
             <h2>Eliminar empresa</h2>
 
             <p>
-                ¿Estás seguro de que quieres eliminar la empresa
-                <strong id="nombreEmpresaEliminar"></strong>?
+                ¿Estás seguro de que quieres eliminar la empresa <strong id="nombreEmpresaEliminar"></strong>?
             </p>
 
             <p class="modal-warning">
@@ -681,11 +766,11 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                 <div class="form-group">
 
                     <label for="motivoDesactivarEmpresa">
-                        Motivo
+                        Motivo (opcional)
                     </label>
 
                     <textarea id="motivoDesactivarEmpresa" name="motivo" rows="3"
-                        placeholder="Explica por qué la empresa pasa a inactiva" required></textarea>
+                        placeholder="Explica por qué la empresa pasa a inactiva"></textarea>
 
                     <span class="field-error" id="error-motivoDesactivarEmpresa"></span>
 

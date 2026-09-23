@@ -335,7 +335,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo
+                            Motivo (opcional)
                         </label>
 
                         <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"

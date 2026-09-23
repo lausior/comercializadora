@@ -91,14 +91,14 @@ $nuevoEstado = $empresa['estado'] === 'Activo' ? 'Inactivo' : 'Activo';
 
 
 // =====================================================
-// SI PASA A INACTIVO, EXIGIR MOTIVO
+// SI PASA A INACTIVO, EL MOTIVO ES OPCIONAL
 // =====================================================
 //
-// Mismo requisito que en crear_empresa.php: desactivar una
-// empresa exige indicar el motivo. El modal del listado (ver
-// empresas.js) lo envía por POST; si se llega aquí sin él
-// (por ejemplo, manipulando la URL a mano), se corta en vez
-// de desactivar sin motivo.
+// El modal del listado (ver empresas.js) sigue enviándose
+// por POST con el motivo si se ha escrito; si se llega aquí
+// sin pasar por POST (por ejemplo, manipulando la URL a
+// mano), se corta igualmente, para que desactivar siga
+// exigiendo el modal de confirmación.
 //
 // =====================================================
 
@@ -106,13 +106,13 @@ $motivo = trim($_POST['motivo'] ?? '');
 
 if ($nuevoEstado === 'Inactivo') {
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $motivo === '') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
         die('
             <h2>Error</h2>
 
             <p>
-                Indica el motivo por el que la empresa pasa a inactiva.
+                Solicitud no válida.
             </p>
 
             <p>
@@ -152,7 +152,7 @@ $stmtActualizar = $pdo->prepare("
 
 $stmtActualizar->execute([
     $nuevoEstado,
-    $nuevoEstado === 'Inactivo' ? $motivo : null,
+    $nuevoEstado === 'Inactivo' && $motivo !== '' ? $motivo : null,
     $id,
 ]);
 
@@ -168,7 +168,7 @@ $pdo->prepare("
         AND r.nombre = ?
 ")->execute([
     $nuevoEstado,
-    $nuevoEstado === 'Inactivo' ? $motivo : null,
+    $nuevoEstado === 'Inactivo' && $motivo !== '' ? $motivo : null,
     $id,
     ROL_EMPRESA,
 ]);
@@ -181,7 +181,7 @@ registrarLog(
     LOG_INFORMACION,
     $nuevoEstado === 'Activo' ? 'Empresa activada' : 'Empresa desactivada',
     'La empresa "' . $empresa['nombre'] . '" ha pasado a estado ' . $nuevoEstado
-        . ($nuevoEstado === 'Inactivo' ? '. Motivo: ' . $motivo : '') . '.'
+        . ($nuevoEstado === 'Inactivo' && $motivo !== '' ? '. Motivo: ' . $motivo : '') . '.'
 );
 
 header('Location: empresas.php');

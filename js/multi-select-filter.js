@@ -421,4 +421,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
+
+    // Marca las casillas cuyo valor esté en "valores" (y desmarca
+    // el resto) y refresca el aspecto del filtro igual que si se
+    // hubieran marcado a mano. La usan usuarios.js/empresas.js
+    // para restaurar los filtros guardados al volver de
+    // activar/desactivar una fila.
+    window.marcarSeleccionMultiFiltro = function (filtro, valores) {
+
+        const seleccion = Array.isArray(valores) ? valores : [];
+
+        filtro.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = seleccion.includes(checkbox.value);
+            sincronizarOpcion(checkbox);
+        });
+
+        reordenarOpciones(filtro);
+        actualizarResumen(filtro);
+
+    };
+
 });

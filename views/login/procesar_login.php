@@ -5,6 +5,7 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/permisos.php';
 require_once __DIR__ . '/../../includes/logs.php';
+require_once __DIR__ . '/../../includes/recordarme.php';
 
 
 // =====================================================
@@ -80,11 +81,16 @@ if (count($partes) !== 3) { //comprueba que haya 3 partes
 
 [$codigoEmpresa, $idUsuario, $username] = $partes; //guarda cada parte en su variable
 
-$codigoEmpresa = (int) $codigoEmpresa; // casting
+// codigo_empresa se guarda como CHAR(6) y puede empezar por
+// "0" (ej. "057620"): NO se castea a (int), porque eso le
+// quitaría el cero inicial y la comparación con la BD
+// dejaría de coincidir aunque el usuario y la contraseña
+// sean correctos.
+$codigoEmpresa = trim($codigoEmpresa);
 $idUsuario     = (int) $idUsuario;
 $username      = trim($username);
 
-if ($codigoEmpresa <= 0 || $idUsuario <= 0 || $username === '') { //comprueba el formato introducido
+if (!ctype_digit($codigoEmpresa) || $idUsuario <= 0 || $username === '') { //comprueba el formato introducido
     volverConError('El usuario introducido no tiene un formato válido.');
 }
 
@@ -207,6 +213,13 @@ $_SESSION['codigo_empresa']   = $usuario['codigo_empresa'];
 $_SESSION['id_rol']           = $usuario['id_rol'];
 $_SESSION['rol']              = $usuario['rol'];
 $_SESSION['cambiar_password'] = (int) $usuario['cambiar_password'];
+
+// "Recordarme": crea un token persistente aparte de la sesión
+// (ver includes/recordarme.php) para poder volver a entrar sin
+// contraseña aunque se cierre el navegador.
+if (!empty($_POST['recordarme'])) {
+    activarRecordarme($pdo, (int) $usuario['id']);
+}
 
 registrarLog(
     LOG_EXITO,

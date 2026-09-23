@@ -215,10 +215,6 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                             <?= $totalUsuarios ?>
                         </strong>
 
-                        <small>
-                            Usuarios registrados
-                        </small>
-
                     </div>
 
                 </div>
@@ -242,10 +238,6 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                         <strong>
                             <?= $usuariosActivos ?>
                         </strong>
-
-                        <small>
-                            Actualmente activos
-                        </small>
 
                     </div>
 
@@ -271,10 +263,6 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                             <?= $usuariosInactivos ?>
                         </strong>
 
-                        <small>
-                            Requieren revisión
-                        </small>
-
                     </div>
 
                 </div>
@@ -298,10 +286,6 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                         <strong>
                             <?= $administradores ?>
                         </strong>
-
-                        <small>
-                            Con permisos elevados
-                        </small>
 
                     </div>
 
@@ -909,81 +893,6 @@ $estadosFiltro = ['Activo', 'Inactivo'];
 
 
 
-            <!-- =====================================================
-                 ACTIVIDAD RECIENTE
-            ====================================================== -->
-
-            <section class="panel usuarios-activity-panel">
-
-
-                <div class="panel-header">
-
-                    <div>
-
-                        <h2>
-                            Actividad reciente
-                        </h2>
-
-                        <p>
-                            Últimas acciones relacionadas con usuarios
-                        </p>
-
-                    </div>
-
-
-                    <button type="button" class="panel-action">
-                        Ver historial
-                    </button>
-
-                </div>
-
-
-
-                <div class="activity-list">
-
-
-                    <div class="activity-item">
-
-                        <span class="activity-dot green"></span>
-
-                        <div>
-
-                            <strong>
-                                Sistema preparado
-                            </strong>
-
-                            <span>
-                                Gestión de usuarios conectada con la base de datos
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="activity-item">
-
-                        <span class="activity-dot blue"></span>
-
-                        <div>
-
-                            <strong>
-                                Usuarios cargados
-                            </strong>
-
-                            <span>
-                                <?= $totalUsuarios ?>
-                                <?= $totalUsuarios === 1 ? 'usuario encontrado' : 'usuarios encontrados' ?>
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                </div>
-
-            </section>
 
 
         </main>
@@ -1005,17 +914,14 @@ $estadosFiltro = ['Activo', 'Inactivo'];
     style="display: none;"
 >
 
-    <div class="modal-confirmacion">
+    <div class="modal-confirmacion deletion-modal">
 
-        <div class="modal-icon">
-            ⚠
-        </div>
+        <div class="modal-icon" aria-hidden="true"><i class="bi bi-trash3"></i></div>
 
         <h2>Eliminar usuario</h2>
 
         <p>
-            ¿Estás seguro de que quieres eliminar al usuario
-            <strong id="nombreUsuarioEliminar"></strong>?
+            ¿Estás seguro de que quieres eliminar al usuario <strong id="nombreUsuarioEliminar"></strong>?
         </p>
 
         <p class="modal-warning" id="avisoEmpresaEliminar" style="display: none;">
@@ -1124,11 +1030,11 @@ $estadosFiltro = ['Activo', 'Inactivo'];
             <div class="form-group">
 
                 <label for="motivoDesactivarUsuario">
-                    Motivo
+                    Motivo (opcional)
                 </label>
 
                 <textarea id="motivoDesactivarUsuario" name="motivo" rows="3"
-                    placeholder="Explica por qué el usuario pasa a inactivo" required></textarea>
+                    placeholder="Explica por qué el usuario pasa a inactivo"></textarea>
 
                 <span class="field-error" id="error-motivoDesactivarUsuario"></span>
 

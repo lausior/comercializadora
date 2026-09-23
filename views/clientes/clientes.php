@@ -52,6 +52,27 @@ $totalClientes = count($clientes);
 
 
 // =====================================================
+// ESTADÍSTICAS
+// =====================================================
+//
+// Clientes no tiene un campo "estado" (a diferencia de
+// Empresas/Usuarios), así que el resumen se basa en qué
+// tan completos están los datos de contacto.
+//
+// =====================================================
+
+$clientesConTelefono = count(array_filter(
+    $clientes,
+    fn(array $cliente): bool => !empty($cliente['telefono'])
+));
+
+$clientesConDireccion = count(array_filter(
+    $clientes,
+    fn(array $cliente): bool => !empty($cliente['direccion'])
+));
+
+
+// =====================================================
 // VALORES DISTINTOS PARA LOS DESPLEGABLES DE CLIENTE/
 // DIRECCIÓN/TELÉFONO/EMAIL/NIF
 // =====================================================
@@ -138,6 +159,83 @@ sort($nifsFiltro);
                 </div>
 
             </div>
+
+
+            <!-- =================================================
+                 RESUMEN
+            ================================================== -->
+
+            <section class="dashboard-cards">
+
+                <!-- TOTAL CLIENTES -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon blue">
+                        👤
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Total clientes
+                        </span>
+
+                        <strong>
+                            <?= $totalClientes ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CON TELÉFONO -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon green">
+                        📞
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Con teléfono
+                        </span>
+
+                        <strong>
+                            <?= $clientesConTelefono ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CON DIRECCIÓN -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon orange">
+                        📍
+                    </div>
+
+                    <div class="card-info">
+
+                        <span class="card-label">
+                            Con dirección
+                        </span>
+
+                        <strong>
+                            <?= $clientesConDireccion ?>
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
 
 
             <!-- =====================================================
@@ -530,17 +628,14 @@ sort($nifsFiltro);
 
     <div id="modalEliminarCliente" class="modal-overlay" style="display: none;">
 
-        <div class="modal-confirmacion">
+        <div class="modal-confirmacion deletion-modal">
 
-            <div class="modal-icon">
-                ⚠
-            </div>
+            <div class="modal-icon" aria-hidden="true"><i class="bi bi-trash3"></i></div>
 
             <h2>Eliminar cliente</h2>
 
             <p>
-                ¿Estás seguro de que quieres eliminar al cliente
-                <strong id="nombreClienteEliminar"></strong>?
+                ¿Estás seguro de que quieres eliminar al cliente <strong id="nombreClienteEliminar"></strong>?
             </p>
 
             <p class="modal-warning">

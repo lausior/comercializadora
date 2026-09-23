@@ -33,6 +33,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'Debe tener al menos 2 caracteres.';
         }
 
+        if (texto.length > 150) {
+            return 'No puede superar los 150 caracteres.';
+        }
+
+        // Mismo criterio que validarCaracteresNombreEmpresa() en
+        // includes/validaciones.php: una razón social permite,
+        // además de letras/números/espacios, la puntuación
+        // habitual en denominaciones comerciales (. , ' - & ( ) /).
+        // Antes esta función no comprobaba los caracteres en
+        // absoluto, así que un símbolo no permitido pasaba el
+        // formulario sin avisar y el servidor lo rechazaba
+        // después, obligando a otra vuelta.
+        if (!/^[\p{L}\p{N}]/u.test(texto)) {
+            return 'Debe empezar con una letra o un número.';
+        }
+
+        if (!/^[\p{L}\p{N}][\p{L}\p{N}\s'&.,()\/-]*$/u.test(texto)) {
+            return 'Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.';
+        }
+
         return null;
 
     }
@@ -180,8 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'Este campo es obligatorio.';
         }
 
-        if (!/^[a-z]+$/.test(texto)) {
-            return 'Solo se permiten letras minúsculas, sin números, espacios ni caracteres especiales.';
+        if (!/^[a-zñ]+$/.test(texto)) {
+            return 'Solo se permiten letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.';
         }
 
         if (texto.length < 2) {
@@ -358,6 +378,21 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
 
                 ocultarMensajeGeneralEmpresa(formulario);
+
+                // Evita el doble envío (doble clic, o un segundo
+                // clic porque la página tarda un instante en
+                // navegar): sin esto, dos peticiones casi
+                // simultáneas pueden colarse las dos antes de que
+                // ninguna haya guardado nada todavía, la primera
+                // crea la empresa y la segunda, al encontrarla ya
+                // creada, responde con "el username/email/CIF/
+                // código ya existe" — un error confuso, porque la
+                // empresa SÍ se ha guardado (por la primera).
+                const botonGuardar = formulario.querySelector('button[type="submit"]');
+
+                if (botonGuardar) {
+                    botonGuardar.disabled = true;
+                }
 
             }
 
@@ -804,17 +839,110 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       12B. RECORDAR FILTROS ENTRE RECARGAS
+       =========================================================
+       Activar/desactivar una empresa desde el listado navega a
+       cambiar_estado_empresa.php, que vuelve a redirigir aquí:
+       la página se recarga entera y, sin esto, los filtros
+       marcados se perderían. Se guardan en sessionStorage (no
+       localStorage) para que no sobrevivan más allá de la
+       pestaña/sesión actual del navegador.
+    ========================================================= */
+
+    const CLAVE_FILTROS_GUARDADOS = 'filtrosEmpresas';
+
+    function guardarFiltros() {
+
+        const datos = {};
+
+        filtros.forEach(filtro => {
+
+            const columna = filtro.dataset.column;
+
+            const valor = filtro.classList.contains('multi-select-filter')
+                ? window.obtenerSeleccionMultiFiltro(filtro)
+                : filtro.value;
+
+            const vacio = Array.isArray(valor) ? valor.length === 0 : valor === '';
+
+            // Los filtros de escritorio y de móvil comparten
+            // data-column pero son elementos distintos; solo uno
+            // de los dos tiene valor a la vez, así que el vacío
+            // del otro no debe pisarlo.
+            if (!vacio || datos[columna] === undefined) {
+                datos[columna] = valor;
+            }
+
+        });
+
+        try {
+            sessionStorage.setItem(CLAVE_FILTROS_GUARDADOS, JSON.stringify(datos));
+        } catch (error) {
+            // Almacenamiento no disponible (modo privado, etc.):
+            // seguimos sin recordar filtros, sin romper nada.
+        }
+
+    }
+
+    function restaurarFiltrosGuardados() {
+
+        let datos = null;
+
+        try {
+            datos = JSON.parse(sessionStorage.getItem(CLAVE_FILTROS_GUARDADOS));
+        } catch (error) {
+            datos = null;
+        }
+
+        if (!datos) {
+            return;
+        }
+
+        filtros.forEach(filtro => {
+
+            const columna = filtro.dataset.column;
+
+            if (!(columna in datos)) {
+                return;
+            }
+
+            const valor = datos[columna];
+
+            if (filtro.classList.contains('multi-select-filter')) {
+                window.marcarSeleccionMultiFiltro(filtro, valor);
+            } else if (typeof valor === 'string') {
+                filtro.value = valor;
+            }
+
+        });
+
+    }
+
+    function olvidarFiltrosGuardados() {
+
+        try {
+            sessionStorage.removeItem(CLAVE_FILTROS_GUARDADOS);
+        } catch (error) {
+            // Nada que limpiar si no hay almacenamiento disponible.
+        }
+
+    }
+
+
+    /* =========================================================
        13. FILTROS
     ========================================================= */
 
     filtros.forEach(filtro => {
 
         filtro.addEventListener('input', () => {
+            guardarFiltros();
             paginaActual = 1;
             mostrarPagina();
         });
 
         filtro.addEventListener('change', () => {
+            guardarFiltros();
             paginaActual = 1;
             mostrarPagina();
         });
@@ -842,6 +970,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             });
+
+            olvidarFiltrosGuardados();
 
             paginaActual = 1;
             mostrarPagina();
@@ -1249,7 +1379,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const nombreEmpresaDesactivar = document.getElementById('nombreEmpresaDesactivar');
     const idEmpresaDesactivarInput = document.getElementById('idEmpresaDesactivar');
     const motivoDesactivarEmpresa = document.getElementById('motivoDesactivarEmpresa');
-    const formDesactivarEmpresa = document.getElementById('formDesactivarEmpresa');
 
     window.abrirModalDesactivarEmpresa = function (id, nombre) {
 
@@ -1291,41 +1420,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
-    if (formDesactivarEmpresa && motivoDesactivarEmpresa) {
-
-        formDesactivarEmpresa.addEventListener('submit', event => {
-
-            if (motivoDesactivarEmpresa.value.trim() === '') {
-
-                event.preventDefault();
-
-                motivoDesactivarEmpresa.classList.add('input-error');
-
-                const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
-                if (contenedorError) {
-                    contenedorError.textContent = 'Indica el motivo por el que la empresa pasa a inactiva.';
-                }
-
-            }
-
-        });
-
-        motivoDesactivarEmpresa.addEventListener('input', () => {
-
-            if (motivoDesactivarEmpresa.value.trim() !== '') {
-
-                motivoDesactivarEmpresa.classList.remove('input-error');
-
-                const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
-                if (contenedorError) {
-                    contenedorError.textContent = '';
-                }
-
-            }
-
-        });
-
-    }
+    // El motivo es opcional: si se deja en blanco, el formulario
+    // se envía igualmente y no se guarda nada (se muestra como
+    // "-" allí donde se lista), así que ya no hace falta
+    // validarlo antes de enviar.
 
     if (modalDesactivarEmpresa) {
 
@@ -1426,6 +1524,7 @@ document.addEventListener('DOMContentLoaded', () => {
        18. PAGINACIÓN INICIAL
     ========================================================= */
 
+    restaurarFiltrosGuardados();
     mostrarPagina();
 
 });

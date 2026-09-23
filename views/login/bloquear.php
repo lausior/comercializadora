@@ -2,6 +2,9 @@
 
 session_start();
 
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/recordarme.php';
+
 
 // =====================================================
 // RECORDAR QUIÉN ERA ANTES DE DESTRUIR LA SESIÓN
@@ -36,7 +39,12 @@ if ( //comprueba que la sesión tenga codigo_empresa, id_usuario_username
 // =====================================================
 
 $_SESSION = []; //elimina todos los datos que había almacenados en la sesión
- 
+
+// Olvida también el "Recordarme" de este navegador: bloquear
+// exige volver a escribir la contraseña de verdad, así que no
+// puede quedar una cookie que reabra sesión sin pedirla.
+olvidarRecordarme($pdo);
+
 //Elimina la cookie de sesión
 if (ini_get('session.use_cookies')) {  
     $parametrosCookie = session_get_cookie_params();

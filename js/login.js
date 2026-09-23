@@ -104,6 +104,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
+       MENSAJE GENERAL
+       =========================================================
+       Mismo patrón que empresas.js/usuarios.js/clientes.js: al
+       enviar con errores, además de marcar en rojo cada campo,
+       arriba del formulario aparece un aviso genérico (sin
+       repetir el error concreto, que ya está bajo su campo).
+    ========================================================== */
+
+    function mostrarMensajeGeneralLogin(mensaje) {
+
+        const contenedor = document.getElementById('form-error-general');
+
+        if (!contenedor) {
+            return;
+        }
+
+        contenedor.textContent = mensaje;
+        contenedor.style.display = 'block';
+
+    }
+
+    function ocultarMensajeGeneralLogin() {
+
+        const contenedor = document.getElementById('form-error-general');
+
+        if (!contenedor) {
+            return;
+        }
+
+        contenedor.textContent = '';
+        contenedor.style.display = 'none';
+
+    }
+
+
+    /* =========================================================
        VALIDAR USUARIO
     ========================================================== */
 
@@ -169,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             /* Comprobar nombre de usuario (o el compuesto codigo-id-username) */
 
             const usuarioRegex =
-                /^[a-zA-Z0-9._-]+$/;
+                /^[a-zA-ZñÑ0-9._-]+$/;
 
             if (!usuarioRegex.test(valor)) {
 
@@ -256,6 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!usuarioCorrecto || !passwordCorrecta) {
 
+            mostrarMensajeGeneralLogin(
+                'Hay campos con errores. Revisa los campos marcados en rojo.'
+            );
+
             if (!usuarioCorrecto) {
                 usuario.focus();
             } else {
@@ -269,6 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
         /* =====================================================
            VALIDACIÓN CORRECTA
         ====================================================== */
+
+        ocultarMensajeGeneralLogin();
 
         console.log('Validación correcta. Enviando formulario...');
 
@@ -285,11 +327,25 @@ document.addEventListener('DOMContentLoaded', () => {
        VALIDACIÓN AL ESCRIBIR
     ========================================================== */
 
+    function ocultarMensajeGeneralSiYaNoQuedanErrores() {
+
+        const quedanErrores =
+            usuario.classList.contains('input-error') ||
+            password.classList.contains('input-error');
+
+        if (!quedanErrores) {
+            ocultarMensajeGeneralLogin();
+        }
+
+    }
+
     usuario.addEventListener('input', () => {
 
         if (usuario.value.trim() !== '') {
             eliminarError(usuario);
         }
+
+        ocultarMensajeGeneralSiYaNoQuedanErrores();
 
     });
 
@@ -299,6 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (password.value !== '') {
             eliminarError(password);
         }
+
+        ocultarMensajeGeneralSiYaNoQuedanErrores();
 
     });
 

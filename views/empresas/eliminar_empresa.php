@@ -298,18 +298,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                         Empresas
                     </h1>
 
-                    <p>
-                        Empresa eliminada correctamente
-                    </p>
 
                 </div>
 
 
                 <div class="page-header-actions">
 
-                    <div class="page-date">
-                        11 septiembre 2026
-                    </div>
+                   
 
                 </div>
 

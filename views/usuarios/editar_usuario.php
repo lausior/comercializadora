@@ -140,19 +140,44 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
     //
     // =====================================================
 
-    $stmtEmpresas = $pdo->query("
+    // Se excluye la propia empresa de quien ha iniciado sesión
+    // (aquí siempre SRG, ver arriba): no tiene sentido reasignar
+    // un usuario "a" la empresa del propio SRG desde este
+    // formulario genérico (mismo criterio que ya oculta esa fila
+    // en los listados de empresas.php/usuarios.php). Salvo que
+    // el usuario que se está editando YA pertenezca a esa
+    // empresa: entonces se deja esa opción, para que el
+    // desplegable no se quede sin la que tiene seleccionada
+    // (si no, el navegador seleccionaría otra distinta sin
+    // querer en el primer guardado).
+    $stmtEmpresas = $pdo->prepare("
         SELECT id, nombre
         FROM empresas
+        WHERE id != :propia OR id = :actual
         ORDER BY nombre
     ");
 
+    $stmtEmpresas->execute([
+        ':propia' => (int) ($_SESSION['id_empresa'] ?? 0),
+        ':actual' => (int) $usuario['id_empresa'],
+    ]);
+
     $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmtRoles = $pdo->query("
+    // Igual que con la empresa: se excluye el rol SRG, salvo que
+    // el usuario editado ya lo tenga (mismo motivo: no perder la
+    // opción actualmente seleccionada).
+    $stmtRoles = $pdo->prepare("
         SELECT id, nombre
         FROM roles
+        WHERE nombre != :srg OR nombre = :actual
         ORDER BY id
     ");
+
+    $stmtRoles->execute([
+        ':srg'    => ROL_SRG,
+        ':actual' => $usuario['rol'],
+    ]);
 
     $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
 
@@ -633,7 +658,7 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo
+                            Motivo (opcional)
                         </label>
 
                         <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"

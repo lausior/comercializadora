@@ -112,12 +112,158 @@ require_once __DIR__ . '/../config/permisos.php';
         <?php endif; ?>
 
         <!-- SEGURIDAD -->
+        <!-- Ya no es una página propia: abre un modal con el
+             formulario de cambiar contraseña (ver más abajo),
+             disponible desde cualquier pantalla. -->
 
         <?php if (tienePermiso('seguridad')): ?>
-            <a href="/comercializadora/views/seguridad.php" class="menu-item" title="Seguridad">
+
+            <button type="button" class="menu-item" id="abrirModalSeguridad" title="Seguridad">
                 <span class="menu-icon"><i class="bi bi-shield-lock"></i></span>
                 <span class="menu-label">Seguridad</span>
-            </a>
+            </button>
+
+            <?php
+
+                // Mensaje pendiente de un envío anterior del
+                // formulario (ver actualizar_password.php), si lo
+                // hay. Si lo hay, el modal se abre ya al cargar la
+                // página, con el aviso puesto, en vez de quedarse
+                // cerrado esperando a que se pulse el botón.
+
+                $passwordError = $_SESSION['password_error'] ?? '';
+                unset($_SESSION['password_error']);
+
+                $passwordSuccess = $_SESSION['password_success'] ?? '';
+                unset($_SESSION['password_success']);
+
+                // También se abre solo si se llega con
+                // "?abrir=seguridad" (enlace antiguo a la extinta
+                // seguridad.php, ver ese archivo).
+                $abrirModalSeguridadAlCargar =
+                    $passwordError !== ''
+                    || $passwordSuccess !== ''
+                    || ($_GET['abrir'] ?? '') === 'seguridad';
+
+            ?>
+
+            <div class="modal-overlay" id="modalSeguridad"
+                style="display: <?= $abrirModalSeguridadAlCargar ? 'flex' : 'none' ?>;">
+
+                <div class="modal-detalle">
+
+                    <div class="modal-detalle-header">
+
+                        <div class="modal-detalle-titulo">
+                            <h2>Cambiar contraseña</h2>
+                            <span>Actualiza la contraseña de tu cuenta</span>
+                        </div>
+
+                        <button type="button" class="modal-detalle-close" id="cerrarModalSeguridad"
+                            aria-label="Cerrar">
+                            ✕
+                        </button>
+
+                    </div>
+
+                    <div class="security-password-form">
+
+                        <div class="form-error-general" id="form-error-general" role="alert"
+                            style="<?= $passwordError !== '' ? 'display: block;' : 'display: none;' ?>">
+                            <?= htmlspecialchars($passwordError) ?>
+                        </div>
+
+                        <div class="form-success-general" id="form-success-general" role="status"
+                            style="<?= $passwordSuccess !== '' ? 'display: block;' : 'display: none;' ?>">
+                            <?= htmlspecialchars($passwordSuccess) ?>
+                        </div>
+
+
+                        <form action="/comercializadora/views/actualizar_password.php" method="POST" novalidate>
+
+                            <!-- A qué página volver tras guardar: la
+                                 propia página actual, sea cual sea
+                                 (ver actualizar_password.php). -->
+                            <input type="hidden" name="volver_a"
+                                value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/comercializadora/index.php', ENT_QUOTES, 'UTF-8') ?>">
+
+
+                            <!-- CONTRASEÑA NUEVA -->
+
+                            <div class="form-group">
+
+                                <label for="password_nueva">
+                                    Contraseña nueva
+                                </label>
+
+                                <div class="password-wrapper">
+
+                                    <input type="password" id="password_nueva" name="password_nueva"
+                                        placeholder="Escribe tu nueva contraseña" autocomplete="new-password"
+                                        required minlength="8">
+
+                                    <button type="button" class="password-toggle" data-target="password_nueva"
+                                        aria-label="Mostrar contraseña">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+
+                                </div>
+
+                                <ul class="password-requisitos" id="passwordRequisitos">
+
+                                    <li data-req="longitud">Mínimo 8 caracteres</li>
+                                    <li data-req="mayuscula">Mayúsculas</li>
+                                    <li data-req="minuscula">Minúsculas</li>
+                                    <li data-req="numero">Números</li>
+                                    <li data-req="especial">Caracteres especiales</li>
+
+                                </ul>
+
+                            </div>
+
+
+                            <!-- REPETIR CONTRASEÑA -->
+
+                            <div class="form-group">
+
+                                <label for="password_confirmar">
+                                    Repite la contraseña nueva
+                                </label>
+
+                                <div class="password-wrapper">
+
+                                    <input type="password" id="password_confirmar" name="password_confirmar"
+                                        placeholder="Repite la nueva contraseña" autocomplete="new-password"
+                                        required minlength="8">
+
+                                    <button type="button" class="password-toggle" data-target="password_confirmar"
+                                        aria-label="Mostrar contraseña">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-actions">
+
+                                <button type="submit" class="config-save-button">
+                                    Guardar nueva contraseña
+                                </button>
+
+                            </div>
+
+
+                        </form>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
         <?php endif; ?>
 
         <!-- LOGS -->
@@ -252,3 +398,4 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
 <script src="/comercializadora/js/sidebar.js"></script>
+<script src="/comercializadora/js/seguridad.js"></script>

@@ -159,11 +159,9 @@ if (
 
 }
 
-if ($estado === 'Inactivo' && $motivoInactivo === '') {
-
-    $errores[] = ['mensaje' => 'Indica el motivo por el que el usuario se marca como inactivo.', 'campo' => 'motivo_inactivo'];
-
-}
+// El motivo de inactividad es opcional: si no se rellena,
+// simplemente no se guarda (se muestra como "-" allí donde
+// se lista).
 
 
 // =====================================================
@@ -432,22 +430,27 @@ $stmtActualizar->execute([
     $idEmpresa,
     $idRol,
     $estado,
-    $estado === 'Inactivo' ? $motivoInactivo : null,
+    $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
     $id
 ]);
 
 // El usuario con rol EMPRESA representa el acceso de su empresa.
-// Mantener ambos estados sincronizados evita que el listado de
-// empresas conserve un estado distinto al del acceso principal.
+// Mantener sincronizados tanto el estado como el motivo evita
+// que el listado de empresas conserve datos distintos a los
+// del acceso principal.
 if ($rol['nombre'] === ROL_EMPRESA) {
 
     $stmtEmpresaEstado = $pdo->prepare("
         UPDATE empresas
-        SET estado = ?
+        SET estado = ?, motivo_inactivo = ?
         WHERE id = ?
     ");
 
-    $stmtEmpresaEstado->execute([$estado, $idEmpresa]);
+    $stmtEmpresaEstado->execute([
+        $estado,
+        $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+        $idEmpresa,
+    ]);
 
 }
 
@@ -863,7 +866,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                                     <div class="usuario-detalle-item">
                                         <span>Motivo</span>
-                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
                                     </div>
 
                                 <?php endif; ?>

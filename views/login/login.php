@@ -2,11 +2,46 @@
 
 session_start();
 
-$errorLogin = $_SESSION['login_error'] ?? '';
-unset($_SESSION['login_error']);
-
 $usuarioBloqueado = $_GET['usuario'] ?? '';
 $estaBloqueado = $usuarioBloqueado !== '';
+
+// =====================================================
+// "RECORDARME": REANUDAR SESIÓN SI HAY UNA COOKIE VÁLIDA
+// =====================================================
+//
+// Salvo en la pantalla de "bloqueado" (llega con ?usuario=):
+// bloquear la pantalla es una acción deliberada para exigir
+// la contraseña de nuevo, y bloquear.php ya borra el
+// "Recordarme" de este navegador (ver includes/recordarme.php),
+// así que aquí nunca debería quedar cookie que reanudar. Se
+// evita igualmente, por si acaso, para no poder saltarse el
+// bloqueo escribiendo login.php sin el "?usuario=".
+//
+// =====================================================
+
+if (!$estaBloqueado && !isset($_SESSION['id_usuario'])) {
+
+    require_once __DIR__ . '/../../config/database.php';
+    require_once __DIR__ . '/../../includes/recordarme.php';
+
+    reanudarSesionRecordarme($pdo);
+
+}
+
+if (isset($_SESSION['id_usuario'])) {
+
+    if (!empty($_SESSION['cambiar_password'])) {
+        header('Location: /comercializadora/views/login/cambiar_password.php');
+        exit;
+    }
+
+    header('Location: /comercializadora/index.php');
+    exit;
+
+}
+
+$errorLogin = $_SESSION['login_error'] ?? '';
+unset($_SESSION['login_error']);
 
 ?>
 <!DOCTYPE html>
@@ -46,13 +81,10 @@ $estaBloqueado = $usuarioBloqueado !== '';
             </div>
 
 
-            <?php if ($errorLogin !== ''): ?>
-
-                <div class="form-error-general" style="display: block;">
-                    <?= htmlspecialchars($errorLogin) ?>
-                </div>
-
-            <?php endif; ?>
+            <div class="form-error-general" id="form-error-general" role="alert"
+                style="display: <?= $errorLogin !== '' ? 'block' : 'none' ?>;">
+                <?= htmlspecialchars($errorLogin) ?>
+            </div>
 
 
             <form action="procesar_login.php" method="POST" class="login-form" novalidate
@@ -108,10 +140,6 @@ $estaBloqueado = $usuarioBloqueado !== '';
                         <span>Recordarme</span>
 
                     </label>
-
-                    <a href="recuperar-password.php">
-                        ¿Has olvidado tu contraseña?
-                    </a>
 
                 </div>
 

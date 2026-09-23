@@ -84,9 +84,9 @@ if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
 if (!validarNombreEmpresa($nombre)) {
 
     $errores[] = [
-        'mensaje' => preg_match("/^[-'.]/", $nombre)
-            ? 'El nombre de la empresa debe empezar con una letra.'
-            : 'El nombre de la empresa no es válido. Solo se permiten letras, números, espacios, guiones, apóstrofes y puntos.',
+        'mensaje' => !preg_match('/^[\p{L}\p{N}]/u', $nombre)
+            ? 'El nombre de la empresa debe empezar con una letra o un número.'
+            : 'El nombre de la empresa no es válido. Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.',
         'campo' => 'nombre',
     ];
 
@@ -141,7 +141,7 @@ if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
 
 if (!validarUsername($usuarioUsername)) {
 
-    $errores[] = ['mensaje' => 'El username del usuario solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.', 'campo' => 'usuario_username'];
+    $errores[] = ['mensaje' => 'El username del usuario solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', 'campo' => 'usuario_username'];
 
 }
 
@@ -316,7 +316,7 @@ try {
         ':telefono'         => $telefono !== '' ? $telefono : null,
         ':email'            => $email !== '' ? $email : null,
         ':estado'           => $estado,
-        ':motivo_inactivo'  => $estado === 'Inactivo' ? $motivoInactivo : null,
+        ':motivo_inactivo'  => $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
         ':creado_por'       => $_SESSION['id_usuario'],
     ]);
 
@@ -354,22 +354,31 @@ try {
             1,
             :id_empresa,
             :id_rol,
-            'Activo',
-            NULL,
+            :estado,
+            :motivo_inactivo,
             :creado_por
         )
     ");
 
+    // El usuario de acceso debe nacer con el MISMO estado que
+    // la empresa (y, si es Inactivo, el mismo motivo): si no,
+    // una empresa creada directamente como Inactiva se queda
+    // con su login en Activo, mostrando estados contradictorios
+    // entre el listado de Empresas y el de Usuarios (ver
+    // actualizar_empresa.php/cambiar_estado_empresa.php, que sí
+    // mantienen ambos sincronizados al editar/activar/desactivar).
     $stmtUsuario->execute([
-        ':username'   => $usuarioUsername,
-        ':nombre'     => $nombre,
-        ':apellidos'  => '',
-        ':email'      => $email,
-        ':telefono'   => $telefono !== '' ? $telefono : null,
-        ':password'   => $passwordHash,
-        ':id_empresa' => $idEmpresa,
-        ':id_rol'     => $idRolEmpresa,
-        ':creado_por' => $_SESSION['id_usuario'],
+        ':username'        => $usuarioUsername,
+        ':nombre'          => $nombre,
+        ':apellidos'       => '',
+        ':email'           => $email,
+        ':telefono'        => $telefono !== '' ? $telefono : null,
+        ':password'        => $passwordHash,
+        ':id_empresa'      => $idEmpresa,
+        ':id_rol'          => $idRolEmpresa,
+        ':estado'          => $estado,
+        ':motivo_inactivo' => $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+        ':creado_por'      => $_SESSION['id_usuario'],
     ]);
 
     $idUsuario = $pdo->lastInsertId();

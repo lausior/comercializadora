@@ -62,19 +62,33 @@ if ($empresaYRolFijos) {
     //
     // =====================================================
 
-    $stmtEmpresas = $pdo->query("
+    // Se excluye la propia empresa de quien ha iniciado sesión
+    // (aquí siempre SRG, ver arriba): no tiene sentido dar de
+    // alta un usuario "dentro de" la empresa del propio SRG
+    // desde este formulario genérico (mismo criterio que ya
+    // oculta esa fila en los listados de empresas.php/usuarios.php).
+    $stmtEmpresas = $pdo->prepare("
         SELECT id, nombre
         FROM empresas
+        WHERE id != ?
         ORDER BY nombre
     ");
 
+    $stmtEmpresas->execute([(int) ($_SESSION['id_empresa'] ?? 0)]);
+
     $empresas = $stmtEmpresas->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmtRoles = $pdo->query("
+    // Igual que con la empresa: se excluye el rol SRG, no tiene
+    // sentido dar de alta a otro usuario con ese rol desde este
+    // formulario.
+    $stmtRoles = $pdo->prepare("
         SELECT id, nombre
         FROM roles
+        WHERE nombre != ?
         ORDER BY id
     ");
+
+    $stmtRoles->execute([ROL_SRG]);
 
     $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
 
@@ -419,7 +433,7 @@ if ($empresaYRolFijos) {
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo
+                            Motivo (opcional)
                         </label>
 
                         <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"

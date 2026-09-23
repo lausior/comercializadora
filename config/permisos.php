@@ -6,6 +6,11 @@
    Único sitio donde se define qué rol puede ver oacceder a qué sección de la aplicación.
 ========================================================= */
 
+// requerirPermiso() necesita $pdo para poder reanudar sesión
+// mediante "Recordarme" (ver includes/recordarme.php) cuando
+// no hay sesión activa.
+require_once __DIR__ . '/database.php';
+
 
 // -------------------------------------------------------
 // Nombres de rol EXACTOS como están en la tabla `roles`.nombre
@@ -92,6 +97,18 @@ function requerirPermiso(string $seccion): void
 {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
+    }
+
+    // Sin sesión, pero puede que llegue una cookie de
+    // "Recordarme" válida: se intenta reanudar sesión con ella
+    // antes de mandar al login (ver includes/recordarme.php).
+    if (!isset($_SESSION['id_usuario'])) {
+
+        global $pdo;
+
+        require_once __DIR__ . '/../includes/recordarme.php';
+        reanudarSesionRecordarme($pdo);
+
     }
 
     if (!isset($_SESSION['id_usuario'])) {

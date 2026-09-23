@@ -1,6 +1,58 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
+       MODAL "SEGURIDAD" (CAMBIAR CONTRASEÑA)
+       =========================================================
+       El botón "Seguridad" del sidebar ya no lleva a una página
+       propia: abre este modal, disponible desde cualquier
+       pantalla (el modal vive en templates/sidebar.php). Mismo
+       patrón que el modal "Acerca de" (ver js/acerca.js).
+    ========================================================= */
+
+    const abrirSeguridad = document.getElementById('abrirModalSeguridad');
+    const cerrarSeguridad = document.getElementById('cerrarModalSeguridad');
+    const modalSeguridad = document.getElementById('modalSeguridad');
+
+    if (abrirSeguridad && cerrarSeguridad && modalSeguridad) {
+
+        function cerrarModalSeguridad() {
+            modalSeguridad.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
+        }
+
+        abrirSeguridad.addEventListener('click', () => {
+            modalSeguridad.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
+            document.getElementById('password_nueva')?.focus();
+        });
+
+        cerrarSeguridad.addEventListener('click', cerrarModalSeguridad);
+
+        modalSeguridad.addEventListener('click', event => {
+            if (event.target === modalSeguridad) {
+                cerrarModalSeguridad();
+            }
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && modalSeguridad.style.display !== 'none') {
+                cerrarModalSeguridad();
+            }
+        });
+
+        // Si el modal ya viene abierto de servidor (volvemos de un
+        // envío anterior con error o con éxito, ver sidebar.php),
+        // se marca la sesión como "hay un modal abierto" igual que
+        // si se hubiera pulsado el botón, para que el resto de la
+        // interfaz (scroll, etc.) se comporte igual.
+        if (modalSeguridad.style.display !== 'none') {
+            document.body.classList.add('modal-abierto');
+        }
+
+    }
+
+
+    /* =========================================================
        CAMBIAR CONTRASEÑA
     ========================================================= */
 

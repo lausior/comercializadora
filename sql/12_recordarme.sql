@@ -1,0 +1,55 @@
+/* -- -- =====================================================
+-- -- PROYECTO: COMPARADORA
+-- -- ARCHIVO: 12_recordarme.sql
+-- -- DESCRIPCIÓN: Tabla para la casilla "Recordarme" del login
+-- -- =====================================================
+
+-- USE comparadora;
+
+
+-- =====================================================
+-- TABLA: RECORDARME_TOKENS
+-- =====================================================
+--
+-- Un token por dispositivo/navegador que marcó "Recordarme"
+-- al iniciar sesión. Permite reabrir sesión sin contraseña
+-- aunque se cierre el navegador, sin depender de que la
+-- sesión de PHP siga viva.
+--
+-- selector        -> viaja en la cookie SIN cifrar; solo
+--                    sirve para localizar la fila (como un
+--                    "usuario" del token).
+-- validador_hash  -> el secreto real viaja en la cookie, pero
+--                    en BD solo se guarda su hash (sha256),
+--                    igual que la contraseña nunca se guarda
+--                    en claro. Así, aunque se leyera esta
+--                    tabla, no se podría fabricar una cookie
+--                    válida.
+--
+-- Al usarse para reanudar sesión, el token se sustituye por
+-- uno nuevo (ver includes/recordarme.php): una cookie robada
+-- pero ya usada por su dueño deja de servir.
+--
+-- ON DELETE CASCADE: al borrar un usuario se borran también
+-- sus tokens (ver views/usuarios/eliminar_usuario.php).
+
+-- CREATE TABLE recordarme_tokens (
+--     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--
+--     id_usuario INT UNSIGNED NOT NULL,
+--
+--     selector CHAR(24) NOT NULL UNIQUE,
+--
+--     validador_hash CHAR(64) NOT NULL,
+--
+--     creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--
+--     expira_en DATETIME NOT NULL,
+--
+--     CONSTRAINT fk_recordarme_usuario
+--         FOREIGN KEY (id_usuario)
+--         REFERENCES usuarios(id)
+--         ON UPDATE CASCADE
+--         ON DELETE CASCADE
+--
+-- ); */

@@ -4,6 +4,7 @@ session_start();
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/logs.php';
+require_once __DIR__ . '/../../includes/recordarme.php';
 
 
 // =====================================================
@@ -132,6 +133,11 @@ $stmt->execute([
     ':password' => $passwordHash,
     ':id'       => $_SESSION['id_usuario'],
 ]);
+
+// Con la contraseña ya cambiada, cualquier "Recordarme" creado
+// con la anterior (por ejemplo, con la inicial "123456") deja
+// de valer, en todos los dispositivos.
+olvidarTodosLosTokensDeUsuario($pdo, (int) $_SESSION['id_usuario']);
 
 
 // =====================================================

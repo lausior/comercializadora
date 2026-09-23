@@ -305,6 +305,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 ocultarMensajeGeneralCliente(formulario);
 
+                // Evita el doble envío (doble clic, o un segundo
+                // clic porque la página tarda un instante en
+                // navegar): sin esto, dos peticiones casi
+                // simultáneas pueden colarse las dos antes de que
+                // ninguna haya guardado nada todavía, y la segunda
+                // responde con "ya existe" aunque el cliente SÍ se
+                // haya guardado (por la primera).
+                const botonGuardar = formulario.querySelector('button[type="submit"]');
+
+                if (botonGuardar) {
+                    botonGuardar.disabled = true;
+                }
+
             }
 
         });

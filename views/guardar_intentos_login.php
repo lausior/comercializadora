@@ -3,7 +3,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/permisos.php';
-requerirPermiso('seguridad');
+requerirPermiso('configuracion');
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/logs.php';
@@ -15,7 +15,7 @@ require_once __DIR__ . '/../includes/seguridad.php';
 // =====================================================
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /comercializadora/views/seguridad.php');
+    header('Location: /comercializadora/views/configuracion.php');
     exit;
 }
 
@@ -56,5 +56,5 @@ if ($minutos >= 1 && $minutos <= 1440) {
 
 }
 
-header('Location: /comercializadora/views/seguridad.php');
+header('Location: /comercializadora/views/configuracion.php');
 exit;

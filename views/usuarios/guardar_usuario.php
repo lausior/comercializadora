@@ -97,7 +97,7 @@ if (!validarApellidos($apellidos)) {
 
 if (!validarUsername($username)) {
 
-    $errores[] = ['mensaje' => 'El username solo puede contener letras minúsculas, sin números, espacios ni caracteres especiales.', 'campo' => 'username'];
+    $errores[] = ['mensaje' => 'El username solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', 'campo' => 'username'];
 
 }
 
@@ -177,12 +177,8 @@ if (!in_array($estado, $estadosValidos, true)) {
 // =====================================================
 // VALIDAR MOTIVO DE INACTIVIDAD
 // =====================================================
-
-if ($estado === 'Inactivo' && $motivoInactivo === '') {
-
-    $errores[] = ['mensaje' => 'Indica el motivo por el que el usuario se marca como inactivo.', 'campo' => 'motivo_inactivo'];
-
-}
+// Es opcional: si no se rellena, simplemente no se guarda
+// (se muestra como "-" allí donde se lista).
 
 if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
 
@@ -430,7 +426,7 @@ $stmt->execute([
     ':id_empresa' => $id_empresa,
     ':id_rol' => $id_rol,
     ':estado' => $estado,
-    ':motivo_inactivo' => $estado === 'Inactivo'
+    ':motivo_inactivo' => $estado === 'Inactivo' && $motivoInactivo !== ''
         ? $motivoInactivo
         : null,
     ':creado_por' => $_SESSION['id_usuario'],
@@ -703,7 +699,7 @@ $estadoPassword = (int) $usuario['cambiar_password'] === 1
 
                                     <div class="usuario-detalle-item">
                                         <span>Motivo</span>
-                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
                                     </div>
 
                                 <?php endif; ?>
@@ -756,7 +752,7 @@ $estadoPassword = (int) $usuario['cambiar_password'] === 1
 
                                 <div class="usuario-detalle-item">
                                     <span>Motivo</span>
-                                    <strong><?= htmlspecialchars($usuario['motivo_inactivo'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
                                 </div>
 
                             <?php endif; ?>

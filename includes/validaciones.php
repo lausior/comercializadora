@@ -67,9 +67,21 @@ function validarNombre(string $nombre): bool
  * VALIDAR CARACTERES DE NOMBRE DE EMPRESA
  * =====================================================
  *
- * Igual que validarCaracteresNombre(), pero además permite
- * puntos, para razones sociales como "Sociedad S.L." o
- * "Comercializadora S.A.".
+ * Una razón social usa más símbolos que un nombre de
+ * persona: además de letras, números, espacios, guiones,
+ * apóstrofes y puntos, permite también los que aparecen en
+ * denominaciones comerciales habituales: comas, el símbolo
+ * "&", paréntesis y la barra "/".
+ *
+ * Debe empezar por una letra o un número (el mensaje de
+ * error específico para cuando no es así vive en
+ * guardar_empresa.php/actualizar_empresa.php).
+ *
+ * Ejemplos válidos:
+ *   Sociedad S.L.
+ *   Fernández & Hijos, S.L.
+ *   Comercializadora Eléctrica (España) S.A.
+ *   3M España
  *
  */
 function validarCaracteresNombreEmpresa(string $texto): bool
@@ -77,7 +89,7 @@ function validarCaracteresNombreEmpresa(string $texto): bool
     $texto = trim($texto);
 
     return preg_match(
-        "/^[\p{L}0-9]+(?:[ '\-.][\p{L}0-9]+)*\.?$/u",
+        "/^[\p{L}\p{N}][\p{L}\p{N}\s'&.,()\/-]*$/u",
         $texto
     ) === 1;
 }
@@ -409,19 +421,14 @@ function validarTelefono(string $telefono): bool
  * =====================================================
  * VALIDAR USERNAME
  * =====================================================
- *
+ 
  * El username solo permite texto:
  * - Letras
  * - Sin números
  * - Sin caracteres especiales
  * - Sin espacios
- *
- * Ejemplos válidos:
- *   laura
- *   juan
- *   maria
- *
  */
+
 function validarUsername(string $username): bool
 {
     $username = trim($username);
@@ -438,6 +445,6 @@ function validarUsername(string $username): bool
         return false;
     }
 
-    return preg_match('/^[a-z]+$/', $username) === 1;
+    return preg_match('/^[a-zñ]+$/u', $username) === 1;
 }
 

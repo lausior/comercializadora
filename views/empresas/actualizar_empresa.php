@@ -70,11 +70,11 @@ if (
 
 if (!validarNombreEmpresa($nombre)) {
 
-    if (preg_match("/^[-'.]/", $nombre)) {
-        establecerErrorFormulario('El nombre de la empresa debe empezar con una letra.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
+    if (!preg_match('/^[\p{L}\p{N}]/u', $nombre)) {
+        establecerErrorFormulario('El nombre de la empresa debe empezar con una letra o un número.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
     }
 
-    establecerErrorFormulario('El nombre de la empresa no es válido. Solo se permiten letras, números, espacios, guiones, apóstrofes y puntos.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
+    establecerErrorFormulario('El nombre de la empresa no es válido. Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
 
 }
 

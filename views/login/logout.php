@@ -2,6 +2,9 @@
 
 session_start();
 
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/recordarme.php';
+
 if (isset($_SESSION['id_usuario'])) {
 
     require_once __DIR__ . '/../../includes/logs.php';
@@ -13,6 +16,11 @@ if (isset($_SESSION['id_usuario'])) {
     );
 
 }
+
+// Olvida el "Recordarme" de este navegador: sin esto, tras
+// cerrar sesión "de verdad" se podría volver a entrar solo por
+// tener la cookie, lo que no tendría sentido.
+olvidarRecordarme($pdo);
 
 $_SESSION = []; //Vacía todas las variables de sesión
 
