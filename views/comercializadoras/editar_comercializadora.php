@@ -3,87 +3,86 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('empresas');
+requerirPermiso('comercializadoras');
 
 require_once '../../config/database.php';
 require_once '../../includes/form_flash.php';
 
 
 // =====================================================
-// COMPROBAR ID DE LA EMPRESA
+// COMPROBAR ID DE LA COMERCIALIZADORA
 // =====================================================
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
-    header('Location: empresas.php');
+    header('Location: comercializadoras.php');
     exit;
 
 }
 
-$idEmpresa = (int) $_GET['id'];
+$idComercializadora = (int) $_GET['id'];
 
 
 // =====================================================
-// OBTENER EMPRESA
+// OBTENER COMERCIALIZADORA
 // =====================================================
 
-$stmtEmpresa = $pdo->prepare("
+$stmtComercializadora = $pdo->prepare("
     SELECT
         id,
-        codigo_empresa,
         nombre,
         cif,
         direccion,
         telefono,
         email,
-        estado,
-        motivo_inactivo,
+        suministra_luz,
+        suministra_gas,
         creado_por
-    FROM empresas
+    FROM comercializadoras
     WHERE id = ?
 ");
 
-$stmtEmpresa->execute([$idEmpresa]);
+$stmtComercializadora->execute([$idComercializadora]);
 
-$empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
+$comercializadora = $stmtComercializadora->fetch(PDO::FETCH_ASSOC);
 
 
 // =====================================================
 // COMPROBAR QUE EXISTE
 // =====================================================
 
-if (!$empresa) {
+if (!$comercializadora) {
 
-    header('Location: empresas.php');
+    header('Location: comercializadoras.php');
     exit;
 
 }
 
 
 // =====================================================
-// COMPROBAR QUE PUEDE VER/EDITAR ESTA EMPRESA
+// COMPROBAR QUE PUEDE VER/EDITAR ESTA COMERCIALIZADORA
 // =====================================================
 //
 // Oculto en el listado no es suficiente: sin esto, NG
-// podría editar la empresa de SRG tecleando su id en
-// la URL directamente.
+// podría editar la comercializadora de otro NG tecleando
+// su id en la URL directamente.
 //
 // =====================================================
 
 if (
-    !puedeVerEmpresa(
-        $empresa['creado_por'] !== null ? (int) $empresa['creado_por'] : null
+    !puedeVerComercializadora(
+        $comercializadora['creado_por'] !== null ? (int) $comercializadora['creado_por'] : null
     )
 ) {
 
-    header('Location: empresas.php?error=sin_permiso');
+    header('Location: comercializadoras.php?error=sin_permiso');
     exit;
 
 }
 
 
 // =====================================================
-// ERROR PENDIENTE (SI VENIMOS DE actualizar_empresa.php)
+// ERROR PENDIENTE (SI VENIMOS DE actualizar_comercializadora.php)
 // =====================================================
 
 $errorFormulario = obtenerErrorFormulario();
@@ -99,7 +98,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Editar empresa - Comparador Eléctrico</title>
+    <title>Editar comercializadora - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../../css/style.css">
 
@@ -140,10 +139,10 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                 <div>
 
-                    <h1>Empresas</h1>
+                    <h1>Comercializadoras</h1>
 
                     <p>
-                        Editar empresa
+                        Editar comercializadora
                     </p>
 
                 </div>
@@ -151,7 +150,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                 <div class="page-header-actions">
 
-                    <a href="empresas.php" class="config-save-button">
+                    <a href="comercializadoras.php" class="config-save-button">
                         ← Volver
                     </a>
 
@@ -166,16 +165,16 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
             <div class="config-card">
 
-                <h2>Datos de la empresa</h2>
+                <h2>Datos de la comercializadora</h2>
 
-                <form action="actualizar_empresa.php" method="POST" novalidate>
+                <form action="actualizar_comercializadora.php" method="POST" novalidate>
 
 
                     <!-- =================================================
-                         ID DE LA EMPRESA
+                         ID DE LA COMERCIALIZADORA
                     ================================================== -->
 
-                    <input type="hidden" name="id" value="<?= (int) $empresa['id'] ?>">
+                    <input type="hidden" name="id" value="<?= (int) $comercializadora['id'] ?>">
 
 
                     <!-- =========================
@@ -192,24 +191,6 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
 
                         <!-- =========================
-                             CÓDIGO DE EMPRESA
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="codigo_empresa">
-                                Código de empresa
-                            </label>
-
-                            <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
-                                value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>" readonly>
-
-                            <span class="field-error" id="error-codigo_empresa"></span>
-
-                        </div>
-
-
-                        <!-- =========================
                              NOMBRE
                         ========================== -->
 
@@ -221,7 +202,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                             <input type="text" id="nombre" name="nombre"
                                 class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'nombre', $empresa['nombre']) ?>" required>
+                                value="<?= valorFormulario($datosPrevios, 'nombre', $comercializadora['nombre']) ?>" required>
 
                             <span class="field-error"
                                 id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
@@ -241,7 +222,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                             <input type="text" id="cif" name="cif"
                                 class="<?= claseErrorCampo($errorFormulario, 'cif') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'cif', $empresa['cif']) ?>" required>
+                                value="<?= valorFormulario($datosPrevios, 'cif', $comercializadora['cif']) ?>" required>
 
                             <span class="field-error"
                                 id="error-cif"><?= mensajeErrorCampo($errorFormulario, 'cif') ?></span>
@@ -261,7 +242,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                             <input type="text" id="direccion" name="direccion"
                                 class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'direccion', $empresa['direccion'] ?? '') ?>">
+                                value="<?= valorFormulario($datosPrevios, 'direccion', $comercializadora['direccion'] ?? '') ?>">
 
                             <span class="field-error"
                                 id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
@@ -281,7 +262,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                             <input type="tel" id="telefono" name="telefono"
                                 class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'telefono', $empresa['telefono'] ?? '') ?>">
+                                value="<?= valorFormulario($datosPrevios, 'telefono', $comercializadora['telefono'] ?? '') ?>">
 
                             <span class="field-error"
                                 id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
@@ -301,7 +282,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
                             <input type="email" id="email" name="email"
                                 class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'email', $empresa['email'] ?? '') ?>">
+                                value="<?= valorFormulario($datosPrevios, 'email', $comercializadora['email'] ?? '') ?>">
 
                             <span class="field-error"
                                 id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
@@ -310,58 +291,46 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
 
                         <!-- =========================
-                             ESTADO
+                             SERVICIOS (LUZ / GAS)
                         ========================== -->
+
+                        <?php
+                        $prevLuz = array_key_exists('suministra_luz', $datosPrevios)
+                            ? $datosPrevios['suministra_luz'] === '1'
+                            : (bool) $comercializadora['suministra_luz'];
+
+                        $prevGas = array_key_exists('suministra_gas', $datosPrevios)
+                            ? $datosPrevios['suministra_gas'] === '1'
+                            : (bool) $comercializadora['suministra_gas'];
+                        ?>
 
                         <div class="form-group">
 
-                            <label for="estado">
-                                Estado
+                            <label>
+                                Servicios que suministra
                             </label>
 
-                            <?php $estadoPrevio = $datosPrevios['estado'] ?? $empresa['estado']; ?>
+                            <div style="display:flex; gap:20px; align-items:center; flex-wrap: wrap; padding-top: 6px;">
 
-                            <select id="estado" name="estado" class="<?= claseErrorCampo($errorFormulario, 'estado') ?>"
-                                required>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight: normal;">
+                                    <input type="checkbox" id="suministra_luz" name="suministra_luz" value="1"
+                                        <?= $prevLuz ? 'checked' : '' ?>>
+                                    <span>⚡ Luz</span>
+                                </label>
 
-                                <option value="Activo" <?= $estadoPrevio === 'Activo' ? 'selected' : '' ?>>Activo</option>
-                                <option value="Inactivo" <?= $estadoPrevio === 'Inactivo' ? 'selected' : '' ?>>Inactivo
-                                </option>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight: normal;">
+                                    <input type="checkbox" id="suministra_gas" name="suministra_gas" value="1"
+                                        <?= $prevGas ? 'checked' : '' ?>>
+                                    <span>🔥 Gas</span>
+                                </label>
 
-                            </select>
+                            </div>
 
                             <span class="field-error"
-                                id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
+                                id="error-suministra_luz"><?= mensajeErrorCampo($errorFormulario, 'suministra_luz') ?></span>
 
                         </div>
 
-
-                    </div>
-
-
-                    <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>"
-                        id="grupo_motivo_inactivo">
-
-                        <label for="motivo_inactivo">
-                            Motivo
-                        </label>
-
-                        <select id="motivo_inactivo" name="motivo_inactivo"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
-                            <option value="">Selecciona un motivo</option>
-
-                            <option value="impago" <?= valorFormulario($datosPrevios, 'motivo_inactivo', $empresa['motivo_inactivo'] ?? '') === 'impago' ? 'selected' : '' ?>>
-                                Impago
-                            </option>
-
-                            <option value="fin_contrato" <?= valorFormulario($datosPrevios, 'motivo_inactivo', $empresa['motivo_inactivo'] ?? '') === 'fin_contrato' ? 'selected' : '' ?>>
-                                Fin de contrato
-                            </option>
-
-                        </select>
-
-                        <span class="field-error"
-                            id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
 
                     </div>
 
@@ -376,11 +345,9 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
                             Guardar cambios
                         </button>
 
-                        <a href="empresas.php" class="config-cancel-button">
+                        <a href="comercializadoras.php" class="config-cancel-button">
                             Cancelar
                         </a>
-
-
 
                     </div>
 
@@ -403,7 +370,7 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
     <?php include '../../templates/footer.php'; ?>
 
 
-    <script src="../../js/empresas.js"></script>
+    <script src="../../js/comercializadoras.js"></script>
 
 </body>
 

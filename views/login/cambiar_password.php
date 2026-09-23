@@ -106,20 +106,8 @@ unset($_SESSION['cambio_password_error']); //elimina el mensaje de error de la s
 
                     </div>
 
-                    <ul class="password-requisitos" id="passwordRequisitos">
 
-                        <li data-req="longitud">Mínimo 8 caracteres</li>
-                        <li data-req="mayuscula">Mayúsculas</li>
-                        <li data-req="minuscula">Minúsculas</li>
-                        <li data-req="numero">Números</li>
-                        <li data-req="especial">Caracteres especiales</li>
-
-                    </ul>
-
-                </div>
-
-
-                <div class="form-group">
+                    <div class="form-group">
 
                     <label for="password_confirmar">
                         Repite la contraseña nueva
@@ -136,6 +124,19 @@ unset($_SESSION['cambio_password_error']); //elimina el mensaje de error de la s
                         </button>
 
                     </div>
+
+                </div>
+
+                    <ul class="password-requisitos" id="passwordRequisitos">
+
+                        <li data-req="longitud">Mínimo 8 caracteres</li>
+                        <li data-req="mayuscula">Mayúsculas</li>
+                        <li data-req="minuscula">Minúsculas</li>
+                        <li data-req="numero">Números</li>
+                        <li data-req="especial">Caracteres especiales</li>
+                        <li data-req="coinciden">Las contraseñas coinciden</li>
+
+                    </ul>
 
                 </div>
 

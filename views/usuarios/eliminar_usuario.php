@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -266,7 +267,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                     [null, null],
                     ['Estado', $usuario['estado']],
                     ...($usuario['estado'] === 'Inactivo'
-                        ? [['Motivo', $usuario['motivo_inactivo'] ?: '-']]
+                        ? [['Motivo', etiquetaMotivoInactivo($usuario['motivo_inactivo'])]]
                         : []),
                 ],
         ],
@@ -287,7 +288,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                 [null, null],
                 ['Estado', $empresaEliminada['estado']],
                 ...($empresaEliminada['estado'] === 'Inactivo'
-                    ? [['Motivo', $empresaEliminada['motivo_inactivo'] ?: '-']]
+                    ? [['Motivo', etiquetaMotivoInactivo($empresaEliminada['motivo_inactivo'])]]
                     : []),
             ],
         ];
@@ -548,7 +549,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                                     <div class="usuario-detalle-item empresa-motivo-item">
                                         <span>Motivo</span>
-                                        <strong><?= htmlspecialchars($empresaEliminada['motivo_inactivo'] ?: '-') ?></strong>
+                                        <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresaEliminada['motivo_inactivo'])) ?></strong>
                                     </div>
 
                                 <?php endif; ?>

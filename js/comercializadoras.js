@@ -1,27 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
-       00. VALIDACIÓN DE FORMULARIOS DE EMPRESA
-       (crear_empresa.php / editar_empresa.php)
+       00. VALIDACIÓN DE FORMULARIOS DE COMERCIALIZADORA
+       (crear_comercializadora.php / editar_comercializadora.php)
     ========================================================= */
 
-    function validarCodigoEmpresa(valor) {
-
-        const texto = valor.trim();
-
-        if (texto === '') {
-            return 'Este campo es obligatorio.';
-        }
-
-        if (!/^[0-9]{6}$/.test(texto)) {
-            return 'Debe tener exactamente 6 dígitos.';
-        }
-
-        return null;
-
-    }
-
-    function validarNombreEmpresa(valor) {
+    function validarNombreComercializadora(valor) {
 
         const texto = valor.trim();
 
@@ -38,13 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Mismo criterio que validarCaracteresNombreEmpresa() en
-        // includes/validaciones.php: una razón social permite,
-        // además de letras/números/espacios, la puntuación
-        // habitual en denominaciones comerciales (. , ' - & ( ) /).
-        // Antes esta función no comprobaba los caracteres en
-        // absoluto, así que un símbolo no permitido pasaba el
-        // formulario sin avisar y el servidor lo rechazaba
-        // después, obligando a otra vuelta.
+        // includes/validaciones.php: además de letras/números/
+        // espacios, permite la puntuación habitual en
+        // denominaciones comerciales (. , ' - & ( ) /).
         if (!/^[\p{L}\p{N}]/u.test(texto)) {
             return 'Debe empezar con una letra o un número.';
         }
@@ -57,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function validarCif(valor) {
+    function validarCifComercializadora(valor) {
 
         const texto = valor.trim().toUpperCase();
 
@@ -68,8 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Mismo formato y dígito/letra de control que valida
         // validarCIF() en includes/validaciones.php, para que
         // un CIF con formato inválido no llegue a enviarse al
-        // servidor y descubrirse solo allí (obligando a otra
-        // vuelta si además había otro error en el formulario).
+        // servidor y descubrirse solo allí.
 
         const coincide = texto.match(/^([ABCDEFGHJNPQRSUVW])([0-9]{7})([0-9A-J])$/);
 
@@ -127,14 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function validarDireccionEmpresa(valor) {
+    function validarDireccionComercializadora(valor) {
 
         // La dirección es opcional
         return null;
 
     }
 
-    function validarTelefonoEmpresa(valor) {
+    function validarTelefonoComercializadora(valor) {
 
         const texto = valor.trim();
 
@@ -157,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function validarEmailEmpresa(valor) {
+    function validarEmailComercializadora(valor) {
 
         const texto = valor.trim();
 
@@ -174,63 +153,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function validarEstadoEmpresa(valor) {
-
-        if (!valor || valor.trim() === '') {
-            return 'Debes seleccionar una opción.';
-        }
-
-        return null;
-
-    }
-
-    function validarMotivoInactivoEmpresa(valor) {
-
-        const estado = document.getElementById('estado');
-
-        if (estado && estado.value === 'Inactivo' && (!valor || valor.trim() === '')) {
-            return 'Debes seleccionar un motivo.';
-        }
-
-        return null;
-
-    }
-
-    function validarUsuarioUsername(valor) {
-
-        const texto = valor.trim();
-
-        if (texto === '') {
-            return 'Este campo es obligatorio.';
-        }
-
-        if (!/^[a-zñ]+$/.test(texto)) {
-            return 'Solo se permiten letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.';
-        }
-
-        if (texto.length < 2) {
-            return 'Debe tener al menos 2 caracteres.';
-        }
-
-        return null;
-
-    }
-
-    const VALIDADORES_EMPRESA = {
-        codigo_empresa: validarCodigoEmpresa,
-        nombre: validarNombreEmpresa,
-        cif: validarCif,
-        direccion: validarDireccionEmpresa,
-        telefono: validarTelefonoEmpresa,
-        email: validarEmailEmpresa,
-        estado: validarEstadoEmpresa,
-        motivo_inactivo: validarMotivoInactivoEmpresa,
-        usuario_username: validarUsuarioUsername
+    const VALIDADORES_COMERCIALIZADORA = {
+        nombre: validarNombreComercializadora,
+        cif: validarCifComercializadora,
+        direccion: validarDireccionComercializadora,
+        telefono: validarTelefonoComercializadora,
+        email: validarEmailComercializadora
     };
 
-    function validarCampoEmpresa(input) {
+    function validarCampoComercializadora(input) {
 
-        const validador = VALIDADORES_EMPRESA[input.name];
+        const validador = VALIDADORES_COMERCIALIZADORA[input.name];
 
         if (!validador) {
             return true;
@@ -261,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function mostrarMensajeGeneralEmpresa(formulario, mensaje) {
+    function mostrarMensajeGeneralComercializadora(formulario, mensaje) {
 
         const contenedor = formulario.querySelector('#form-error-general');
 
@@ -274,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function ocultarMensajeGeneralEmpresa(formulario) {
+    function ocultarMensajeGeneralComercializadora(formulario) {
 
         const contenedor = formulario.querySelector('#form-error-general');
 
@@ -287,9 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    function quedanCamposInvalidosEmpresa(formulario) {
+    function quedanCamposInvalidosComercializadora(formulario) {
 
-        return Object.keys(VALIDADORES_EMPRESA).some(nombreCampo => {
+        return Object.keys(VALIDADORES_COMERCIALIZADORA).some(nombreCampo => {
 
             const input = formulario.querySelector('#' + nombreCampo);
 
@@ -297,13 +230,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
-            return VALIDADORES_EMPRESA[nombreCampo](input.value) !== null;
+            return VALIDADORES_COMERCIALIZADORA[nombreCampo](input.value) !== null;
 
         });
 
     }
 
-    function inicializarValidacionFormularioEmpresa() {
+    /* =========================================================
+       00B. SERVICIOS (LUZ / GAS)
+       No es un campo de texto como los demás: hay que marcar
+       al menos una de las dos casillas.
+    ========================================================= */
+
+    function validarServiciosComercializadora(formulario) {
+
+        const luz = formulario.querySelector('#suministra_luz');
+        const gas = formulario.querySelector('#suministra_gas');
+
+        if (!luz || !gas) {
+            return true;
+        }
+
+        const contenedorError = document.getElementById('error-suministra_luz');
+        const valido = luz.checked || gas.checked;
+
+        if (!valido) {
+
+            if (contenedorError) {
+                contenedorError.textContent = 'Debes marcar al menos un servicio (luz o gas).';
+            }
+
+            return false;
+
+        }
+
+        if (contenedorError) {
+            contenedorError.textContent = '';
+        }
+
+        return true;
+
+    }
+
+    function inicializarValidacionFormularioComercializadora() {
 
         const formulario = document.querySelector('.config-card form');
 
@@ -311,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        Object.keys(VALIDADORES_EMPRESA).forEach(nombreCampo => {
+        Object.keys(VALIDADORES_COMERCIALIZADORA).forEach(nombreCampo => {
 
             const input = formulario.querySelector('#' + nombreCampo);
 
@@ -320,12 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             input.addEventListener('blur', () => {
-                validarCampoEmpresa(input);
+                validarCampoComercializadora(input);
             });
 
             input.addEventListener('input', () => {
 
-                const validador = VALIDADORES_EMPRESA[input.name];
+                const validador = VALIDADORES_COMERCIALIZADORA[input.name];
                 const error = validador(input.value);
 
                 if (!error) {
@@ -336,10 +305,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                if (!quedanCamposInvalidosEmpresa(formulario)) {
-                    ocultarMensajeGeneralEmpresa(formulario);
+                if (!quedanCamposInvalidosComercializadora(formulario)) {
+                    ocultarMensajeGeneralComercializadora(formulario);
                 }
 
+            });
+
+        });
+
+        formulario.querySelectorAll('#suministra_luz, #suministra_gas').forEach(checkbox => {
+
+            checkbox.addEventListener('change', () => {
+                validarServiciosComercializadora(formulario);
             });
 
         });
@@ -348,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let formularioValido = true;
 
-            Object.keys(VALIDADORES_EMPRESA).forEach(nombreCampo => {
+            Object.keys(VALIDADORES_COMERCIALIZADORA).forEach(nombreCampo => {
 
                 const input = formulario.querySelector('#' + nombreCampo);
 
@@ -356,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const campoValido = validarCampoEmpresa(input);
+                const campoValido = validarCampoComercializadora(input);
 
                 if (!campoValido) {
                     formularioValido = false;
@@ -364,11 +341,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             });
 
+            if (!validarServiciosComercializadora(formulario)) {
+                formularioValido = false;
+            }
+
             if (!formularioValido) {
 
                 event.preventDefault();
 
-                mostrarMensajeGeneralEmpresa(
+                mostrarMensajeGeneralComercializadora(
                     formulario,
                     'Hay campos obligatorios sin completar o con un formato incorrecto. Revisa los campos marcados en rojo.'
                 );
@@ -381,17 +362,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
 
-                ocultarMensajeGeneralEmpresa(formulario);
+                ocultarMensajeGeneralComercializadora(formulario);
 
                 // Evita el doble envío (doble clic, o un segundo
                 // clic porque la página tarda un instante en
-                // navegar): sin esto, dos peticiones casi
-                // simultáneas pueden colarse las dos antes de que
-                // ninguna haya guardado nada todavía, la primera
-                // crea la empresa y la segunda, al encontrarla ya
-                // creada, responde con "el username/email/CIF/
-                // código ya existe" — un error confuso, porque la
-                // empresa SÍ se ha guardado (por la primera).
+                // navegar).
                 const botonGuardar = formulario.querySelector('button[type="submit"]');
 
                 if (botonGuardar) {
@@ -404,63 +379,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    inicializarValidacionFormularioEmpresa();
-
-
-    /* =========================================================
-       00B. MOTIVO DE INACTIVO
-       El textarea solo se muestra (y solo hace falta
-       rellenarlo) cuando el estado elegido es "Inactivo".
-    ========================================================= */
-
-    function actualizarVisibilidadMotivoInactivoEmpresa() {
-
-        const estado = document.getElementById('estado');
-        const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
-
-        if (!estado || !grupoMotivo) {
-            return;
-        }
-
-        grupoMotivo.classList.toggle('hidden', estado.value !== 'Inactivo');
-
-    }
-
-    const estadoEmpresaSelect = document.getElementById('estado');
-
-    if (estadoEmpresaSelect) {
-
-        actualizarVisibilidadMotivoInactivoEmpresa();
-
-        estadoEmpresaSelect.addEventListener('change', () => {
-
-            actualizarVisibilidadMotivoInactivoEmpresa();
-
-            const grupoMotivo = document.getElementById('grupo_motivo_inactivo');
-            const motivo = document.getElementById('motivo_inactivo');
-
-            if (grupoMotivo && grupoMotivo.classList.contains('hidden') && motivo) {
-                motivo.classList.remove('input-error');
-                const contenedorError = document.getElementById('error-motivo_inactivo');
-                if (contenedorError) {
-                    contenedorError.textContent = '';
-                }
-            }
-
-        });
-
-    }
+    inicializarValidacionFormularioComercializadora();
 
 
     /* =========================================================
        01. ELEMENTOS DEL DOM (LISTADO)
     ========================================================= */
 
-    const tbody = document.getElementById('empresasBody');
+    const tbody = document.getElementById('comercializadorasBody');
     const tabla = document.querySelector('.usuarios-table');
 
-    const contador = document.getElementById('empresasContador');
-    const mostrando = document.getElementById('empresasMostrando');
+    const contador = document.getElementById('comercializadorasContador');
+    const mostrando = document.getElementById('comercializadorasMostrando');
 
     const selectorPorPagina = document.getElementById('selectorPorPagina');
 
@@ -491,11 +421,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let filas = Array.from(tbody.querySelectorAll('tr'));
 
-    let EMPRESAS_POR_PAGINA = 5;
+    let COMERCIALIZADORAS_POR_PAGINA = 5;
 
     let paginaActual = 1;
 
-    let EMPRESAS_TOTALES = filas.length;
+    let COMERCIALIZADORAS_TOTALES = filas.length;
 
     // Mismo punto de corte que el @media (max-width: 680px)
     // del CSS que decide entre vista de escritorio y móvil.
@@ -550,11 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================================
        06B. VALOR "LIMPIO" DE UNA COLUMNA PARA LOS FILTROS
        DESPLEGABLES
-       =========================================================
-       Usamos los data-* de la fila (ya traen el valor limpio
-       de cada campo) en vez del texto de la celda, para que
-       las opciones marcadas en el desplegable coincidan de
-       forma exacta.
     ========================================================= */
 
     const CAMPO_POR_COLUMNA = {
@@ -563,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         2: 'direccion',
         3: 'telefono',
         4: 'email',
-        5: 'estado'
+        5: 'servicios'
     };
 
     function obtenerValorFiltroFila(fila, columna) {
@@ -593,10 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const columna = Number(filtro.dataset.column);
 
-                // Filtros desplegables de selección múltiple:
-                // la fila pasa si su valor coincide con
-                // CUALQUIERA de las opciones marcadas (si no
-                // hay ninguna marcada, el filtro no se aplica).
                 if (filtro.classList.contains('multi-select-filter')) {
 
                     const seleccionados = window.obtenerSeleccionMultiFiltro(filtro)
@@ -647,11 +568,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return 1;
         }
 
-        if (EMPRESAS_POR_PAGINA === Infinity) {
+        if (COMERCIALIZADORAS_POR_PAGINA === Infinity) {
             return 1;
         }
 
-        return Math.ceil(filasFiltradas.length / EMPRESAS_POR_PAGINA);
+        return Math.ceil(filasFiltradas.length / COMERCIALIZADORAS_POR_PAGINA);
 
     }
 
@@ -677,13 +598,13 @@ document.addEventListener('DOMContentLoaded', () => {
             fila.style.display = 'none';
         });
 
-        const inicio = EMPRESAS_POR_PAGINA === Infinity
+        const inicio = COMERCIALIZADORAS_POR_PAGINA === Infinity
             ? 0
-            : (paginaActual - 1) * EMPRESAS_POR_PAGINA;
+            : (paginaActual - 1) * COMERCIALIZADORAS_POR_PAGINA;
 
-        const fin = EMPRESAS_POR_PAGINA === Infinity
+        const fin = COMERCIALIZADORAS_POR_PAGINA === Infinity
             ? filasFiltradas.length
-            : inicio + EMPRESAS_POR_PAGINA;
+            : inicio + COMERCIALIZADORAS_POR_PAGINA;
 
         const filasPagina = filasFiltradas.slice(inicio, fin);
 
@@ -708,8 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contador) {
 
             contador.textContent = cantidadFiltrada === 1
-                ? '1 empresa encontrada'
-                : `${cantidadFiltrada} empresas encontradas`;
+                ? '1 comercializadora encontrada'
+                : `${cantidadFiltrada} comercializadoras encontradas`;
 
         }
 
@@ -717,28 +638,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (cantidadFiltrada === 0) {
 
-                mostrando.textContent = `Mostrando 0 de ${EMPRESAS_TOTALES} empresas`;
+                mostrando.textContent = `Mostrando 0 de ${COMERCIALIZADORAS_TOTALES} comercializadoras`;
 
                 return;
 
             }
 
-            if (EMPRESAS_POR_PAGINA === Infinity) {
+            if (COMERCIALIZADORAS_POR_PAGINA === Infinity) {
 
-                mostrando.textContent = `Mostrando ${cantidadFiltrada} de ${cantidadFiltrada} empresas`;
+                mostrando.textContent = `Mostrando ${cantidadFiltrada} de ${cantidadFiltrada} comercializadoras`;
 
                 return;
 
             }
 
-            const inicio = (paginaActual - 1) * EMPRESAS_POR_PAGINA + 1;
+            const inicio = (paginaActual - 1) * COMERCIALIZADORAS_POR_PAGINA + 1;
 
             const fin = Math.min(
-                inicio + EMPRESAS_POR_PAGINA - 1,
+                inicio + COMERCIALIZADORAS_POR_PAGINA - 1,
                 cantidadFiltrada
             );
 
-            mostrando.textContent = `Mostrando ${inicio}-${fin} de ${cantidadFiltrada} empresas`;
+            mostrando.textContent = `Mostrando ${inicio}-${fin} de ${cantidadFiltrada} comercializadoras`;
 
         }
 
@@ -782,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!Number.isNaN(numeroPagina)) {
 
                 boton.style.display =
-                    (EMPRESAS_POR_PAGINA === Infinity || numeroPagina > totalPaginas)
+                    (COMERCIALIZADORAS_POR_PAGINA === Infinity || numeroPagina > totalPaginas)
                         ? 'none'
                         : 'inline-flex';
 
@@ -844,16 +765,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        12B. RECORDAR FILTROS ENTRE RECARGAS
-       =========================================================
-       Activar/desactivar una empresa desde el listado navega a
-       cambiar_estado_empresa.php, que vuelve a redirigir aquí:
-       la página se recarga entera y, sin esto, los filtros
-       marcados se perderían. Se guardan en sessionStorage (no
-       localStorage) para que no sobrevivan más allá de la
-       pestaña/sesión actual del navegador.
     ========================================================= */
 
-    const CLAVE_FILTROS_GUARDADOS = 'filtrosEmpresas';
+    const CLAVE_FILTROS_GUARDADOS = 'filtrosComercializadoras';
 
     function guardarFiltros() {
 
@@ -869,10 +783,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const vacio = Array.isArray(valor) ? valor.length === 0 : valor === '';
 
-            // Los filtros de escritorio y de móvil comparten
-            // data-column pero son elementos distintos; solo uno
-            // de los dos tiene valor a la vez, así que el vacío
-            // del otro no debe pisarlo.
             if (!vacio || datos[columna] === undefined) {
                 datos[columna] = valor;
             }
@@ -956,9 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        14. LIMPIAR FILTROS
-       Hay dos botones "Limpiar filtros" (el de la tabla de
-       escritorio y el del panel móvil); los dos vacían el
-       mismo conjunto de inputs, escritorio y móvil incluidos.
     ========================================================= */
 
     document.querySelectorAll('#btnLimpiarFiltros, #btnLimpiarFiltrosMovil').forEach(btn => {
@@ -987,8 +894,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        14B. EXPORTAR PDF
-       Exporta las empresas que cumplen los filtros activos
-       (ver js/exportar-pdf.js).
     ========================================================= */
 
     const btnExportarPDF = document.getElementById('btnExportarPDF');
@@ -1003,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* =========================================================
-       15. EMPRESAS POR PÁGINA
+       15. COMERCIALIZADORAS POR PÁGINA
     ========================================================= */
 
     if (selectorPorPagina) {
@@ -1012,7 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const valor = selectorPorPagina.value;
 
-            EMPRESAS_POR_PAGINA = valor === 'todos'
+            COMERCIALIZADORAS_POR_PAGINA = valor === 'todos'
                 ? Infinity
                 : Number(valor);
 
@@ -1104,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ========================================================= */
 
     const btnToggleFiltros = document.getElementById('btnToggleFiltros');
-    const panelFiltros = document.getElementById('panelFiltrosEmpresas');
+    const panelFiltros = document.getElementById('panelFiltrosComercializadoras');
 
     if (btnToggleFiltros && panelFiltros) {
 
@@ -1131,26 +1036,23 @@ document.addEventListener('DOMContentLoaded', () => {
        ve todo y están los botones Editar/Eliminar de siempre.
     ========================================================= */
 
-    const modalDetalle = document.getElementById('modalDetalleEmpresa');
+    const modalDetalle = document.getElementById('modalDetalleComercializadora');
 
-    const detalleAvatar = document.getElementById('detalleEmpresaAvatar');
-    const detalleNombre = document.getElementById('detalleEmpresaNombre');
-    const detalleCodigo = document.getElementById('detalleEmpresaCodigo');
-    const detalleCif = document.getElementById('detalleEmpresaCif');
-    const detalleDireccion = document.getElementById('detalleEmpresaDireccion');
-    const detalleTelefono = document.getElementById('detalleEmpresaTelefono');
-    const detalleEmail = document.getElementById('detalleEmpresaEmail');
-    const detalleEstado = document.getElementById('detalleEmpresaEstado');
-    const detalleMotivo = document.getElementById('detalleEmpresaMotivo');
-    const detalleMotivoItem = document.getElementById('detalleEmpresaMotivoItem');
-    const btnDetalleEditar = document.getElementById('btnDetalleEditarEmpresa');
-    const btnDetalleEliminar = document.getElementById('btnDetalleEliminarEmpresa');
+    const detalleAvatar = document.getElementById('detalleComercializadoraAvatar');
+    const detalleNombre = document.getElementById('detalleComercializadoraNombre');
+    const detalleCif = document.getElementById('detalleComercializadoraCif');
+    const detalleDireccion = document.getElementById('detalleComercializadoraDireccion');
+    const detalleTelefono = document.getElementById('detalleComercializadoraTelefono');
+    const detalleEmail = document.getElementById('detalleComercializadoraEmail');
+    const detalleServicios = document.getElementById('detalleComercializadoraServicios');
+    const btnDetalleEditar = document.getElementById('btnDetalleEditarComercializadora');
+    const btnDetalleEliminar = document.getElementById('btnDetalleEliminarComercializadora');
 
-    let empresaDetalleActual = null;
+    let comercializadoraDetalleActual = null;
 
-    function abrirModalDetalleEmpresa(fila) {
+    function abrirModalDetalleComercializadora(fila) {
 
-        empresaDetalleActual = fila.dataset;
+        comercializadoraDetalleActual = fila.dataset;
 
         if (detalleAvatar) {
             detalleAvatar.textContent = fila.dataset.iniciales || '';
@@ -1158,10 +1060,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (detalleNombre) {
             detalleNombre.textContent = fila.dataset.nombre || '';
-        }
-
-        if (detalleCodigo) {
-            detalleCodigo.textContent = fila.dataset.codigo || '—';
         }
 
         if (detalleCif) {
@@ -1180,22 +1078,12 @@ document.addEventListener('DOMContentLoaded', () => {
             detalleEmail.textContent = fila.dataset.email || '—';
         }
 
-        if (detalleEstado) {
-            detalleEstado.textContent = fila.dataset.estado || '—';
-            detalleEstado.classList.toggle('text-success', fila.dataset.estado === 'Activo');
-            detalleEstado.classList.toggle('text-danger', fila.dataset.estado === 'Inactivo');
-        }
-
-        if (detalleMotivo) {
-            detalleMotivo.textContent = fila.dataset.motivo || '-';
-        }
-
-        if (detalleMotivoItem) {
-            detalleMotivoItem.classList.toggle('hidden', fila.dataset.estado !== 'Inactivo');
+        if (detalleServicios) {
+            detalleServicios.textContent = fila.dataset.servicios || '—';
         }
 
         if (btnDetalleEditar) {
-            btnDetalleEditar.href = 'editar_empresa.php?id=' + encodeURIComponent(fila.dataset.id);
+            btnDetalleEditar.href = 'editar_comercializadora.php?id=' + encodeURIComponent(fila.dataset.id);
         }
 
         if (modalDetalle) {
@@ -1205,9 +1093,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    window.cerrarModalDetalleEmpresa = function () {
+    window.cerrarModalDetalleComercializadora = function () {
 
-        empresaDetalleActual = null;
+        comercializadoraDetalleActual = null;
 
         if (modalDetalle) {
             modalDetalle.style.display = 'none';
@@ -1219,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filas.forEach(fila => {
 
         fila.addEventListener('click', () => {
-            abrirModalDetalleEmpresa(fila);
+            abrirModalDetalleComercializadora(fila);
         });
 
     });
@@ -1228,15 +1116,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnDetalleEliminar.addEventListener('click', () => {
 
-            if (!empresaDetalleActual) {
+            if (!comercializadoraDetalleActual) {
                 return;
             }
 
-            const id = empresaDetalleActual.id;
-            const nombre = empresaDetalleActual.nombre;
+            const id = comercializadoraDetalleActual.id;
+            const nombre = comercializadoraDetalleActual.nombre;
 
-            window.cerrarModalDetalleEmpresa();
-            window.abrirModalEliminarEmpresa(id, nombre);
+            window.cerrarModalDetalleComercializadora();
+            window.abrirModalEliminarComercializadora(id, nombre);
 
         });
 
@@ -1247,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalDetalle.addEventListener('click', event => {
 
             if (event.target === modalDetalle) {
-                window.cerrarModalDetalleEmpresa();
+                window.cerrarModalDetalleComercializadora();
             }
 
         });
@@ -1256,8 +1144,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', event => {
 
-        if (event.key === 'Escape' && empresaDetalleActual) {
-            window.cerrarModalDetalleEmpresa();
+        if (event.key === 'Escape' && comercializadoraDetalleActual) {
+            window.cerrarModalDetalleComercializadora();
         }
 
     });
@@ -1267,18 +1155,18 @@ document.addEventListener('DOMContentLoaded', () => {
        17. MODAL DE ELIMINACIÓN
     ========================================================= */
 
-    let empresaEliminarId = 0;
+    let comercializadoraEliminarId = 0;
 
-    const modalEliminar = document.getElementById('modalEliminarEmpresa');
-    const nombreEmpresaEliminar = document.getElementById('nombreEmpresaEliminar');
+    const modalEliminar = document.getElementById('modalEliminarComercializadora');
+    const nombreComercializadoraEliminar = document.getElementById('nombreComercializadoraEliminar');
 
 
-    window.abrirModalEliminarEmpresa = function (id, nombre) {
+    window.abrirModalEliminarComercializadora = function (id, nombre) {
 
-        empresaEliminarId = Number(id);
+        comercializadoraEliminarId = Number(id);
 
-        if (nombreEmpresaEliminar) {
-            nombreEmpresaEliminar.textContent = nombre;
+        if (nombreComercializadoraEliminar) {
+            nombreComercializadoraEliminar.textContent = nombre;
         }
 
         if (modalEliminar) {
@@ -1289,9 +1177,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    window.cerrarModalEliminarEmpresa = function () {
+    window.cerrarModalEliminarComercializadora = function () {
 
-        empresaEliminarId = 0;
+        comercializadoraEliminarId = 0;
 
         if (modalEliminar) {
             modalEliminar.style.display = 'none';
@@ -1301,39 +1189,39 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    let empresaEliminarEnCurso = false;
+    let comercializadoraEliminarEnCurso = false;
 
-    window.confirmarEliminarEmpresa = async function () {
+    window.confirmarEliminarComercializadora = async function () {
 
-        if (empresaEliminarId <= 0 || empresaEliminarEnCurso) {
+        if (comercializadoraEliminarId <= 0 || comercializadoraEliminarEnCurso) {
             return;
         }
 
-        const idEliminado = empresaEliminarId;
+        const idEliminado = comercializadoraEliminarId;
 
-        empresaEliminarEnCurso = true;
+        comercializadoraEliminarEnCurso = true;
 
         try {
 
             const respuesta = await fetch(
-                'eliminar_empresa.php?id=' + encodeURIComponent(idEliminado) + '&ajax=1',
+                'eliminar_comercializadora.php?id=' + encodeURIComponent(idEliminado) + '&ajax=1',
                 { headers: { Accept: 'application/json' } }
             );
 
             const datos = await respuesta.json();
 
             if (!respuesta.ok || !datos.ok) {
-                throw new Error(datos.error || 'No se ha podido eliminar la empresa.');
+                throw new Error(datos.error || 'No se ha podido eliminar la comercializadora.');
             }
 
-            window.cerrarModalEliminarEmpresa();
+            window.cerrarModalEliminarComercializadora();
 
             const fila = tbody.querySelector(`tr[data-id="${idEliminado}"]`);
 
             if (fila) {
                 fila.remove();
                 filas = filas.filter(filaActual => filaActual !== fila);
-                EMPRESAS_TOTALES = filas.length;
+                COMERCIALIZADORAS_TOTALES = filas.length;
                 mostrarPagina();
             }
 
@@ -1342,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             window.alert(error.message);
         } finally {
-            empresaEliminarEnCurso = false;
+            comercializadoraEliminarEnCurso = false;
         }
 
     };
@@ -1353,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalEliminar.addEventListener('click', event => {
 
             if (event.target === modalEliminar) {
-                window.cerrarModalEliminarEmpresa();
+                window.cerrarModalEliminarComercializadora();
             }
 
         });
@@ -1363,193 +1251,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', event => {
 
-        if (event.key === 'Escape' && empresaEliminarId > 0) {
-            window.cerrarModalEliminarEmpresa();
-        }
-
-    });
-
-
-    /* =========================================================
-       17B. DESACTIVAR EMPRESA DESDE EL LISTADO (PIDE MOTIVO)
-       Mismo patrón que el modal de desactivar usuario: al
-       llevarse el motivo, se envía un formulario real por POST
-       a cambiar_estado_empresa.php en vez de ir directo.
-    ========================================================= */
-
-    let empresaDesactivarAbierto = false;
-
-    const modalDesactivarEmpresa = document.getElementById('modalDesactivarEmpresa');
-    const nombreEmpresaDesactivar = document.getElementById('nombreEmpresaDesactivar');
-    const idEmpresaDesactivarInput = document.getElementById('idEmpresaDesactivar');
-    const motivoDesactivarEmpresa = document.getElementById('motivoDesactivarEmpresa');
-
-    window.abrirModalDesactivarEmpresa = function (id, nombre) {
-
-        empresaDesactivarAbierto = true;
-
-        if (idEmpresaDesactivarInput) {
-            idEmpresaDesactivarInput.value = id;
-        }
-
-        if (nombreEmpresaDesactivar) {
-            nombreEmpresaDesactivar.textContent = nombre;
-        }
-
-        if (motivoDesactivarEmpresa) {
-            motivoDesactivarEmpresa.value = '';
-            motivoDesactivarEmpresa.classList.remove('input-error');
-        }
-
-        const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
-        if (contenedorError) {
-            contenedorError.textContent = '';
-        }
-
-        if (modalDesactivarEmpresa) {
-            modalDesactivarEmpresa.style.display = 'flex';
-            document.body.classList.add('modal-abierto');
-        }
-
-    };
-
-    window.cerrarModalDesactivarEmpresa = function () {
-
-        empresaDesactivarAbierto = false;
-
-        if (modalDesactivarEmpresa) {
-            modalDesactivarEmpresa.style.display = 'none';
-            document.body.classList.remove('modal-abierto');
-        }
-
-    };
-
-    const formDesactivarEmpresa = document.getElementById('formDesactivarEmpresa');
-
-    if (formDesactivarEmpresa && motivoDesactivarEmpresa) {
-
-        formDesactivarEmpresa.addEventListener('submit', event => {
-
-            if (motivoDesactivarEmpresa.value === '') {
-
-                event.preventDefault();
-
-                motivoDesactivarEmpresa.classList.add('input-error');
-
-                const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
-                if (contenedorError) {
-                    contenedorError.textContent = 'Debes seleccionar un motivo.';
-                }
-
-                motivoDesactivarEmpresa.focus();
-
-            }
-
-        });
-
-        motivoDesactivarEmpresa.addEventListener('change', () => {
-
-            motivoDesactivarEmpresa.classList.remove('input-error');
-
-            const contenedorError = document.getElementById('error-motivoDesactivarEmpresa');
-            if (contenedorError) {
-                contenedorError.textContent = '';
-            }
-
-        });
-
-    }
-
-    if (modalDesactivarEmpresa) {
-
-        modalDesactivarEmpresa.addEventListener('click', event => {
-
-            if (event.target === modalDesactivarEmpresa) {
-                window.cerrarModalDesactivarEmpresa();
-            }
-
-        });
-
-    }
-
-    document.addEventListener('keydown', event => {
-
-        if (event.key === 'Escape' && empresaDesactivarAbierto) {
-            window.cerrarModalDesactivarEmpresa();
-        }
-
-    });
-
-
-    /* =========================================================
-       17C. RESTABLECER CONTRASEÑA DEL USUARIO DE LA EMPRESA
-       Mismo patrón que el modal de eliminación: un único
-       modal reutilizado por todas las filas, con el id del
-       usuario objetivo guardado en una variable hasta que
-       se confirma o se cancela. Reutiliza el mismo endpoint
-       que el listado de usuarios (resetear_password.php),
-       ya que lo que se restablece es la contraseña del
-       usuario de acceso de la empresa, no la empresa en sí.
-    ========================================================= */
-
-    let empresaResetPasswordUsuarioId = 0;
-
-    const modalResetPasswordEmpresa = document.getElementById('modalResetPasswordEmpresa');
-    const nombreEmpresaResetPassword = document.getElementById('nombreEmpresaResetPassword');
-
-    window.abrirModalResetPasswordEmpresa = function (idUsuario, nombre) {
-
-        empresaResetPasswordUsuarioId = Number(idUsuario);
-
-        if (nombreEmpresaResetPassword) {
-            nombreEmpresaResetPassword.textContent = nombre;
-        }
-
-        if (modalResetPasswordEmpresa) {
-            modalResetPasswordEmpresa.style.display = 'flex';
-            document.body.classList.add('modal-abierto');
-        }
-
-    };
-
-    window.cerrarModalResetPasswordEmpresa = function () {
-
-        empresaResetPasswordUsuarioId = 0;
-
-        if (modalResetPasswordEmpresa) {
-            modalResetPasswordEmpresa.style.display = 'none';
-            document.body.classList.remove('modal-abierto');
-        }
-
-    };
-
-    window.confirmarResetPasswordEmpresa = function () {
-
-        if (empresaResetPasswordUsuarioId <= 0) {
-            return;
-        }
-
-        window.location.href =
-            '../usuarios/resetear_password.php?id=' + encodeURIComponent(empresaResetPasswordUsuarioId);
-
-    };
-
-    if (modalResetPasswordEmpresa) {
-
-        modalResetPasswordEmpresa.addEventListener('click', event => {
-
-            if (event.target === modalResetPasswordEmpresa) {
-                window.cerrarModalResetPasswordEmpresa();
-            }
-
-        });
-
-    }
-
-    document.addEventListener('keydown', event => {
-
-        if (event.key === 'Escape' && empresaResetPasswordUsuarioId > 0) {
-            window.cerrarModalResetPasswordEmpresa();
+        if (event.key === 'Escape' && comercializadoraEliminarId > 0) {
+            window.cerrarModalEliminarComercializadora();
         }
 
     });

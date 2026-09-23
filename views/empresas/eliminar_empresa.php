@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -208,7 +209,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                 [null, null],
                 ['Estado', $empresa['estado']],
                 ...($empresa['estado'] === 'Inactivo'
-                    ? [['Motivo', $empresa['motivo_inactivo'] ?: '-']]
+                    ? [['Motivo', etiquetaMotivoInactivo($empresa['motivo_inactivo'])]]
                     : []),
             ],
         ],
@@ -394,7 +395,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                             <div class="usuario-detalle-item empresa-motivo-item">
                                 <span>Motivo</span>
-                                <strong><?= htmlspecialchars($empresa['motivo_inactivo'] ?: '-') ?></strong>
+                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo'])) ?></strong>
                             </div>
 
                         <?php endif; ?>

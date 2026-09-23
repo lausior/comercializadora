@@ -433,12 +433,49 @@ if ($empresaYRolFijos) {
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo (opcional)
+                            Motivo
                         </label>
 
-                        <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>"
-                            placeholder="Explica por qué el usuario se marca como inactivo"><?= valorFormulario($datosPrevios, 'motivo_inactivo') ?></textarea>
+                        <?php $motivoPrevio = valorFormulario($datosPrevios, 'motivo_inactivo'); ?>
+
+                        <select id="motivo_inactivo" name="motivo_inactivo"
+                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
+
+                            <option value="">Selecciona un motivo</option>
+
+                            <?php if ($motivoPrevio === 'impago' || $motivoPrevio === 'fin_contrato'): ?>
+
+                                <option value="impago" <?= $motivoPrevio === 'impago' ? 'selected' : '' ?>>
+                                    Impago
+                                </option>
+
+                                <option value="fin_contrato" <?= $motivoPrevio === 'fin_contrato' ? 'selected' : '' ?>>
+                                    Fin de contrato
+                                </option>
+
+                            <?php else: ?>
+
+                                <option value="vacaciones" <?= $motivoPrevio === 'vacaciones' ? 'selected' : '' ?>>
+                                    Vacaciones
+                                </option>
+
+                                <option value="baja_laboral" <?= $motivoPrevio === 'baja_laboral' ? 'selected' : '' ?>>
+                                    Baja laboral
+                                </option>
+
+                                <option value="baja_empresa" <?= $motivoPrevio === 'baja_empresa' ? 'selected' : '' ?>>
+                                    Baja en la empresa
+                                </option>
+
+                            <?php endif; ?>
+
+                        </select>
+
+                        <!-- Este es el estado inicial al cargar la página (o
+                             tras volver de un error, ver $motivoPrevio arriba);
+                             si se cambia el Rol a mano (solo SRG puede, ver
+                             más abajo), actualizarOpcionesMotivoSegunRol()
+                             en usuarios.js reconstruye estas opciones. -->
 
                         <span class="field-error" id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
 

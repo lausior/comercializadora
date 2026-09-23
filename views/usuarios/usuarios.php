@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/filtro_multiselect.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -28,6 +29,7 @@ $stmtUsuarios = $pdo->query("
         u.creado_por,
         e.nombre AS empresa,
         e.codigo_empresa,
+        e.estado AS empresa_estado,
         r.nombre AS rol
     FROM usuarios u
 
@@ -685,7 +687,7 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                         data-rol="<?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?>"
                                         data-empresa="<?= htmlspecialchars($usuario['empresa'], ENT_QUOTES, 'UTF-8') ?>"
                                         data-estado="<?= htmlspecialchars($usuario['estado'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-motivo="<?= htmlspecialchars($usuario['motivo_inactivo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-motivo="<?= htmlspecialchars(etiquetaMotivoInactivo($usuario['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?>"
                                         data-password-estado="<?= htmlspecialchars($estadoPasswordUsuario, ENT_QUOTES, 'UTF-8') ?>"
                                     >
 
@@ -776,7 +778,19 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-key"></i>
                                                 </button>
 
-                                                <?php if ($usuario['estado'] === 'Activo'): ?>
+                                                <?php if ($usuario['rol'] === ROL_USUARIO && $usuario['empresa_estado'] === 'Inactivo'): ?>
+
+                                                    <!-- Su empresa está inactiva: no se puede
+                                                         activar/desactivar a este usuario suelto,
+                                                         primero hay que reactivar la empresa (ver
+                                                         empresas.php). -->
+
+                                                    <span class="table-action-button icon-action-button estado-toggle <?= $usuario['estado'] === 'Activo' ? 'activo' : 'inactivo' ?> disabled"
+                                                        title="Empresa bloqueada">
+                                                        <i class="bi <?= $usuario['estado'] === 'Activo' ? 'bi-unlock-fill' : 'bi-lock-fill' ?>"></i>
+                                                    </span>
+
+                                                <?php elseif ($usuario['estado'] === 'Activo'): ?>
 
                                                     <!-- Desactivar pide motivo, así que abre un
                                                          modal en vez de ir directo (igual que al
@@ -787,7 +801,8 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                                         title="Activo — clic para desactivar"
                                                         onclick="event.stopPropagation(); window.abrirModalDesactivarUsuario(
         <?= (int) $usuario['id'] ?>,
-        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>'
+        '<?= htmlspecialchars($nombreCompleto, ENT_QUOTES, 'UTF-8') ?>',
+        '<?= htmlspecialchars($usuario['rol'], ENT_QUOTES, 'UTF-8') ?>'
     )">
                                                         <i class="bi bi-unlock-fill"></i>
                                                     </button>
@@ -1030,11 +1045,12 @@ $estadosFiltro = ['Activo', 'Inactivo'];
             <div class="form-group">
 
                 <label for="motivoDesactivarUsuario">
-                    Motivo (opcional)
+                    Motivo
                 </label>
 
-                <textarea id="motivoDesactivarUsuario" name="motivo" rows="3"
-                    placeholder="Explica por qué el usuario pasa a inactivo"></textarea>
+                <select id="motivoDesactivarUsuario" name="motivo" required>
+                    <option value="">Selecciona un motivo</option>
+                </select>
 
                 <span class="field-error" id="error-motivoDesactivarUsuario"></span>
 

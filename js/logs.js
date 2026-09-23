@@ -1,305 +1,284 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const table = document.querySelector('.logs-table');
+    /* =========================================================
+       01. ELEMENTOS DEL DOM (LISTADO)
+    ========================================================= */
 
-    if (!table) {
-        return;
-    }
+    const tbody = document.querySelector('.logs-table tbody');
+    const tabla = document.querySelector('.logs-table');
 
-    const tbody = table.querySelector('tbody');
-    let rows = Array.from(tbody.querySelectorAll('tr'));
-
-    const mostrando = document.querySelector('.logs-footer > span');
-
-    const botonesPaginacion = document.querySelectorAll(
-        '.logs-footer .pagination-button'
-    );
+    const contador = document.getElementById('logsContador');
+    const mostrando = document.getElementById('logsMostrando');
 
     const selectorPorPagina = document.getElementById('logsPorPagina');
 
-    let logsPorPagina = 5;
+    // Los filtros por columna de escritorio y los del panel
+    // móvil usan la misma clase y el mismo data-column, así
+    // que un único selector los recoge a todos: solo el que
+    // esté visible en cada momento tendrá valor.
+    const filtros = document.querySelectorAll('.column-filter');
+
+    const botonesOrden = document.querySelectorAll('.logs-table .sort-button');
+
+    const botonesPaginacion = document.querySelectorAll('.logs-footer .pagination-button');
+
+    if (!tbody || !tabla) {
+        return;
+    }
+
+
+    /* =========================================================
+       02. CONFIGURACIÓN
+    ========================================================= */
+
+    let filas = Array.from(tbody.querySelectorAll('tr'));
+
+    let LOGS_POR_PAGINA = 5;
 
     let paginaActual = 1;
 
-    let filasFiltradasActuales = [];
+    let LOGS_TOTALES = filas.length;
 
-    const filtroTipo = document.getElementById('tipo');
-    const filtroUsuario = document.getElementById('usuario');
-    const filtroFecha = document.getElementById('fecha');
-    const filtroEvento = document.getElementById('evento');
-    const filtroDescripcion = document.getElementById('descripcion');
-    const filtroIp = document.getElementById('ip');
 
-    const botonFiltrar = document.querySelector('.logs-filters .logs-btn.primary');
+    /* =========================================================
+       03. ORDEN ORIGINAL
+    ========================================================= */
 
-    const btnExportarPDF = document.getElementById('btnExportarPDF');
+    filas.forEach((fila, index) => {
+        fila.dataset.originalOrder = index;
+    });
 
-    const btnActualizarLogs = document.getElementById('btnActualizarLogs');
 
-    const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
+    /* =========================================================
+       04. NORMALIZAR TEXTO
+    ========================================================= */
 
-    const filtrosColumna = table.querySelectorAll('.column-filter');
+    function normalizar(texto) {
 
-    const modalDetalle = document.getElementById('modalDetalleLog');
-    const detalleAvatar = document.getElementById('detalleLogAvatar');
-    const detalleEvento = document.getElementById('detalleLogEvento');
-    const detalleFecha = document.getElementById('detalleLogFecha');
-    const detalleTipo = document.getElementById('detalleLogTipo');
-    const detalleUsuario = document.getElementById('detalleLogUsuario');
-    const detalleDescripcion = document.getElementById('detalleLogDescripcion');
-    const detalleIp = document.getElementById('detalleLogIp');
+        return String(texto)
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .trim();
 
-    const sortButtons = table.querySelectorAll('.sort-button');
+    }
 
-    if (btnActualizarLogs) {
 
-        btnActualizarLogs.addEventListener('click', () => {
+    /* =========================================================
+       05. OBTENER TEXTO DE UNA CELDA
+       =========================================================
+       La columna 0 (Usuario) es la única siempre visible: su
+       celda es la tarjeta avatar+usuario+evento, así que el
+       "texto" a filtrar/ordenar se saca del <strong> (el
+       usuario), no de la celda entera.
+    ========================================================= */
 
-            btnActualizarLogs.disabled = true;
-            btnActualizarLogs.textContent = '🔄 Actualizando...';
+    function obtenerTextoCelda(fila, columna) {
 
-            window.location.reload();
+        const celdas = fila.querySelectorAll('td');
+
+        if (!celdas[columna]) {
+            return '';
+        }
+
+        if (columna === 0) {
+
+            const nombre = celdas[0].querySelector('strong');
+            return normalizar(nombre ? nombre.textContent : celdas[0].textContent);
+
+        }
+
+        return normalizar(celdas[columna].textContent);
+
+    }
+
+
+    /* =========================================================
+       05B. VALOR "LIMPIO" DE UNA COLUMNA PARA LOS FILTROS
+       DESPLEGABLES
+       =========================================================
+       Usamos los data-* de la fila (ya traen el valor limpio
+       de cada campo) en vez del texto de la celda, para que
+       las opciones marcadas en el desplegable coincidan de
+       forma exacta.
+    ========================================================= */
+
+    const CAMPO_POR_COLUMNA = {
+        0: 'usuario',
+        1: 'tipo',
+        2: 'evento',
+        3: 'descripcion',
+        4: 'fechaFiltro',
+        5: 'ip'
+    };
+
+    function obtenerValorFiltroFila(fila, columna) {
+
+        // La columna 4 (Fecha) se filtra por día completo
+        // ("dd/mm/aaaa"), no por la fecha+hora que se muestra
+        // en la celda; ver data-fecha-filtro más abajo.
+        if (columna === 4) {
+            return normalizar(fila.dataset.fechaFiltro || '');
+        }
+
+        const campo = CAMPO_POR_COLUMNA[columna];
+
+        if (campo && fila.dataset[campo] !== undefined) {
+            return normalizar(fila.dataset[campo]);
+        }
+
+        return obtenerTextoCelda(fila, columna);
+
+    }
+
+
+    /* =========================================================
+       06. FILTRADO
+    ========================================================= */
+
+    function obtenerFilasFiltradas() {
+
+        return filas.filter(fila => {
+
+            let coincide = true;
+
+            filtros.forEach(filtro => {
+
+                const columna = Number(filtro.dataset.column);
+
+                const seleccionados = window.obtenerSeleccionMultiFiltro(filtro)
+                    .map(normalizar);
+
+                if (seleccionados.length === 0) {
+                    return;
+                }
+
+                const valorFila = obtenerValorFiltroFila(fila, columna);
+
+                if (!seleccionados.includes(valorFila)) {
+                    coincide = false;
+                }
+
+            });
+
+            return coincide;
 
         });
 
     }
 
-    /*
-    ========================================
-    FILTRADO
-    ========================================
-    */
 
-    function aplicarFiltros() {
+    /* =========================================================
+       07. TOTAL DE PÁGINAS
+    ========================================================= */
 
-        // Tipo y Usuario admiten marcar varias opciones a la
-        // vez (ver js/multi-select-filter.js); si no hay
-        // ninguna marcada, el filtro no se aplica.
-        const tiposSeleccionados = filtroTipo
-            ? window.obtenerSeleccionMultiFiltro(filtroTipo).map(v => v.toLowerCase().trim())
-            : [];
+    function obtenerTotalPaginas(filasFiltradas) {
 
-        const usuariosSeleccionados = filtroUsuario
-            ? window.obtenerSeleccionMultiFiltro(filtroUsuario).map(v => v.toLowerCase().trim())
-            : [];
+        if (filasFiltradas.length === 0) {
+            return 1;
+        }
 
-        // Fecha, Evento, Descripción e IP también admiten
-        // marcar varias opciones a la vez (ver
-        // js/multi-select-filter.js); si no hay ninguna
-        // marcada, el filtro no se aplica.
-        const fechasSeleccionadas = filtroFecha
-            ? window.obtenerSeleccionMultiFiltro(filtroFecha)
-            : [];
+        if (LOGS_POR_PAGINA === Infinity) {
+            return 1;
+        }
 
-        const eventosSeleccionados = filtroEvento
-            ? window.obtenerSeleccionMultiFiltro(filtroEvento).map(v => v.toLowerCase().trim())
-            : [];
+        return Math.ceil(filasFiltradas.length / LOGS_POR_PAGINA);
 
-        const descripcionesSeleccionadas = filtroDescripcion
-            ? window.obtenerSeleccionMultiFiltro(filtroDescripcion).map(v => v.toLowerCase().trim())
-            : [];
-
-        const ipsSeleccionadas = filtroIp
-            ? window.obtenerSeleccionMultiFiltro(filtroIp).map(v => v.toLowerCase().trim())
-            : [];
-
-        filasFiltradasActuales = rows.filter(row => {
-
-            const celdas = row.querySelectorAll('td');
-
-            if (celdas.length < 6) {
-            return false;
-            }
-
-            const tipo = celdas[1]
-                .textContent
-                .toLowerCase()
-                .trim();
-
-            const usuario = celdas[2]
-                .textContent
-                .toLowerCase()
-                .trim();
-
-            const fechaHora = celdas[0]
-                .textContent
-                .trim();
-
-            const evento = celdas[3]
-                .textContent
-                .toLowerCase()
-                .trim();
-
-            const descripcion = celdas[4]
-                .textContent
-                .toLowerCase()
-                .trim();
-
-            const ip = celdas[5]
-                .textContent
-                .toLowerCase()
-                .trim();
-
-            /*
-            Convertimos:
-            03/09/2026 10:42:15
-            en:
-            2026-09-03
-            */
-
-            let fechaFila = '';
-
-            const coincidencia = fechaHora.match(
-                /^(\d{2})\/(\d{2})\/(\d{4})/
-            );
-
-            if (coincidencia) {
-
-                const dia = coincidencia[1];
-                const mes = coincidencia[2];
-                const anio = coincidencia[3];
-
-                fechaFila = `${anio}-${mes}-${dia}`;
-            }
+    }
 
 
-            const coincideTipo =
-                tiposSeleccionados.length === 0 ||
-                tiposSeleccionados.includes(tipo);
+    /* =========================================================
+       08. MOSTRAR PÁGINA
+    ========================================================= */
 
+    function mostrarPagina() {
 
-            const coincideUsuario =
-                usuariosSeleccionados.length === 0 ||
-                usuariosSeleccionados.includes(usuario);
+        const filasFiltradas = obtenerFilasFiltradas();
+        const totalPaginas = obtenerTotalPaginas(filasFiltradas);
 
+        if (paginaActual > totalPaginas) {
+            paginaActual = totalPaginas;
+        }
 
-            // Las fechas marcadas llegan como "dd/mm/aaaa" (igual
-            // que se muestran en la tabla); las convertimos al
-            // mismo formato "aaaa-mm-dd" que fechaFila para
-            // poder compararlas.
-            const coincideFecha =
-                fechasSeleccionadas.length === 0 ||
-                fechasSeleccionadas.some(fechaSeleccionada => {
+        if (paginaActual < 1) {
+            paginaActual = 1;
+        }
 
-                    const partes = fechaSeleccionada.match(
-                        /^(\d{2})\/(\d{2})\/(\d{4})$/
-                    );
-
-                    if (!partes) {
-                        return false;
-                    }
-
-                    return fechaFila === `${partes[3]}-${partes[2]}-${partes[1]}`;
-
-                });
-
-            const coincideEvento =
-                eventosSeleccionados.length === 0 ||
-                eventosSeleccionados.includes(evento);
-
-            const coincideDescripcion =
-                descripcionesSeleccionadas.length === 0 ||
-                descripcionesSeleccionadas.includes(descripcion);
-
-            const coincideIp =
-                ipsSeleccionadas.length === 0 ||
-                ipsSeleccionadas.includes(ip);
-
-
-            return (
-                coincideTipo &&
-                coincideUsuario &&
-                coincideFecha &&
-                coincideEvento &&
-                coincideDescripcion &&
-                coincideIp
-            );
-
+        filas.forEach(fila => {
+            fila.style.display = 'none';
         });
 
-        const totalPaginas = Math.max(
-            1,
-            logsPorPagina === Infinity
-                ? 1
-                : Math.ceil(
-                    filasFiltradasActuales.length /
-                    logsPorPagina
-                )
-        );
-
-        paginaActual = Math.min(
-            paginaActual,
-            totalPaginas
-        );
-
-        const inicio = logsPorPagina === Infinity
+        const inicio = LOGS_POR_PAGINA === Infinity
             ? 0
-            : (paginaActual - 1) * logsPorPagina;
+            : (paginaActual - 1) * LOGS_POR_PAGINA;
 
-        const filasPagina = filasFiltradasActuales.slice(
-            inicio,
-            logsPorPagina === Infinity
-                ? filasFiltradasActuales.length
-                : inicio + logsPorPagina
-        );
+        const fin = LOGS_POR_PAGINA === Infinity
+            ? filasFiltradas.length
+            : inicio + LOGS_POR_PAGINA;
 
-        rows.forEach(row => {
-            row.style.display = filasPagina.includes(row)
-                ? ''
-                : 'none';
+        const filasPagina = filasFiltradas.slice(inicio, fin);
+
+        filasPagina.forEach(fila => {
+            fila.style.display = '';
         });
 
-        actualizarContador(
-            filasFiltradasActuales.length,
-            inicio,
-            filasPagina.length
-        );
-
+        actualizarContadores(filasFiltradas);
         actualizarPaginacion(totalPaginas);
 
-
     }
 
 
-    /*
-    ========================================
-    CONTADOR
-    ========================================
-    */
+    /* =========================================================
+       09. CONTADORES
+    ========================================================= */
 
-    function actualizarContador(cantidad, inicio, cantidadPagina) {
+    function actualizarContadores(filasFiltradas) {
 
-        if (!mostrando) {
-            return;
+        const cantidadFiltrada = filasFiltradas.length;
+
+        if (contador) {
+
+            contador.textContent = cantidadFiltrada === 1
+                ? '1 registro encontrado'
+                : `${cantidadFiltrada} registros encontrados`;
+
         }
 
-        if (cantidad === 0) {
-            mostrando.textContent = 'Mostrando 0 de 0 registros';
-            return;
+        if (mostrando) {
+
+            if (cantidadFiltrada === 0) {
+
+                mostrando.textContent = `Mostrando 0 de ${LOGS_TOTALES} registros`;
+
+                return;
+
+            }
+
+            if (LOGS_POR_PAGINA === Infinity) {
+
+                mostrando.textContent = `Mostrando ${cantidadFiltrada} de ${cantidadFiltrada} registros`;
+
+                return;
+
+            }
+
+            const inicio = (paginaActual - 1) * LOGS_POR_PAGINA + 1;
+
+            const fin = Math.min(
+                inicio + LOGS_POR_PAGINA - 1,
+                cantidadFiltrada
+            );
+
+            mostrando.textContent = `Mostrando ${inicio}-${fin} de ${cantidadFiltrada} registros`;
+
         }
 
-        mostrando.textContent =
-            `Mostrando ${inicio + 1}-${inicio + cantidadPagina} de ${cantidad} registros`;
-
     }
 
 
-    if (selectorPorPagina) {
-
-        selectorPorPagina.addEventListener('change', () => {
-
-            logsPorPagina = selectorPorPagina.value === 'all'
-                ? Infinity
-                : Number(selectorPorPagina.value);
-
-            paginaActual = 1;
-
-            aplicarFiltros();
-
-        });
-
-    }
-
+    /* =========================================================
+       10. PAGINACIÓN
+    ========================================================= */
 
     function actualizarPaginacion(totalPaginas) {
 
@@ -308,107 +287,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const accion = boton.dataset.page;
 
             if (accion === 'prev') {
-                boton.disabled = paginaActual <= 1;
-                boton.classList.toggle(
-                    'disabled',
-                    paginaActual <= 1
-                );
+
+                const deshabilitado = paginaActual <= 1;
+
+                boton.disabled = deshabilitado;
+                boton.classList.toggle('disabled', deshabilitado);
+
                 return;
+
             }
 
             if (accion === 'next') {
-                boton.disabled = paginaActual >= totalPaginas;
-                boton.classList.toggle(
-                    'disabled',
-                    paginaActual >= totalPaginas
-                );
+
+                const deshabilitado = paginaActual >= totalPaginas;
+
+                boton.disabled = deshabilitado;
+                boton.classList.toggle('disabled', deshabilitado);
+
                 return;
+
             }
 
             const numeroPagina = Number(accion);
 
             if (!Number.isNaN(numeroPagina)) {
-                boton.style.display = numeroPagina > totalPaginas
-                    || logsPorPagina === Infinity
+
+                boton.style.display =
+                    (LOGS_POR_PAGINA === Infinity || numeroPagina > totalPaginas)
                         ? 'none'
                         : 'inline-flex';
 
-                boton.classList.toggle(
-                    'active',
-                    numeroPagina === paginaActual
-                );
+                boton.classList.toggle('active', numeroPagina === paginaActual);
+
             }
 
         });
 
     }
-
-
-    /*
-    ========================================
-    BOTÓN FILTRAR
-    ========================================
-    */
-
-    if (botonFiltrar) {
-
-        botonFiltrar.addEventListener('click', (event) => {
-
-            event.preventDefault();
-
-            paginaActual = 1;
-
-            aplicarFiltros();
-
-        });
-
-    }
-
-
-    /*
-    ========================================
-    FILTRADO AUTOMÁTICO
-    ========================================
-    */
-
-    if (filtroTipo) {
-
-        filtroTipo.addEventListener('change', () => {
-            paginaActual = 1;
-            aplicarFiltros();
-        });
-
-    }
-
-
-    if (filtroUsuario) {
-
-        filtroUsuario.addEventListener('change', () => {
-            paginaActual = 1;
-            aplicarFiltros();
-        });
-
-    }
-
-
-    [
-        filtroFecha,
-        filtroEvento,
-        filtroDescripcion,
-        filtroIp
-    ].forEach(filtro => {
-
-        if (!filtro) {
-            return;
-        }
-
-        filtro.addEventListener('change', () => {
-            paginaActual = 1;
-            aplicarFiltros();
-        });
-
-    });
-
 
     botonesPaginacion.forEach(boton => {
 
@@ -416,256 +331,223 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const accion = boton.dataset.page;
 
-            if (accion === 'prev' && paginaActual > 1) {
-                paginaActual--;
+            if (accion === 'prev') {
+
+                if (paginaActual > 1) {
+                    paginaActual--;
+                    mostrarPagina();
+                }
+
+                return;
+
             }
 
             if (accion === 'next') {
-                const totalPaginas = Math.max(
-                    1,
-                    Math.ceil(
-                        filasFiltradasActuales.length /
-                        logsPorPagina
-                    )
-                );
+
+                const filasFiltradas = obtenerFilasFiltradas();
+                const totalPaginas = obtenerTotalPaginas(filasFiltradas);
 
                 if (paginaActual < totalPaginas) {
                     paginaActual++;
+                    mostrarPagina();
                 }
+
+                return;
+
             }
 
             const numeroPagina = Number(accion);
 
             if (!Number.isNaN(numeroPagina)) {
                 paginaActual = numeroPagina;
+                mostrarPagina();
             }
-
-            aplicarFiltros();
 
         });
 
     });
 
 
-    /*
-    ========================================
-    ORDENACIÓN
-    ========================================
-    */
+    /* =========================================================
+       11. FILTROS
+    ========================================================= */
 
-    sortButtons.forEach((button, index) => {
+    filtros.forEach(filtro => {
 
-        button.dataset.order = 'none';
+        filtro.addEventListener('input', () => {
+            paginaActual = 1;
+            mostrarPagina();
+        });
+
+        filtro.addEventListener('change', () => {
+            paginaActual = 1;
+            mostrarPagina();
+        });
+
+    });
 
 
-        button.addEventListener('click', () => {
+    /* =========================================================
+       12. LIMPIAR FILTROS
+       Hay dos botones "Limpiar filtros" (el de la tabla de
+       escritorio y el del panel móvil); los dos vacían el
+       mismo conjunto de inputs, escritorio y móvil incluidos.
+    ========================================================= */
 
-            let orden;
+    document.querySelectorAll('#btnLimpiarFiltros, #btnLimpiarFiltrosMovil').forEach(btn => {
 
-            if (button.dataset.order === 'none' ||
-                button.dataset.order === 'desc') {
+        btn.addEventListener('click', () => {
 
-                orden = 'asc';
+            filtros.forEach(filtro => {
+                window.limpiarMultiFiltro(filtro);
+            });
 
+            paginaActual = 1;
+            mostrarPagina();
+
+        });
+
+    });
+
+
+    /* =========================================================
+       13. REGISTROS POR PÁGINA
+    ========================================================= */
+
+    if (selectorPorPagina) {
+
+        selectorPorPagina.addEventListener('change', () => {
+
+            const valor = selectorPorPagina.value;
+
+            LOGS_POR_PAGINA = valor === 'all'
+                ? Infinity
+                : Number(valor);
+
+            paginaActual = 1;
+            mostrarPagina();
+
+        });
+
+    }
+
+
+    /* =========================================================
+       14. ORDENACIÓN
+       =========================================================
+       La columna 4 (Fecha y hora) se ordena por instante real
+       (data-fecha-orden, "aaaa-mm-dd HH:ii:ss"), no como texto:
+       "31/01/2026" ordenado como texto quedaría antes que
+       "05/02/2026" porque "3" < "5", aunque sea posterior.
+    ========================================================= */
+
+    botonesOrden.forEach(boton => {
+
+        boton.addEventListener('click', () => {
+
+            const columna = Number(boton.dataset.column);
+
+            let direccion = boton.dataset.direction || 'none';
+
+            if (direccion === 'none') {
+                direccion = 'asc';
+            } else if (direccion === 'asc') {
+                direccion = 'desc';
             } else {
-
-                orden = 'desc';
-
+                direccion = 'none';
             }
 
+            botonesOrden.forEach(otro => {
 
-            sortButtons.forEach(otherButton => {
-
-                if (otherButton !== button) {
-
-                    otherButton.dataset.order = 'none';
-                    otherButton.textContent = '↕';
-
+                if (otro !== boton) {
+                    otro.dataset.direction = 'none';
+                    otro.textContent = '↕';
                 }
 
             });
 
+            if (direccion === 'none') {
 
-            button.dataset.order = orden;
+                boton.dataset.direction = 'none';
+                boton.textContent = '↕';
 
-
-            if (orden === 'asc') {
-
-                button.textContent = '↑';
+                filas.sort((a, b) =>
+                    Number(a.dataset.originalOrder) -
+                    Number(b.dataset.originalOrder)
+                );
 
             } else {
 
-                button.textContent = '↓';
+                boton.dataset.direction = direccion;
+                boton.textContent = direccion === 'asc' ? '↑' : '↓';
+
+                filas.sort((a, b) => {
+
+                    const valorA = columna === 4
+                        ? (a.dataset.fechaOrden || '')
+                        : obtenerTextoCelda(a, columna);
+
+                    const valorB = columna === 4
+                        ? (b.dataset.fechaOrden || '')
+                        : obtenerTextoCelda(b, columna);
+
+                    if (valorA < valorB) {
+                        return direccion === 'asc' ? -1 : 1;
+                    }
+
+                    if (valorA > valorB) {
+                        return direccion === 'asc' ? 1 : -1;
+                    }
+
+                    return 0;
+
+                });
 
             }
 
+            filas.forEach(fila => {
+                tbody.appendChild(fila);
+            });
 
-            ordenarTabla(index, orden);
+            paginaActual = 1;
+            mostrarPagina();
 
         });
 
     });
 
 
-    /*
-    ========================================
-    ORDENAR TABLA
-    ========================================
-    */
+    /* =========================================================
+       15. PANEL DE FILTROS DESPLEGABLE (SOLO MÓVIL)
+    ========================================================= */
 
-    function ordenarTabla(columna, orden) {
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    const panelFiltros = document.getElementById('panelFiltrosLogs');
 
-        const filas = Array.from(
-            tbody.querySelectorAll('tr')
-        );
+    if (btnToggleFiltros && panelFiltros) {
 
+        btnToggleFiltros.addEventListener('click', () => {
 
-        filas.sort((filaA, filaB) => {
+            const abierto = panelFiltros.style.display !== 'none';
 
-            const valorA = obtenerValor(
-                filaA,
-                columna
+            panelFiltros.style.display = abierto ? 'none' : 'block';
+
+            btnToggleFiltros.setAttribute(
+                'aria-expanded',
+                abierto ? 'false' : 'true'
             );
-
-            const valorB = obtenerValor(
-                filaB,
-                columna
-            );
-
-
-            let comparacion = 0;
-
-
-            /*
-            FECHA
-            */
-
-            if (columna === 0) {
-
-                const fechaA = convertirFecha(valorA);
-                const fechaB = convertirFecha(valorB);
-
-                comparacion = fechaA - fechaB;
-
-            }
-
-
-            /*
-            TEXTO
-            */
-
-            else {
-
-                comparacion = valorA.localeCompare(
-                    valorB,
-                    'es',
-                    {
-                        sensitivity: 'base'
-                    }
-                );
-
-            }
-
-
-            return orden === 'asc'
-                ? comparacion
-                : -comparacion;
 
         });
 
-
-        filas.forEach(fila => {
-            tbody.appendChild(fila);
-        });
-
-        rows = filas;
-        paginaActual = 1;
-
-        aplicarFiltros();
-
     }
 
 
-    /*
-    ========================================
-    OBTENER VALOR DE COLUMNA
-    ========================================
-    */
-
-    function obtenerValor(fila, columna) {
-
-        const celda = fila.querySelectorAll('td')[columna];
-
-        if (!celda) {
-            return '';
-        }
-
-        return celda.textContent
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toLowerCase();
-
-    }
-
-
-    /*
-    ========================================
-    CONVERTIR FECHA
-    ========================================
-    */
-
-    function convertirFecha(fechaTexto) {
-
-        const coincidencia = fechaTexto.match(
-            /^(\d{2})\/(\d{2})\/(\d{4})\s*(\d{2})?:?(\d{2})?:?(\d{2})?/
-        );
-
-
-        if (!coincidencia) {
-            return 0;
-        }
-
-
-        const dia = parseInt(coincidencia[1], 10);
-        const mes = parseInt(coincidencia[2], 10) - 1;
-        const anio = parseInt(coincidencia[3], 10);
-
-        const horas = parseInt(
-            coincidencia[4] || '0',
-            10
-        );
-
-        const minutos = parseInt(
-            coincidencia[5] || '0',
-            10
-        );
-
-        const segundos = parseInt(
-            coincidencia[6] || '0',
-            10
-        );
-
-
-        return new Date(
-            anio,
-            mes,
-            dia,
-            horas,
-            minutos,
-            segundos
-        ).getTime();
-
-    }
-
-
-    /*
-    ========================================
-    VENTANA DE DETALLE
-    Al pulsar una fila se abre una ventana con toda la
-    información del log, con el mismo estilo que las de
-    Clientes/Usuarios/Empresas.
-    ========================================
-    */
+    /* =========================================================
+       16. VENTANA DE DETALLE
+       Al pulsar una fila (escritorio o móvil) se abre la
+       ventana con toda la información del log, con el mismo
+       estilo que las de Clientes/Usuarios/Empresas.
+    ========================================================= */
 
     function claseBadgeLog(tipo) {
 
@@ -684,6 +566,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+    const modalDetalle = document.getElementById('modalDetalleLog');
+    const detalleAvatar = document.getElementById('detalleLogAvatar');
+    const detalleEvento = document.getElementById('detalleLogEvento');
+    const detalleFecha = document.getElementById('detalleLogFecha');
+    const detalleEventoGrid = document.getElementById('detalleLogEventoGrid');
+    const detalleFechaGrid = document.getElementById('detalleLogFechaGrid');
+    const detalleTipo = document.getElementById('detalleLogTipo');
+    const detalleUsuario = document.getElementById('detalleLogUsuario');
+    const detalleDescripcion = document.getElementById('detalleLogDescripcion');
+    const detalleIp = document.getElementById('detalleLogIp');
+
     function abrirModalDetalleLog(fila) {
 
         const datos = fila.dataset;
@@ -696,8 +589,16 @@ document.addEventListener('DOMContentLoaded', () => {
             detalleFecha.textContent = datos.fecha || '';
         }
 
+        if (detalleEventoGrid) {
+            detalleEventoGrid.textContent = datos.evento || '';
+        }
+
+        if (detalleFechaGrid) {
+            detalleFechaGrid.textContent = datos.fecha || '';
+        }
+
         if (detalleAvatar) {
-            detalleAvatar.className = 'modal-detalle-avatar ' + claseBadgeLog(datos.tipo);
+            detalleAvatar.className = 'modal-detalle-avatar log-avatar ' + claseBadgeLog(datos.tipo);
             detalleAvatar.textContent = (datos.tipo || '').charAt(0);
         }
 
@@ -720,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (modalDetalle) {
             modalDetalle.style.display = 'flex';
+            document.body.classList.add('modal-abierto');
         }
 
     }
@@ -728,11 +630,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (modalDetalle) {
             modalDetalle.style.display = 'none';
+            document.body.classList.remove('modal-abierto');
         }
 
     };
 
-    rows.forEach(fila => {
+    filas.forEach(fila => {
 
         fila.addEventListener('click', () => {
             abrirModalDetalleLog(fila);
@@ -765,58 +668,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    /*
-    ========================================
-    LIMPIAR FILTROS
-    ========================================
-    */
+    /* =========================================================
+       17. EXPORTAR PDF
+       Exporta los logs que cumplen los filtros activos
+       (ver js/exportar-pdf.js).
+    ========================================================= */
 
-    if (btnLimpiarFiltros) {
-
-        btnLimpiarFiltros.addEventListener('click', () => {
-
-            filtrosColumna.forEach(filtro => {
-
-                if (filtro.classList.contains('multi-select-filter')) {
-                    window.limpiarMultiFiltro(filtro);
-                } else {
-                    filtro.value = '';
-                }
-
-            });
-
-            paginaActual = 1;
-
-            aplicarFiltros();
-
-        });
-
-    }
-
-
-    /*
-    ========================================
-    EXPORTAR PDF
-    Exporta los logs que cumplen los filtros activos
-    (ver js/exportar-pdf.js).
-    ========================================
-    */
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
 
     if (btnExportarPDF) {
 
         btnExportarPDF.addEventListener('click', () => {
-            exportarListadoPDF('exportar_pdf.php', () => filasFiltradasActuales);
+            exportarListadoPDF('exportar_pdf.php', obtenerFilasFiltradas);
         });
 
     }
 
 
-    /*
-    ========================================
-    INICIALIZAR
-    ========================================
-    */
+    /* =========================================================
+       18. PAGINACIÓN INICIAL
+    ========================================================= */
 
-    aplicarFiltros();
+    mostrarPagina();
 
 });

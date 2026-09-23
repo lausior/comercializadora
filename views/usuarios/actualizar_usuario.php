@@ -8,6 +8,7 @@ requerirPermiso('usuarios');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -159,9 +160,10 @@ if (
 
 }
 
-// El motivo de inactividad es opcional: si no se rellena,
-// simplemente no se guarda (se muestra como "-" allí donde
-// se lista).
+// Si el estado elegido es Inactivo, el motivo es obligatorio
+// (comprobación de valores válidos más abajo, una vez se
+// conoce el rol: las opciones del select dependen de si es
+// USUARIO o EMPRESA).
 
 
 // =====================================================
@@ -277,7 +279,8 @@ if ($idEmpresa > 0) {
     $stmtEmpresa = $pdo->prepare("
         SELECT
             id,
-            nombre
+            nombre,
+            estado
         FROM empresas
         WHERE id = ?
     ");
@@ -379,6 +382,62 @@ if ($rol && $rol['nombre'] === ROL_EMPRESA) {
 
 
 // =====================================================
+// MOTIVO OBLIGATORIO SI PASA A INACTIVO
+// =====================================================
+//
+// Las opciones válidas dependen del rol (mismas listas que en
+// el select de crear_usuario.php/editar_usuario.php): USUARIO
+// usa vacaciones/baja_laboral/baja_empresa, EMPRESA usa
+// impago/fin_contrato. "empresa_inactiva" se admite aparte:
+// nunca aparece en el select (no se elige a mano, ver
+// editar_usuario.php), pero editar_usuario.php lo reenvía en un
+// campo oculto para los usuarios que la cascada de la empresa
+// dejó Inactivos, así que este formulario debe seguir
+// aceptándolo al guardar el resto de sus cambios.
+//
+// =====================================================
+
+if ($estado === 'Inactivo' && $rol) {
+
+    $motivosValidos = $rol['nombre'] === ROL_EMPRESA
+        ? ['impago', 'fin_contrato']
+        : ['vacaciones', 'baja_laboral', 'baja_empresa', 'empresa_inactiva'];
+
+    if (!in_array($motivoInactivo, $motivosValidos, true)) {
+
+        $errores[] = ['mensaje' => 'Debes seleccionar un motivo.', 'campo' => 'motivo_inactivo'];
+
+    }
+
+}
+
+
+// =====================================================
+// NO ACTIVAR USUARIOS SUELTOS DE UNA EMPRESA INACTIVA
+// =====================================================
+//
+// Mismo criterio que cambiar_estado_usuario.php: un usuario
+// normal (rol USUARIO) no puede quedar Activo si su empresa
+// está Inactiva, aunque sea desde este formulario completo en
+// vez del botón rápido del listado. El usuario con rol EMPRESA
+// no entra aquí: activarlo A ÉL es cómo se reactiva la empresa.
+//
+// =====================================================
+
+if (
+    $estado === 'Activo' &&
+    $rol &&
+    $rol['nombre'] === ROL_USUARIO &&
+    $empresa &&
+    $empresa['estado'] === 'Inactivo'
+) {
+
+    $errores[] = ['mensaje' => 'No puedes activar a este usuario: su empresa está inactiva.', 'campo' => 'estado'];
+
+}
+
+
+// =====================================================
 // SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
 // =====================================================
 
@@ -406,6 +465,11 @@ if (!empty($errores)) {
 //
 // =====================================================
 
+// inactivo_por_empresa se pone a 0: este cambio es una acción
+// manual sobre ESTE usuario, así que deja de estar "marcado"
+// por la cascada de la empresa (ver includes/empresas.php); si
+// se le vuelve a inactivar aquí, es por su propio motivo, no
+// porque la empresa se haya inactivado.
 $stmtActualizar = $pdo->prepare("
     UPDATE usuarios
     SET
@@ -417,7 +481,8 @@ $stmtActualizar = $pdo->prepare("
         id_empresa = ?,
         id_rol = ?,
         estado = ?,
-        motivo_inactivo = ?
+        motivo_inactivo = ?,
+        inactivo_por_empresa = 0
     WHERE id = ?
 ");
 
@@ -430,14 +495,17 @@ $stmtActualizar->execute([
     $idEmpresa,
     $idRol,
     $estado,
-    $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+    $estado === 'Inactivo' ? $motivoInactivo : null,
     $id
 ]);
 
 // El usuario con rol EMPRESA representa el acceso de su empresa.
 // Mantener sincronizados tanto el estado como el motivo evita
 // que el listado de empresas conserve datos distintos a los
-// del acceso principal.
+// del acceso principal. Cambiar este usuario equivale a
+// cambiar la empresa, así que también se inactivan/reactivan
+// en cascada sus empleados (rol USUARIO), igual que desde
+// cambiar_estado_empresa.php.
 if ($rol['nombre'] === ROL_EMPRESA) {
 
     $stmtEmpresaEstado = $pdo->prepare("
@@ -448,9 +516,15 @@ if ($rol['nombre'] === ROL_EMPRESA) {
 
     $stmtEmpresaEstado->execute([
         $estado,
-        $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+        $estado === 'Inactivo' ? $motivoInactivo : null,
         $idEmpresa,
     ]);
+
+    if ($estado === 'Inactivo') {
+        inactivarUsuariosPorEmpresa($pdo, $idEmpresa);
+    } else {
+        reactivarUsuariosPorEmpresa($pdo, $idEmpresa);
+    }
 
 }
 
@@ -777,7 +851,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                                     <strong>
                                         <?= htmlspecialchars(
-                                            $usuario['motivo_inactivo'],
+                                            etiquetaMotivoInactivo($usuario['motivo_inactivo']),
                                             ENT_QUOTES,
                                             'UTF-8'
                                         ) ?>
@@ -866,7 +940,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                                     <div class="usuario-detalle-item">
                                         <span>Motivo</span>
-                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <strong><?= htmlspecialchars(etiquetaMotivoInactivo($usuario['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?></strong>
                                     </div>
 
                                 <?php endif; ?>
@@ -1060,7 +1134,7 @@ if ((int) $usuario['cambiar_password'] === 1) {
 
                                     <strong>
                                         <?= htmlspecialchars(
-                                            $usuario['motivo_inactivo'],
+                                            etiquetaMotivoInactivo($usuario['motivo_inactivo']),
                                             ENT_QUOTES,
                                             'UTF-8'
                                         ) ?>

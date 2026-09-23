@@ -28,12 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cerrarSeguridad.addEventListener('click', cerrarModalSeguridad);
 
-        modalSeguridad.addEventListener('click', event => {
-            if (event.target === modalSeguridad) {
-                cerrarModalSeguridad();
-            }
-        });
-
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape' && modalSeguridad.style.display !== 'none') {
                 cerrarModalSeguridad();
@@ -96,7 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
             mayuscula: valor => /[A-Z]/.test(valor),
             minuscula: valor => /[a-z]/.test(valor),
             numero: valor => /[0-9]/.test(valor),
-            especial: valor => /[^A-Za-z0-9]/.test(valor)
+            especial: valor => /[^A-Za-z0-9]/.test(valor),
+            coinciden: valor => valor !== '' && valor === passwordConfirmar.value
         };
 
         const itemsRequisitos = listaRequisitos.querySelectorAll('[data-req]');
@@ -155,7 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ocultarError();
         });
 
-        passwordConfirmar.addEventListener('input', ocultarError);
+        passwordConfirmar.addEventListener('input', () => {
+
+            actualizarRequisitos();
+            ocultarError();
+
+        });
 
         formPassword.addEventListener('submit', event => {
 
@@ -170,18 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
 
                 passwordNueva.focus();
-
-                return;
-
-            }
-
-            if (passwordNueva.value !== passwordConfirmar.value) {
-
-                event.preventDefault();
-
-                mostrarError('Las dos contraseñas nuevas no coinciden.');
-
-                passwordConfirmar.focus();
 
             }
 

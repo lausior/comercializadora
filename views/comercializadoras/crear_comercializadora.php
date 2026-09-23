@@ -3,45 +3,18 @@
 session_start();
 
 require_once '../../config/permisos.php';
-requerirPermiso('empresas');
+requerirPermiso('comercializadoras');
 
 require_once '../../config/database.php';
 require_once '../../includes/form_flash.php';
 
 
 // =====================================================
-// ERROR PENDIENTE (SI VENIMOS DE guardar_empresa.php)
+// ERROR PENDIENTE (SI VENIMOS DE guardar_comercializadora.php)
 // =====================================================
 
 $errorFormulario = obtenerErrorFormulario();
 $datosPrevios = $errorFormulario['datos'] ?? [];
-
-
-// =====================================================
-// GENERAR CÓDIGO DE EMPRESA ALEATORIO
-// =====================================================
-//
-// 6 dígitos, comprobando que no coincida con uno ya
-// existente antes de darlo por válido. Se muestra ya
-// relleno (y no editable) en el formulario; se vuelve a
-// comprobar que sigue libre al guardar (guardar_empresa.php).
-//
-// =====================================================
-
-do {
-
-    $codigoEmpresa = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-    $stmtCodigo = $pdo->prepare("
-        SELECT id
-        FROM empresas
-        WHERE codigo_empresa = ?
-        LIMIT 1
-    ");
-
-    $stmtCodigo->execute([$codigoEmpresa]);
-
-} while ($stmtCodigo->fetch());
 
 ?>
 
@@ -53,7 +26,7 @@ do {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Crear empresa - Comparador Eléctrico</title>
+    <title>Crear comercializadora - Comparador Eléctrico</title>
 
     <link rel="stylesheet" href="../../css/style.css">
 
@@ -94,10 +67,10 @@ do {
 
                 <div>
 
-                    <h1>Empresas</h1>
+                    <h1>Comercializadoras</h1>
 
                     <p>
-                        Crear nueva empresa
+                        Crear nueva comercializadora
                     </p>
 
                 </div>
@@ -105,7 +78,7 @@ do {
 
                 <div class="page-header-actions">
 
-                    <a href="empresas.php" class="config-save-button">
+                    <a href="comercializadoras.php" class="config-save-button">
                         ← Volver
                     </a>
 
@@ -120,9 +93,9 @@ do {
 
             <div class="config-card">
 
-                <h2>Datos de la empresa</h2>
+                <h2>Datos de la comercializadora</h2>
 
-                <form action="guardar_empresa.php" method="POST" novalidate>
+                <form action="guardar_comercializadora.php" method="POST" novalidate>
 
 
                     <!-- =========================
@@ -135,33 +108,7 @@ do {
                     </div>
 
 
-                    <div class="form-info">
-
-                        <p>
-                            El código de empresa se genera automáticamente
-                            y no se puede modificar.
-                        </p>
-
-                    </div>
-
-
                     <div class="form-grid">
-
-
-                        <!-- =========================
-                             CÓDIGO DE EMPRESA
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="codigo_empresa">
-                                Código de empresa
-                            </label>
-
-                            <input type="text" id="codigo_empresa" name="codigo_empresa"
-                                value="<?= htmlspecialchars($codigoEmpresa) ?>" readonly>
-
-                        </div>
 
 
                         <!-- =========================
@@ -246,8 +193,6 @@ do {
 
                         <!-- =========================
                              EMAIL
-                             (obligatorio: se reutiliza como
-                             email del primer usuario)
                         ========================== -->
 
                         <div class="form-group">
@@ -258,7 +203,7 @@ do {
 
                             <input type="email" id="email" name="email"
                                 class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'email') ?>" required>
+                                value="<?= valorFormulario($datosPrevios, 'email') ?>">
 
                             <span class="field-error"
                                 id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
@@ -267,109 +212,33 @@ do {
 
 
                         <!-- =========================
-                             ESTADO
+                             SERVICIOS (LUZ / GAS)
                         ========================== -->
 
                         <div class="form-group">
 
-                            <label for="estado">
-                                Estado
+                            <label>
+                                Servicios que suministra
                             </label>
 
-                            <?php $estadoPrevio = $datosPrevios['estado'] ?? 'Activo'; ?>
+                            <div style="display:flex; gap:20px; align-items:center; flex-wrap: wrap; padding-top: 6px;">
 
-                            <select id="estado" name="estado" class="<?= claseErrorCampo($errorFormulario, 'estado') ?>"
-                                required>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight: normal;">
+                                    <input type="checkbox" id="suministra_luz" name="suministra_luz" value="1"
+                                        <?= valorFormulario($datosPrevios, 'suministra_luz') === '1' ? 'checked' : '' ?>>
+                                    <span>⚡ Luz</span>
+                                </label>
 
-                                <option value="Activo" <?= $estadoPrevio === 'Activo' ? 'selected' : '' ?>>Activo</option>
-                                <option value="Inactivo" <?= $estadoPrevio === 'Inactivo' ? 'selected' : '' ?>>Inactivo
-                                </option>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight: normal;">
+                                    <input type="checkbox" id="suministra_gas" name="suministra_gas" value="1"
+                                        <?= valorFormulario($datosPrevios, 'suministra_gas') === '1' ? 'checked' : '' ?>>
+                                    <span>🔥 Gas</span>
+                                </label>
 
-                            </select>
-
-                            <span class="field-error"
-                                id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <!-- =========================
-                         MOTIVO (SOLO SI INACTIVO)
-                    ========================== -->
-
-                    <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>"
-                        id="grupo_motivo_inactivo">
-
-                        <label for="motivo_inactivo">
-                            Motivo
-                        </label>
-
-                        <select id="motivo_inactivo" name="motivo_inactivo"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
-                            <option value="">Selecciona un motivo</option>
-
-                            <option value="impago" <?= valorFormulario($datosPrevios, 'motivo_inactivo') === 'impago' ? 'selected' : '' ?>>
-                                Impago
-                            </option>
-
-                            <option value="fin_contrato" <?= valorFormulario($datosPrevios, 'motivo_inactivo') === 'fin_contrato' ? 'selected' : '' ?>>
-                                Fin de contrato
-                            </option>
-
-                        </select>
-
-                        <span class="field-error"
-                            id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         ACCESO DE LA EMPRESA
-                         =================================================
-                         No es "un usuario que pertenece a la empresa":
-                         es el acceso de la propia empresa (rol EMPRESA),
-                         para no tener que crear la empresa y su login por
-                         separado en dos formularios. Por eso reutiliza el
-                         nombre, el email y el teléfono ya escritos arriba
-                         como datos de la empresa, y aquí solo hace falta
-                         el username — luego, desde ese acceso, la empresa
-                         podrá dar de alta a su equipo (rol Usuario).
-                    ================================================== -->
-
-                    <h2>Acceso de la empresa</h2>
-
-                    <div class="form-info">
-
-                        <p>
-                            La contraseña inicial se genera automáticamente y
-                            deberá cambiarla en su primer acceso.
-                        </p>
-
-                    </div>
-
-                    <div class="form-grid">
-
-
-                        <!-- =========================
-                             USERNAME
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="usuario_username">
-                                Username
-                            </label>
-
-                            <input type="text" id="usuario_username" name="usuario_username"
-                                class="<?= claseErrorCampo($errorFormulario, 'usuario_username') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'usuario_username') ?>" required>
+                            </div>
 
                             <span class="field-error"
-                                id="error-usuario_username"><?= mensajeErrorCampo($errorFormulario, 'usuario_username') ?></span>
+                                id="error-suministra_luz"><?= mensajeErrorCampo($errorFormulario, 'suministra_luz') ?></span>
 
                         </div>
 
@@ -384,10 +253,10 @@ do {
                     <div class="form-actions">
 
                         <button type="submit" class="config-save-button">
-                            Crear empresa y su acceso
+                            Crear comercializadora
                         </button>
 
-                        <a href="empresas.php" class="config-cancel-button">
+                        <a href="comercializadoras.php" class="config-cancel-button">
                             Cancelar
                         </a>
 
@@ -412,7 +281,7 @@ do {
     <?php include '../../templates/footer.php'; ?>
 
 
-    <script src="../../js/empresas.js"></script>
+    <script src="../../js/comercializadoras.js"></script>
 
 </body>
 

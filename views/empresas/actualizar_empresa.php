@@ -9,6 +9,7 @@ require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -108,9 +109,9 @@ if (!in_array($estado, ['Activo', 'Inactivo'], true)) {
 
 }
 
-if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
+if ($estado === 'Inactivo' && !in_array($motivoInactivo, ['impago', 'fin_contrato'], true)) {
 
-    establecerErrorFormulario('El motivo de inactividad no puede superar los 500 caracteres.', $_POST, 'editar_empresa.php?id=' . $id, 'motivo_inactivo');
+    establecerErrorFormulario('Debes seleccionar un motivo.', $_POST, 'editar_empresa.php?id=' . $id, 'motivo_inactivo');
 
 }
 
@@ -219,7 +220,7 @@ $stmt->execute([
     ':telefono'       => $telefono !== '' ? $telefono : null,
     ':email'          => $email !== '' ? $email : null,
     ':estado'         => $estado,
-    ':motivo_inactivo' => $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+    ':motivo_inactivo' => $estado === 'Inactivo' ? $motivoInactivo : null,
     ':id'             => $id,
 ]);
 
@@ -231,10 +232,19 @@ $pdo->prepare("
         AND r.nombre = ?
 ")->execute([
     $estado,
-    $estado === 'Inactivo' && $motivoInactivo !== '' ? $motivoInactivo : null,
+    $estado === 'Inactivo' ? $motivoInactivo : null,
     $id,
     ROL_EMPRESA,
 ]);
+
+// Al inactivar la empresa se inactivan también sus empleados
+// (rol USUARIO) que estuvieran Activos; al reactivarla, se
+// reactiva solo a esos mismos (ver includes/empresas.php).
+if ($estado === 'Inactivo') {
+    inactivarUsuariosPorEmpresa($pdo, $id);
+} else {
+    reactivarUsuariosPorEmpresa($pdo, $id);
+}
 
 $stmtDatos = $pdo->prepare("
     SELECT
@@ -383,7 +393,7 @@ registrarLog(
 
                             <div class="usuario-detalle-item empresa-motivo-item">
                                 <span>Motivo</span>
-                                <strong><?= htmlspecialchars($empresa['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?></strong>
                             </div>
 
                         <?php endif; ?>

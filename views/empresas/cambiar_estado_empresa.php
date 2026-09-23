@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -91,18 +92,21 @@ $nuevoEstado = $empresa['estado'] === 'Activo' ? 'Inactivo' : 'Activo';
 
 
 // =====================================================
-// SI PASA A INACTIVO, EL MOTIVO ES OPCIONAL
+// SI PASA A INACTIVO, EL MOTIVO ES OBLIGATORIO
 // =====================================================
 //
-// El modal del listado (ver empresas.js) sigue enviándose
-// por POST con el motivo si se ha escrito; si se llega aquí
-// sin pasar por POST (por ejemplo, manipulando la URL a
-// mano), se corta igualmente, para que desactivar siga
-// exigiendo el modal de confirmación.
+// El modal del listado (ver empresas.js) siempre envía por
+// POST el id junto con el motivo (select con las mismas
+// opciones que crear_empresa.php/editar_empresa.php); si se
+// llega aquí sin pasar por POST (por ejemplo, manipulando la
+// URL a mano) o sin un motivo válido, se corta igualmente,
+// para que desactivar siga exigiendo el modal de confirmación.
 //
 // =====================================================
 
 $motivo = trim($_POST['motivo'] ?? '');
+
+$motivosValidos = ['impago', 'fin_contrato'];
 
 if ($nuevoEstado === 'Inactivo') {
 
@@ -124,13 +128,13 @@ if ($nuevoEstado === 'Inactivo') {
 
     }
 
-    if (mb_strlen($motivo, 'UTF-8') > 500) {
+    if (!in_array($motivo, $motivosValidos, true)) {
 
         die('
             <h2>Error</h2>
 
             <p>
-                El motivo de inactividad no puede superar los 500 caracteres.
+                Debes indicar un motivo para desactivar la empresa.
             </p>
 
             <p>
@@ -152,7 +156,7 @@ $stmtActualizar = $pdo->prepare("
 
 $stmtActualizar->execute([
     $nuevoEstado,
-    $nuevoEstado === 'Inactivo' && $motivo !== '' ? $motivo : null,
+    $nuevoEstado === 'Inactivo' ? $motivo : null,
     $id,
 ]);
 
@@ -168,10 +172,19 @@ $pdo->prepare("
         AND r.nombre = ?
 ")->execute([
     $nuevoEstado,
-    $nuevoEstado === 'Inactivo' && $motivo !== '' ? $motivo : null,
+    $nuevoEstado === 'Inactivo' ? $motivo : null,
     $id,
     ROL_EMPRESA,
 ]);
+
+// Al inactivar la empresa se inactivan también sus empleados
+// (rol USUARIO) que estuvieran Activos; al reactivarla, se
+// reactiva solo a esos mismos (ver includes/empresas.php).
+if ($nuevoEstado === 'Inactivo') {
+    inactivarUsuariosPorEmpresa($pdo, $id);
+} else {
+    reactivarUsuariosPorEmpresa($pdo, $id);
+}
 
 // El evento es "Empresa activada"/"Empresa desactivada" (en vez
 // de un único "Estado modificado") para que se pueda filtrar en
@@ -181,7 +194,7 @@ registrarLog(
     LOG_INFORMACION,
     $nuevoEstado === 'Activo' ? 'Empresa activada' : 'Empresa desactivada',
     'La empresa "' . $empresa['nombre'] . '" ha pasado a estado ' . $nuevoEstado
-        . ($nuevoEstado === 'Inactivo' && $motivo !== '' ? '. Motivo: ' . $motivo : '') . '.'
+        . ($nuevoEstado === 'Inactivo' ? '. Motivo: ' . etiquetaMotivoInactivo($motivo) : '') . '.'
 );
 
 header('Location: empresas.php');

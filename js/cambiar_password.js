@@ -53,7 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mayuscula: valor => /[A-Z]/.test(valor),
         minuscula: valor => /[a-z]/.test(valor),
         numero: valor => /[0-9]/.test(valor),
-        especial: valor => /[^A-Za-z0-9]/.test(valor)
+        especial: valor => /[^A-Za-z0-9]/.test(valor),
+        coinciden: valor => valor !== '' && valor === passwordConfirmar.value
     };
 
     const itemsRequisitos = listaRequisitos.querySelectorAll('[data-req]');
@@ -125,7 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     });
 
-    passwordConfirmar.addEventListener('input', ocultarMensaje);
+    passwordConfirmar.addEventListener('input', () => {
+
+        actualizarRequisitos();
+        ocultarMensaje();
+
+    });
 
 
     form.addEventListener('submit', event => {
@@ -141,18 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
 
             passwordNueva.focus();
-
-            return;
-
-        }
-
-        if (passwordNueva.value !== passwordConfirmar.value) {
-
-            event.preventDefault();
-
-            mostrarMensaje('Las dos contraseñas nuevas no coinciden.');
-
-            passwordConfirmar.focus();
 
         }
 

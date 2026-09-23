@@ -39,12 +39,17 @@ $stmtUsuario = $pdo->prepare("
         u.id_rol,
         u.estado,
         u.motivo_inactivo,
+        u.inactivo_por_empresa,
         u.creado_por,
-        r.nombre AS rol
+        r.nombre AS rol,
+        e.estado AS empresa_estado
     FROM usuarios u
 
     INNER JOIN roles r
         ON r.id = u.id_rol
+
+    INNER JOIN empresas e
+        ON e.id = u.id_empresa
 
     WHERE u.id = ?
 ");
@@ -125,6 +130,40 @@ $empresaYRolFijos = in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true);
 // =====================================================
 
 $usuarioEsCuentaEmpresa = $usuario['rol'] === ROL_EMPRESA;
+
+
+// =====================================================
+// ¿ESTÁ INACTIVO PORQUE SU EMPRESA SE INACTIVÓ?
+// =====================================================
+//
+// Si es así, el motivo ("Empresa inactiva") lo controla la
+// cascada de la empresa (ver includes/empresas.php), no se
+// elige a mano aquí: el select de motivo se sustituye por un
+// aviso informativo (ver más abajo). Si en cambio ya estaba
+// Inactivo por su cuenta (vacaciones, baja laboral...) antes de
+// que la empresa se inactivara, sigue siendo un motivo normal y
+// editable.
+//
+// =====================================================
+
+$bloqueadoPorEmpresa = $usuario['estado'] === 'Inactivo' && (int) $usuario['inactivo_por_empresa'] === 1;
+
+
+// =====================================================
+// ¿SU EMPRESA ESTÁ INACTIVA AHORA MISMO?
+// =====================================================
+//
+// Mismo criterio que el listado (ver usuarios.php): un usuario
+// normal (rol USUARIO) no puede quedar Activo mientras su
+// empresa esté Inactiva. Aquí, en vez de dejar elegir "Activo"
+// en el select y que el guardado lo rechace, el select se fija
+// en "Inactivo" y se avisa del motivo (ver el select de Estado
+// más abajo). El usuario con rol EMPRESA no entra aquí: activarlo
+// A ÉL es precisamente cómo se reactiva la empresa.
+//
+// =====================================================
+
+$empresaDelUsuarioInactiva = $usuario['rol'] === ROL_USUARIO && $usuario['empresa_estado'] === 'Inactivo';
 
 if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
 
@@ -628,22 +667,50 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
                             Estado
                         </label>
 
-                        <?php $estadoPrevio = $datosPrevios['estado'] ?? $usuario['estado']; ?>
+                        <?php $estadoPrevio = $empresaDelUsuarioInactiva ? 'Inactivo' : ($datosPrevios['estado'] ?? $usuario['estado']); ?>
 
-                        <select id="estado" name="estado"
-                            class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" required>
+                        <?php if ($empresaDelUsuarioInactiva): ?>
 
-                            <?php foreach (['Activo', 'Inactivo'] as $estadoOpcion): ?>
+                            <!-- Fijo en Inactivo: no se puede activar a este
+                                 usuario mientras su empresa esté inactiva
+                                 (ver el aviso debajo). disabled evita que se
+                                 elija a mano; el hidden es lo que de verdad
+                                 se envía, porque un select disabled no
+                                 manda su valor al enviar el formulario. -->
 
-                                <option value="<?= $estadoOpcion ?>" <?= $estadoPrevio === $estadoOpcion ? 'selected' : '' ?>>
-                                    <?= $estadoOpcion ?>
-                                </option>
+                            <select id="estado" class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" disabled>
+                                <option value="Inactivo" selected>Inactivo</option>
+                            </select>
 
-                            <?php endforeach; ?>
+                            <input type="hidden" name="estado" value="Inactivo">
 
-                        </select>
+                        <?php else: ?>
+
+                            <select id="estado" name="estado"
+                                class="<?= claseErrorCampo($errorFormulario, 'estado') ?>" required>
+
+                                <?php foreach (['Activo', 'Inactivo'] as $estadoOpcion): ?>
+
+                                    <option value="<?= $estadoOpcion ?>" <?= $estadoPrevio === $estadoOpcion ? 'selected' : '' ?>>
+                                        <?= $estadoOpcion ?>
+                                    </option>
+
+                                <?php endforeach; ?>
+
+                            </select>
+
+                        <?php endif; ?>
 
                         <span class="field-error" id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
+
+                        <?php if ($empresaDelUsuarioInactiva): ?>
+
+                            <p class="form-hint">
+                                La empresa de este usuario está inactiva, así que no se puede activar.
+                                Actívala primero desde <a href="../empresas/empresas.php">Empresas</a>.
+                            </p>
+
+                        <?php endif; ?>
 
                     </div>
 
@@ -658,12 +725,65 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
                     <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>" id="grupo_motivo_inactivo">
 
                         <label for="motivo_inactivo">
-                            Motivo (opcional)
+                            Motivo
                         </label>
 
-                        <textarea id="motivo_inactivo" name="motivo_inactivo" rows="3"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>"
-                            placeholder="Explica por qué el usuario se marca como inactivo"><?= valorFormulario($datosPrevios, 'motivo_inactivo', $usuario['motivo_inactivo'] ?? '') ?></textarea>
+                        <?php if ($bloqueadoPorEmpresa): ?>
+
+                            <!-- Motivo controlado por la cascada de la
+                                 empresa: no se elige a mano (ver
+                                 includes/empresas.php). Se conserva tal
+                                 cual al guardar el resto del formulario. -->
+
+                            <input type="hidden" name="motivo_inactivo" value="empresa_inactiva">
+
+                            <div class="form-info">
+                                <p>
+                                    Empresa inactiva: este usuario se inactivó
+                                    automáticamente al inactivarse su empresa.
+                                    Volverá a Activo solo si reactivas la
+                                    <a href="../empresas/empresas.php">empresa</a>.
+                                </p>
+                            </div>
+
+                        <?php else: ?>
+
+                            <?php $motivoPrevio = valorFormulario($datosPrevios, 'motivo_inactivo', $usuario['motivo_inactivo'] ?? ''); ?>
+
+                            <select id="motivo_inactivo" name="motivo_inactivo"
+                                class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
+
+                                <option value="">Selecciona un motivo</option>
+
+                                <?php if ($usuarioEsCuentaEmpresa): ?>
+
+                                    <option value="impago" <?= $motivoPrevio === 'impago' ? 'selected' : '' ?>>
+                                        Impago
+                                    </option>
+
+                                    <option value="fin_contrato" <?= $motivoPrevio === 'fin_contrato' ? 'selected' : '' ?>>
+                                        Fin de contrato
+                                    </option>
+
+                                <?php else: ?>
+
+                                    <option value="vacaciones" <?= $motivoPrevio === 'vacaciones' ? 'selected' : '' ?>>
+                                        Vacaciones
+                                    </option>
+
+                                    <option value="baja_laboral" <?= $motivoPrevio === 'baja_laboral' ? 'selected' : '' ?>>
+                                        Baja laboral
+                                    </option>
+
+                                    <option value="baja_empresa" <?= $motivoPrevio === 'baja_empresa' ? 'selected' : '' ?>>
+                                        Baja en la empresa
+                                    </option>
+
+                                <?php endif; ?>
+
+                            </select>
+
+                        <?php endif; ?>
 
                         <span class="field-error" id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
 

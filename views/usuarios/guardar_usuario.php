@@ -9,6 +9,7 @@ require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -177,8 +178,10 @@ if (!in_array($estado, $estadosValidos, true)) {
 // =====================================================
 // VALIDAR MOTIVO DE INACTIVIDAD
 // =====================================================
-// Es opcional: si no se rellena, simplemente no se guarda
-// (se muestra como "-" allí donde se lista).
+// Si el estado elegido es Inactivo, el motivo es obligatorio
+// (comprobación de valores válidos más abajo, una vez se
+// conoce el rol elegido: las opciones del select dependen de
+// si es USUARIO o EMPRESA).
 
 if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
 
@@ -243,7 +246,7 @@ $empresaSeleccionada = null;
 if ($id_empresa > 0) {
 
     $stmt = $pdo->prepare("
-        SELECT id, creado_por
+        SELECT id, creado_por, estado
         FROM empresas
         WHERE id = ?
         LIMIT 1
@@ -341,6 +344,58 @@ if ($rolSeleccionado && $rolSeleccionado['nombre'] === ROL_EMPRESA) {
         $errores[] = ['mensaje' => 'Esa empresa ya tiene un usuario con rol Empresa. El nuevo usuario debe ser Usuario.', 'campo' => 'id_rol'];
 
     }
+
+}
+
+
+// =====================================================
+// MOTIVO OBLIGATORIO SI PASA A INACTIVO
+// =====================================================
+//
+// Las opciones válidas dependen del rol elegido (mismas
+// listas que en el select de crear_usuario.php/
+// editar_usuario.php): USUARIO usa vacaciones/baja_laboral/
+// baja_empresa, EMPRESA usa impago/fin_contrato.
+//
+// =====================================================
+
+if ($estado === 'Inactivo' && $rolSeleccionado) {
+
+    // "empresa_inactiva" no está aquí a propósito: ese motivo lo
+    // pone solo la cascada de la empresa (ver includes/empresas.php),
+    // nunca se elige a mano al crear un usuario.
+    $motivosValidos = $rolSeleccionado['nombre'] === ROL_EMPRESA
+        ? ['impago', 'fin_contrato']
+        : ['vacaciones', 'baja_laboral', 'baja_empresa'];
+
+    if (!in_array($motivoInactivo, $motivosValidos, true)) {
+
+        $errores[] = ['mensaje' => 'Debes seleccionar un motivo.', 'campo' => 'motivo_inactivo'];
+
+    }
+
+}
+
+
+// =====================================================
+// NO CREAR ACTIVO UN USUARIO SUELTO DE EMPRESA INACTIVA
+// =====================================================
+//
+// Mismo criterio que actualizar_usuario.php: un usuario normal
+// (rol USUARIO) no puede nacer Activo si la empresa elegida
+// está Inactiva.
+//
+// =====================================================
+
+if (
+    $estado === 'Activo' &&
+    $rolSeleccionado &&
+    $rolSeleccionado['nombre'] === ROL_USUARIO &&
+    $empresaSeleccionada &&
+    $empresaSeleccionada['estado'] === 'Inactivo'
+) {
+
+    $errores[] = ['mensaje' => 'No puedes crear este usuario como Activo: la empresa está inactiva.', 'campo' => 'estado'];
 
 }
 
@@ -699,7 +754,7 @@ $estadoPassword = (int) $usuario['cambiar_password'] === 1
 
                                     <div class="usuario-detalle-item">
                                         <span>Motivo</span>
-                                        <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <strong><?= htmlspecialchars(etiquetaMotivoInactivo($usuario['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?></strong>
                                     </div>
 
                                 <?php endif; ?>
@@ -752,7 +807,7 @@ $estadoPassword = (int) $usuario['cambiar_password'] === 1
 
                                 <div class="usuario-detalle-item">
                                     <span>Motivo</span>
-                                    <strong><?= htmlspecialchars($usuario['motivo_inactivo'] ?: '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <strong><?= htmlspecialchars(etiquetaMotivoInactivo($usuario['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?></strong>
                                 </div>
 
                             <?php endif; ?>

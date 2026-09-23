@@ -29,7 +29,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- INICIO -->
-
         <?php if (tienePermiso('inicio')): ?>
             <a href="/comercializadora/index.php" class="menu-item" title="Inicio">
                 <span class="menu-icon"><i class="bi bi-house-door"></i></span>
@@ -38,10 +37,28 @@ require_once __DIR__ . '/../config/permisos.php';
         <?php endif; ?>
 
 
-        <!-- PLANIFICADOR -->
+        <!-- COMERCIALIZADORAS -->
+        <?php if (tienePermiso('comercializadoras')): ?>
+            <a href="/comercializadora/views/comercializadoras/comercializadoras.php" class="menu-item" title="Comercializadoras">
+                <span class="menu-icon"><i class="bi bi-shop"></i></span>
+                <span class="menu-label">Comercializadoras</span>
+            </a>
+        <?php endif; ?>
 
+
+        <!-- TARIFAS -->
+        <?php if (tienePermiso('tarifas')): ?>
+            <a href="/comercializadora/views/tarifas/tarifas.php" class="menu-item" title="Tarifas">
+                <span class="menu-icon"><i class="bi bi-currency-euro"></i></span>
+                <span class="menu-label">Tarifas</span>
+            </a>
+        <?php endif; ?>
+
+
+        <!-- PLANIFICADOR -->
         <?php if (tienePermiso('planificador')): ?>
-            <a href="/comercializadora/views/planificador/planificador.php" class="menu-item" title="Planificador de tareas">
+            <a href="/comercializadora/views/planificador/planificador.php" class="menu-item"
+                title="Planificador de tareas">
                 <span class="menu-icon"><i class="bi bi-calendar3"></i></span>
                 <span class="menu-label">Planificador</span>
             </a>
@@ -49,7 +66,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- PARTES -->
-
         <?php if (tienePermiso('partes')): ?>
             <a href="/comercializadora/views/partes.php" class="menu-item" title="Gestión de partes">
                 <span class="menu-icon"><i class="bi bi-clipboard-check"></i></span>
@@ -59,7 +75,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- INCIDENCIAS -->
-
         <?php if (tienePermiso('incidencias')): ?>
             <a href="/comercializadora/views/incidencias.php" class="menu-item" title=" Gestión de incidencias">
                 <span class="menu-icon"><i class="bi bi-exclamation-triangle"></i></span>
@@ -69,7 +84,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- CLIENTES -->
-
         <?php if (tienePermiso('clientes')): ?>
             <a href="/comercializadora/views/clientes/clientes.php" class="menu-item" title="Gestión de clientes">
                 <span class="menu-icon"><i class="bi bi-people"></i></span>
@@ -77,24 +91,12 @@ require_once __DIR__ . '/../config/permisos.php';
             </a>
         <?php endif; ?>
 
-        <!-- OFERTAS -->
-
-        <?php if (tienePermiso('ofertas')): ?>
-            <a href="/comercializadora/views/ofertas.php" class="menu-item" title="Ofertas">
-                <span class="menu-icon"><i class="bi bi-tags"></i></span>
-                <span class="menu-label">Ofertas</span>
-            </a>
-        <?php endif; ?>
-
 
         <!-- SEPARADOR -->
-
         <div class="menu-separator"></div>
 
 
-
         <!-- EMPRESAS -->
-
         <?php if (tienePermiso('empresas')): ?>
             <a href="/comercializadora/views/empresas/empresas.php" class="menu-item" title="Gestión de empresas">
                 <span class="menu-icon"><i class="bi bi-building"></i></span>
@@ -102,8 +104,8 @@ require_once __DIR__ . '/../config/permisos.php';
             </a>
         <?php endif; ?>
 
-        <!-- USUARIOS -->
 
+        <!-- USUARIOS -->
         <?php if (tienePermiso('usuarios')): ?>
             <a href="/comercializadora/views/usuarios/usuarios.php" class="menu-item" title="Gestión de usuarios">
                 <span class="menu-icon"><i class="bi bi-person-gear"></i></span>
@@ -111,11 +113,8 @@ require_once __DIR__ . '/../config/permisos.php';
             </a>
         <?php endif; ?>
 
-        <!-- SEGURIDAD -->
-        <!-- Ya no es una página propia: abre un modal con el
-             formulario de cambiar contraseña (ver más abajo),
-             disponible desde cualquier pantalla. -->
 
+        <!-- SEGURIDAD -->
         <?php if (tienePermiso('seguridad')): ?>
 
             <button type="button" class="menu-item" id="abrirModalSeguridad" title="Seguridad">
@@ -125,25 +124,25 @@ require_once __DIR__ . '/../config/permisos.php';
 
             <?php
 
-                // Mensaje pendiente de un envío anterior del
-                // formulario (ver actualizar_password.php), si lo
-                // hay. Si lo hay, el modal se abre ya al cargar la
-                // página, con el aviso puesto, en vez de quedarse
-                // cerrado esperando a que se pulse el botón.
+            // Mensaje pendiente de un envío anterior del
+            // formulario (ver actualizar_password.php), si lo
+            // hay. Si lo hay, el modal se abre ya al cargar la
+            // página, con el aviso puesto, en vez de quedarse
+            // cerrado esperando a que se pulse el botón.
+        
+            $passwordError = $_SESSION['password_error'] ?? '';
+            unset($_SESSION['password_error']);
 
-                $passwordError = $_SESSION['password_error'] ?? '';
-                unset($_SESSION['password_error']);
+            $passwordSuccess = $_SESSION['password_success'] ?? '';
+            unset($_SESSION['password_success']);
 
-                $passwordSuccess = $_SESSION['password_success'] ?? '';
-                unset($_SESSION['password_success']);
-
-                // También se abre solo si se llega con
-                // "?abrir=seguridad" (enlace antiguo a la extinta
-                // seguridad.php, ver ese archivo).
-                $abrirModalSeguridadAlCargar =
-                    $passwordError !== ''
-                    || $passwordSuccess !== ''
-                    || ($_GET['abrir'] ?? '') === 'seguridad';
+            // También se abre solo si se llega con
+            // "?abrir=seguridad" (enlace antiguo a la extinta
+            // seguridad.php, ver ese archivo).
+            $abrirModalSeguridadAlCargar =
+                $passwordError !== ''
+                || $passwordSuccess !== ''
+                || ($_GET['abrir'] ?? '') === 'seguridad';
 
             ?>
 
@@ -159,8 +158,7 @@ require_once __DIR__ . '/../config/permisos.php';
                             <span>Actualiza la contraseña de tu cuenta</span>
                         </div>
 
-                        <button type="button" class="modal-detalle-close" id="cerrarModalSeguridad"
-                            aria-label="Cerrar">
+                        <button type="button" class="modal-detalle-close" id="cerrarModalSeguridad" aria-label="Cerrar">
                             ✕
                         </button>
 
@@ -191,21 +189,45 @@ require_once __DIR__ . '/../config/permisos.php';
                             <!-- CONTRASEÑA NUEVA -->
 
                             <div class="form-group">
-
+                                <!-- 
                                 <label for="password_nueva">
                                     Contraseña nueva
-                                </label>
+                                </label> -->
 
                                 <div class="password-wrapper">
 
                                     <input type="password" id="password_nueva" name="password_nueva"
-                                        placeholder="Escribe tu nueva contraseña" autocomplete="new-password"
-                                        required minlength="8">
+                                        placeholder="Escribe tu nueva contraseña" autocomplete="new-password" required
+                                        minlength="8">
 
                                     <button type="button" class="password-toggle" data-target="password_nueva"
                                         aria-label="Mostrar contraseña">
                                         <i class="bi bi-eye-slash"></i>
                                     </button>
+
+                                </div>
+
+
+                                <!-- REPETIR CONTRASEÑA -->
+
+                                <div class="form-group">
+
+                                    <!-- <label for="password_confirmar">
+                                    Repite la contraseña nueva
+                                </label> -->
+
+                                    <div class="password-wrapper">
+
+                                        <input type="password" id="password_confirmar" name="password_confirmar"
+                                            placeholder="Repite la nueva contraseña" autocomplete="new-password" required
+                                            minlength="8">
+
+                                        <button type="button" class="password-toggle" data-target="password_confirmar"
+                                            aria-label="Mostrar contraseña">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+
+                                    </div>
 
                                 </div>
 
@@ -216,35 +238,11 @@ require_once __DIR__ . '/../config/permisos.php';
                                     <li data-req="minuscula">Minúsculas</li>
                                     <li data-req="numero">Números</li>
                                     <li data-req="especial">Caracteres especiales</li>
+                                    <li data-req="coinciden">Las contraseñas coinciden</li>
 
                                 </ul>
 
                             </div>
-
-
-                            <!-- REPETIR CONTRASEÑA -->
-
-                            <div class="form-group">
-
-                                <label for="password_confirmar">
-                                    Repite la contraseña nueva
-                                </label>
-
-                                <div class="password-wrapper">
-
-                                    <input type="password" id="password_confirmar" name="password_confirmar"
-                                        placeholder="Repite la nueva contraseña" autocomplete="new-password"
-                                        required minlength="8">
-
-                                    <button type="button" class="password-toggle" data-target="password_confirmar"
-                                        aria-label="Mostrar contraseña">
-                                        <i class="bi bi-eye-slash"></i>
-                                    </button>
-
-                                </div>
-
-                            </div>
-
 
                             <div class="form-actions">
 
@@ -267,7 +265,6 @@ require_once __DIR__ . '/../config/permisos.php';
         <?php endif; ?>
 
         <!-- LOGS -->
-
         <?php if (tienePermiso('logs')): ?>
             <a href="/comercializadora/views/logs.php" class="menu-item" title="Gestión de logs">
                 <span class="menu-icon"><i class="bi bi-clock-history"></i></span>
@@ -277,7 +274,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- CONFIGURACIÓN -->
-
         <?php if (tienePermiso('configuracion')): ?>
             <a href="/comercializadora/views/configuracion.php" class="menu-item" title="Configuración">
                 <span class="menu-icon"><i class="bi bi-gear"></i></span>
@@ -287,7 +283,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- AYUDA -->
-
         <?php if (tienePermiso('ayuda')): ?>
 
             <div class="menu-group">
@@ -310,11 +305,9 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
                 <!-- SUBMENÚ AYUDA -->
-
                 <div class="submenu" id="ayuda-submenu">
 
-                    <button type="button" class="submenu-item about-menu-trigger" id="abrirInfoSrg"
-                        title="Acerca de">
+                    <button type="button" class="submenu-item about-menu-trigger" id="abrirInfoSrg" title="Acerca de">
 
                         <span class="submenu-icon">
                             <i class="bi bi-info-circle"></i>
@@ -383,7 +376,6 @@ require_once __DIR__ . '/../config/permisos.php';
 
 
         <!-- SEPARADOR -->
-
         <div class="menu-separator"></div>
 
         <!-- Cerrar sesión -->

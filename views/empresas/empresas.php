@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/filtro_multiselect.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -515,7 +516,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                                         data-telefono="<?= htmlspecialchars($empresa['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-email="<?= htmlspecialchars($empresa['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                         data-estado="<?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>"
-                                        data-motivo="<?= htmlspecialchars($empresa['motivo_inactivo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                        data-motivo="<?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?>"
                                         data-usuario-id="<?= (int) ($empresa['usuario_id'] ?? 0) ?>">
 
                                         <td>
@@ -766,11 +767,14 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                 <div class="form-group">
 
                     <label for="motivoDesactivarEmpresa">
-                        Motivo (opcional)
+                        Motivo
                     </label>
 
-                    <textarea id="motivoDesactivarEmpresa" name="motivo" rows="3"
-                        placeholder="Explica por qué la empresa pasa a inactiva"></textarea>
+                    <select id="motivoDesactivarEmpresa" name="motivo" required>
+                        <option value="">Selecciona un motivo</option>
+                        <option value="impago">Impago</option>
+                        <option value="fin_contrato">Fin de contrato</option>
+                    </select>
 
                     <span class="field-error" id="error-motivoDesactivarEmpresa"></span>
 

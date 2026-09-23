@@ -2169,7 +2169,8 @@ textarea:focus-visible {
 }
 
 .clientes-table-panel .panel-header,
-.usuarios-table-panel .panel-header {
+.usuarios-table-panel .panel-header,
+.logs-table-panel .panel-header {
     padding: 18px 21px;
 }
 
@@ -2240,7 +2241,9 @@ textarea:focus-visible {
 .clientes-table .sortable-header,
 .clientes-table .table-header-content,
 .usuarios-table .sortable-header,
-.usuarios-table .table-header-content {
+.usuarios-table .table-header-content,
+.logs-table .sortable-header,
+.logs-table .table-header-content {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -2249,7 +2252,8 @@ textarea:focus-visible {
 }
 
 .clientes-table .sort-button,
-.usuarios-table .sort-button {
+.usuarios-table .sort-button,
+.logs-table .sort-button {
     width: 21px;
     height: 21px;
     display: inline-flex;
@@ -2265,7 +2269,8 @@ textarea:focus-visible {
 }
 
 .clientes-table .sort-button:hover,
-.usuarios-table .sort-button:hover {
+.usuarios-table .sort-button:hover,
+.logs-table .sort-button:hover {
     border-color: var(--line-dark);
     background: var(--primary-soft);
     color: var(--primary);
@@ -2583,6 +2588,23 @@ textarea:focus-visible {
     font-weight: 700;
 }
 
+/* Mismo tamaño/forma que .usuario-avatar, pero sin fondo/color
+   propios: se combina con .log-success/.log-info/.log-warning/
+   .log-error (ver claseBadgeLog() en logs.php) para que el
+   avatar de la fila salga del color del tipo de evento, en vez
+   de forzar siempre el azul de .usuario-avatar. */
+.log-avatar {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: 1px solid #d7e5fb;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .cliente-info,
 .usuario-info {
     min-width: 0;
@@ -2736,6 +2758,12 @@ textarea:focus-visible {
     border-color: var(--muted);
     background: var(--muted);
     color: #ffffff;
+}
+
+.icon-action-button.estado-toggle.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 
@@ -3513,7 +3541,8 @@ textarea:focus-visible {
     }
 
     .usuarios-table-panel .panel-header,
-    .clientes-table-panel .panel-header {
+    .clientes-table-panel .panel-header,
+    .logs-table-panel .panel-header {
         flex-wrap: nowrap;
     }
 
@@ -4582,7 +4611,6 @@ select {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
-
 }
 
 
@@ -5589,6 +5617,35 @@ body.modal-detalle-arrastrando .modal-detalle {
     font-weight: 700;
 }
 
+/* En el detalle de Logs, .modal-detalle-avatar se combina con
+   .log-success/.log-info/.log-warning/.log-error (ver
+   abrirModalDetalleLog() en logs.js) para que el avatar salga
+   del color del tipo de evento en vez del azul por defecto.
+   Hace falta repetir aquí los mismos colores con un selector de
+   dos clases (más específico que cualquiera de las dos por
+   separado): si no, al llevar .modal-detalle-avatar también su
+   propio background/color, sería quien gane por ir después en
+   la hoja de estilos. */
+.modal-detalle-avatar.log-info {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.modal-detalle-avatar.log-error {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.modal-detalle-avatar.log-success {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.modal-detalle-avatar.log-warning {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
 .modal-detalle-titulo {
     min-width: 0;
 }
@@ -5759,12 +5816,14 @@ body.modal-detalle-arrastrando .modal-detalle {
     }
 
     .clientes-table-container,
-    .usuarios-table-container {
+    .usuarios-table-container,
+    .logs-table-container {
         overflow-x: visible;
     }
 
     .clientes-table,
-    .usuarios-table {
+    .usuarios-table,
+    .logs-table {
         min-width: 0;
         table-layout: auto;
     }

@@ -101,10 +101,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    // El motivo es opcional (ver también validarMotivoInactivoEmpresa
-    // en empresas.js): si se deja en blanco, no se guarda nada y se
-    // muestra como "-" allí donde se lista.
     function validarMotivoInactivo(valor) {
+
+        const estado = document.getElementById('estado');
+
+        if (estado && estado.value === 'Inactivo' && (!valor || valor.trim() === '')) {
+            return 'Debes seleccionar un motivo.';
+        }
 
         return null;
 
@@ -365,6 +368,67 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         });
+
+    }
+
+
+    /* =========================================================
+       00B-2. OPCIONES DE MOTIVO SEGÚN EL ROL ELEGIDO
+       (crear_usuario.php, solo cuando Rol es un <select>: SRG)
+       =========================================================
+       Las opciones del motivo dependen del rol: EMPRESA usa
+       impago/fin_contrato, el resto usa las de USUARIO (mismas
+       listas que en abrirModalDesactivarUsuario(), más abajo).
+    ========================================================= */
+
+    function actualizarOpcionesMotivoSegunRol() {
+
+        const rolSelect = document.getElementById('id_rol');
+        const motivo = document.getElementById('motivo_inactivo');
+
+        if (!motivo || !rolSelect || rolSelect.tagName !== 'SELECT') {
+            return;
+        }
+
+        const opcionRol = rolSelect.selectedOptions[0];
+        const nombreRol = opcionRol ? opcionRol.dataset.rol : '';
+
+        const opciones = nombreRol === 'EMPRESA'
+            ? [['impago', 'Impago'], ['fin_contrato', 'Fin de contrato']]
+            : [
+                ['vacaciones', 'Vacaciones'],
+                ['baja_laboral', 'Baja laboral'],
+                ['baja_empresa', 'Baja en la empresa']
+            ];
+
+        const valorPrevio = motivo.value;
+
+        motivo.innerHTML = '<option value="">Selecciona un motivo</option>';
+
+        opciones.forEach(([valor, etiqueta]) => {
+
+            const opcion = document.createElement('option');
+            opcion.value = valor;
+            opcion.textContent = etiqueta;
+
+            motivo.appendChild(opcion);
+
+        });
+
+        // Si la opción que tenía elegida sigue existiendo en la
+        // nueva lista, se conserva; si no (venía de otro rol),
+        // se pierde y hay que volver a elegir.
+        motivo.value = valorPrevio;
+
+    }
+
+    const rolSelectParaMotivo = document.getElementById('id_rol');
+
+    if (rolSelectParaMotivo && rolSelectParaMotivo.tagName === 'SELECT') {
+
+        actualizarOpcionesMotivoSegunRol();
+
+        rolSelectParaMotivo.addEventListener('change', actualizarOpcionesMotivoSegunRol);
 
     }
 
@@ -1945,8 +2009,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const nombreUsuarioDesactivar = document.getElementById('nombreUsuarioDesactivar');
     const idUsuarioDesactivarInput = document.getElementById('idUsuarioDesactivar');
     const motivoDesactivarUsuario = document.getElementById('motivoDesactivarUsuario');
+    const formDesactivarUsuario = document.getElementById('formDesactivarUsuario');
 
-    window.abrirModalDesactivarUsuario = function (id, nombre) {
+    // Las opciones del select dependen del rol del usuario que
+    // se está desactivando (mismas listas que en el select de
+    // crear_usuario.php/editar_usuario.php y, para EMPRESA, que
+    // el de crear_empresa.php/editar_empresa.php).
+    const MOTIVOS_DESACTIVAR_USUARIO = {
+        USUARIO: [
+            ['vacaciones', 'Vacaciones'],
+            ['baja_laboral', 'Baja laboral'],
+            ['baja_empresa', 'Baja en la empresa']
+        ],
+        EMPRESA: [
+            ['impago', 'Impago'],
+            ['fin_contrato', 'Fin de contrato']
+        ]
+    };
+
+    window.abrirModalDesactivarUsuario = function (id, nombre, rol) {
 
         usuarioDesactivarAbierto = true;
 
@@ -1959,8 +2040,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (motivoDesactivarUsuario) {
-            motivoDesactivarUsuario.value = '';
+
+            const opciones = MOTIVOS_DESACTIVAR_USUARIO[rol] || MOTIVOS_DESACTIVAR_USUARIO.USUARIO;
+
+            motivoDesactivarUsuario.innerHTML = '<option value="">Selecciona un motivo</option>';
+
+            opciones.forEach(([valor, etiqueta]) => {
+
+                const opcion = document.createElement('option');
+                opcion.value = valor;
+                opcion.textContent = etiqueta;
+
+                motivoDesactivarUsuario.appendChild(opcion);
+
+            });
+
             motivoDesactivarUsuario.classList.remove('input-error');
+
         }
 
         const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
@@ -1986,10 +2082,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
-    // El motivo es opcional: si se deja en blanco, el formulario
-    // se envía igualmente y no se guarda nada (se muestra como
-    // "-" allí donde se lista), así que ya no hace falta
-    // validarlo antes de enviar.
+    if (formDesactivarUsuario && motivoDesactivarUsuario) {
+
+        formDesactivarUsuario.addEventListener('submit', event => {
+
+            if (motivoDesactivarUsuario.value === '') {
+
+                event.preventDefault();
+
+                motivoDesactivarUsuario.classList.add('input-error');
+
+                const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+                if (contenedorError) {
+                    contenedorError.textContent = 'Debes seleccionar un motivo.';
+                }
+
+                motivoDesactivarUsuario.focus();
+
+            }
+
+        });
+
+        motivoDesactivarUsuario.addEventListener('change', () => {
+
+            motivoDesactivarUsuario.classList.remove('input-error');
+
+            const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+            if (contenedorError) {
+                contenedorError.textContent = '';
+            }
+
+        });
+
+    }
 
     if (modalDesactivarUsuario) {
 

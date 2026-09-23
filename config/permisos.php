@@ -30,6 +30,9 @@ $GLOBALS['PERMISOS_SECCIONES'] = [
 
     'inicio'         => [ROL_SRG, ROL_NG, ROL_EMPRESA, ROL_USUARIO],
 
+    'comercializadoras' => [ROL_SRG, ROL_NG, ROL_EMPRESA],
+    'tarifas'        => [ROL_SRG, ROL_NG, ROL_EMPRESA],
+
     'planificador'   => [ROL_SRG, ROL_NG, ROL_EMPRESA],
     'partes'         => [ROL_SRG, ROL_NG, ROL_EMPRESA],
     'incidencias'    => [ROL_SRG, ROL_NG, ROL_EMPRESA],
@@ -242,6 +245,28 @@ function puedeVerCliente(?int $creadoPor): bool
  * ellos mismos han creado.
  */
 function puedeVerTarea(?int $creadoPor): bool
+{
+    $rol = rolActual();
+
+    if ($rol === ROL_SRG) {
+        return true;
+    }
+
+    if ($rol === ROL_NG || $rol === ROL_EMPRESA) {
+        return $creadoPor !== null
+            && $creadoPor === (int) ($_SESSION['id_usuario'] ?? 0);
+    }
+
+    return false;
+}
+
+
+/**
+ * ¿Puede el usuario actual ver/gestionar una comercializadora
+ * creada por $creadoPor? SRG las ve todas; NG y EMPRESA solo
+ * las que ellos mismos han creado.
+ */
+function puedeVerComercializadora(?int $creadoPor): bool
 {
     $rol = rolActual();
 

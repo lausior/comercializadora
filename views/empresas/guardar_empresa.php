@@ -9,6 +9,7 @@ require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/validaciones.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -122,9 +123,9 @@ if (!in_array($estado, $estadosValidos, true)) {
 
 }
 
-if (mb_strlen($motivoInactivo, 'UTF-8') > 500) {
+if ($estado === 'Inactivo' && !in_array($motivoInactivo, ['impago', 'fin_contrato'], true)) {
 
-    $errores[] = ['mensaje' => 'El motivo de inactividad no puede superar los 500 caracteres.', 'campo' => 'motivo_inactivo'];
+    $errores[] = ['mensaje' => 'Debes seleccionar un motivo.', 'campo' => 'motivo_inactivo'];
 
 }
 
@@ -577,7 +578,7 @@ registrarLog(
 
                             <div class="usuario-detalle-item empresa-motivo-item">
                                 <span>Motivo</span>
-                                <strong><?= htmlspecialchars($empresa['motivo_inactivo'] ?: '-') ?></strong>
+                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo'])) ?></strong>
                             </div>
 
                         <?php endif; ?>

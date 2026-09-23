@@ -218,6 +218,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             cerrarTodosLosMenus();
 
+            // El orden (marcadas arriba) se recalcula aquí, al
+            // abrir, y no en cada casilla marcada/desmarcada: si
+            // se reordenara con el menú ya abierto, desmarcar
+            // varias seguidas iría desplazando las siguientes
+            // opciones bajo el cursor, haciendo que el siguiente
+            // clic caiga sobre la opción equivocada (o sobre
+            // ningún sitio) en vez de sobre la que tocaba
+            // desmarcar a continuación.
+            reordenarOpciones(filtro);
+
             menu.hidden = false;
             campoInput.setAttribute('aria-expanded', 'true');
             posicionarMenu(toggle, menu);
@@ -285,8 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             checkbox.addEventListener('change', () => {
 
+                // No se reordena aquí a propósito (ver
+                // abrirMenu()): con el menú ya abierto, el orden
+                // se queda quieto mientras se marca/desmarca, así
+                // el resto de opciones no se mueve bajo el cursor.
                 sincronizarOpcion(checkbox);
-                reordenarOpciones(filtro);
 
                 // Avisa a la página (usuarios.js/clientes.js/
                 // logs.js) de que este filtro ha cambiado, con
@@ -314,8 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 checkbox.checked = false;
 
+                // Mismo motivo que en el "change" de la casilla:
+                // no reordenar aquí, para no desplazar el resto
+                // de opciones mientras el menú sigue abierto.
                 sincronizarOpcion(checkbox);
-                reordenarOpciones(filtro);
                 filtro.dispatchEvent(new Event('change'));
 
             });
