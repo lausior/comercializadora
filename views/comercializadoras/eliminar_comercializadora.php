@@ -164,7 +164,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                     ['Dirección', $comercializadora['direccion'] ?? 'No indicada'],
                     ['Teléfono', $comercializadora['telefono'] ?? 'No indicado'],
                     ['Email', $comercializadora['email'] ?? 'No indicado'],
-                    ['Servicios', implode(' y ', $serviciosComercializadora)],
+                    ['Servicios', implode('/', $serviciosComercializadora)],
                 ],
             ],
         ],
@@ -282,7 +282,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                         <div class="usuario-detalle-item">
                             <span>Servicios</span>
-                            <strong><?= htmlspecialchars(implode(' y ', $serviciosComercializadora)) ?></strong>
+                            <strong><?= htmlspecialchars(implode('/', $serviciosComercializadora)) ?></strong>
                         </div>
 
                     </div>

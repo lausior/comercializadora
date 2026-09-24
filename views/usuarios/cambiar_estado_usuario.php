@@ -148,8 +148,8 @@ $motivo = trim($_POST['motivo'] ?? '');
 // pone solo la cascada de la empresa (ver includes/empresas.php),
 // nunca se elige a mano al desactivar un usuario desde aquí.
 $motivosValidos = $usuario['rol'] === ROL_EMPRESA
-    ? ['impago', 'fin_contrato']
-    : ['vacaciones', 'baja_laboral', 'baja_empresa'];
+    ? array_keys(MOTIVOS_INACTIVO_EMPRESA)
+    : array_keys(MOTIVOS_INACTIVO_USUARIO);
 
 if ($nuevoEstado === 'Inactivo') {
 

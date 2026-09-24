@@ -314,7 +314,7 @@ registrarLog(
 
                         <div class="usuario-detalle-item">
                             <span>Servicios</span>
-                            <strong><?= htmlspecialchars(implode(' y ', $serviciosComercializadora)) ?></strong>
+                            <strong><?= htmlspecialchars(implode('/', $serviciosComercializadora)) ?></strong>
                         </div>
 
                     </div>

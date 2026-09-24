@@ -400,8 +400,8 @@ if ($rol && $rol['nombre'] === ROL_EMPRESA) {
 if ($estado === 'Inactivo' && $rol) {
 
     $motivosValidos = $rol['nombre'] === ROL_EMPRESA
-        ? ['impago', 'fin_contrato']
-        : ['vacaciones', 'baja_laboral', 'baja_empresa', 'empresa_inactiva'];
+        ? array_keys(MOTIVOS_INACTIVO_EMPRESA)
+        : [...array_keys(MOTIVOS_INACTIVO_USUARIO), MOTIVO_EMPRESA_INACTIVA];
 
     if (!in_array($motivoInactivo, $motivosValidos, true)) {
 
@@ -619,10 +619,7 @@ $usuarioEsCuentaEmpresa = $usuario['rol'] === ROL_EMPRESA;
 // del listado plano que usan SRG y NG.
 $esRolUsuario = $usuario['rol'] === ROL_USUARIO;
 
-$usuarioAcceso =
-    $usuario['codigo_empresa'] . '-' .
-    $usuario['id'] . '-' .
-    $usuario['username'];
+$usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 
 
 // =====================================================

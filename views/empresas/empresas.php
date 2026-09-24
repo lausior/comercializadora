@@ -174,7 +174,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
                  RESUMEN
             ================================================== -->
 
-            <section class="dashboard-cards">
+            <section class="dashboard-cards resumen-entidad-cards">
 
                 <!-- TOTAL EMPRESAS -->
 
@@ -772,8 +772,7 @@ $estadosEmpresaFiltro = ['Activo', 'Inactivo'];
 
                     <select id="motivoDesactivarEmpresa" name="motivo" required>
                         <option value="">Selecciona un motivo</option>
-                        <option value="impago">Impago</option>
-                        <option value="fin_contrato">Fin de contrato</option>
+                        <?php pintarOpcionesMotivo(MOTIVOS_INACTIVO_EMPRESA, null); ?>
                     </select>
 
                     <span class="field-error" id="error-motivoDesactivarEmpresa"></span>

@@ -7,6 +7,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -42,6 +43,14 @@ do {
     $stmtCodigo->execute([$codigoEmpresa]);
 
 } while ($stmtCodigo->fetch());
+
+
+// Datos iniciales para formulario_empresa.php: una empresa
+// nueva solo trae el código generado; todavía no tiene
+// usuario de acceso (se crea al guardar).
+$empresa = ['codigo_empresa' => $codigoEmpresa];
+$usuarioAcceso = null;
+$esEdicion = false;
 
 ?>
 
@@ -124,257 +133,7 @@ do {
 
                 <form action="guardar_empresa.php" method="POST" novalidate>
 
-
-                    <!-- =========================
-                         MENSAJE DE ERROR GENERAL
-                    ========================== -->
-
-                    <div class="form-error-general" id="form-error-general" role="alert"
-                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
-                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
-                    </div>
-
-
-                    <div class="form-info">
-
-                        <p>
-                            El código de empresa se genera automáticamente
-                            y no se puede modificar.
-                        </p>
-
-                    </div>
-
-
-                    <div class="form-grid">
-
-
-                        <!-- =========================
-                             CÓDIGO DE EMPRESA
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="codigo_empresa">
-                                Código de empresa
-                            </label>
-
-                            <input type="text" id="codigo_empresa" name="codigo_empresa"
-                                value="<?= htmlspecialchars($codigoEmpresa) ?>" readonly>
-
-                        </div>
-
-
-                        <!-- =========================
-                             NOMBRE
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="nombre">
-                                Nombre
-                            </label>
-
-                            <input type="text" id="nombre" name="nombre"
-                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'nombre') ?>" required>
-
-                            <span class="field-error"
-                                id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             CIF
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="cif">
-                                CIF
-                            </label>
-
-                            <input type="text" id="cif" name="cif"
-                                class="<?= claseErrorCampo($errorFormulario, 'cif') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'cif') ?>" required>
-
-                            <span class="field-error"
-                                id="error-cif"><?= mensajeErrorCampo($errorFormulario, 'cif') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             DIRECCIÓN
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="direccion">
-                                Dirección
-                            </label>
-
-                            <input type="text" id="direccion" name="direccion"
-                                class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'direccion') ?>">
-
-                            <span class="field-error"
-                                id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             TELÉFONO
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="telefono">
-                                Teléfono
-                            </label>
-
-                            <input type="tel" id="telefono" name="telefono"
-                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'telefono') ?>">
-
-                            <span class="field-error"
-                                id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             EMAIL
-                             (obligatorio: se reutiliza como
-                             email del primer usuario)
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="email">
-                                Email
-                            </label>
-
-                            <input type="email" id="email" name="email"
-                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'email') ?>" required>
-
-                            <span class="field-error"
-                                id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             ESTADO
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="estado">
-                                Estado
-                            </label>
-
-                            <?php $estadoPrevio = $datosPrevios['estado'] ?? 'Activo'; ?>
-
-                            <select id="estado" name="estado" class="<?= claseErrorCampo($errorFormulario, 'estado') ?>"
-                                required>
-
-                                <option value="Activo" <?= $estadoPrevio === 'Activo' ? 'selected' : '' ?>>Activo</option>
-                                <option value="Inactivo" <?= $estadoPrevio === 'Inactivo' ? 'selected' : '' ?>>Inactivo
-                                </option>
-
-                            </select>
-
-                            <span class="field-error"
-                                id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <!-- =========================
-                         MOTIVO (SOLO SI INACTIVO)
-                    ========================== -->
-
-                    <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>"
-                        id="grupo_motivo_inactivo">
-
-                        <label for="motivo_inactivo">
-                            Motivo
-                        </label>
-
-                        <select id="motivo_inactivo" name="motivo_inactivo"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
-                            <option value="">Selecciona un motivo</option>
-
-                            <option value="impago" <?= valorFormulario($datosPrevios, 'motivo_inactivo') === 'impago' ? 'selected' : '' ?>>
-                                Impago
-                            </option>
-
-                            <option value="fin_contrato" <?= valorFormulario($datosPrevios, 'motivo_inactivo') === 'fin_contrato' ? 'selected' : '' ?>>
-                                Fin de contrato
-                            </option>
-
-                        </select>
-
-                        <span class="field-error"
-                            id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         ACCESO DE LA EMPRESA
-                         =================================================
-                         No es "un usuario que pertenece a la empresa":
-                         es el acceso de la propia empresa (rol EMPRESA),
-                         para no tener que crear la empresa y su login por
-                         separado en dos formularios. Por eso reutiliza el
-                         nombre, el email y el teléfono ya escritos arriba
-                         como datos de la empresa, y aquí solo hace falta
-                         el username — luego, desde ese acceso, la empresa
-                         podrá dar de alta a su equipo (rol Usuario).
-                    ================================================== -->
-
-                    <h2>Acceso de la empresa</h2>
-
-                    <div class="form-info">
-
-                        <p>
-                            La contraseña inicial se genera automáticamente y
-                            deberá cambiarla en su primer acceso.
-                        </p>
-
-                    </div>
-
-                    <div class="form-grid">
-
-
-                        <!-- =========================
-                             USERNAME
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="usuario_username">
-                                Username
-                            </label>
-
-                            <input type="text" id="usuario_username" name="usuario_username"
-                                class="<?= claseErrorCampo($errorFormulario, 'usuario_username') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'usuario_username') ?>" required>
-
-                            <span class="field-error"
-                                id="error-usuario_username"><?= mensajeErrorCampo($errorFormulario, 'usuario_username') ?></span>
-
-                        </div>
-
-
-                    </div>
+                    <?php include 'formulario_empresa.php'; ?>
 
 
                     <!-- =================================================

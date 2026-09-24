@@ -165,7 +165,7 @@ sort($nifsFiltro);
                  RESUMEN
             ================================================== -->
 
-            <section class="dashboard-cards">
+            <section class="dashboard-cards resumen-entidad-cards">
 
                 <!-- TOTAL CLIENTES -->
 

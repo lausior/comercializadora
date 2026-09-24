@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -443,31 +444,15 @@ if ($empresaYRolFijos) {
 
                             <option value="">Selecciona un motivo</option>
 
-                            <?php if ($motivoPrevio === 'impago' || $motivoPrevio === 'fin_contrato'): ?>
-
-                                <option value="impago" <?= $motivoPrevio === 'impago' ? 'selected' : '' ?>>
-                                    Impago
-                                </option>
-
-                                <option value="fin_contrato" <?= $motivoPrevio === 'fin_contrato' ? 'selected' : '' ?>>
-                                    Fin de contrato
-                                </option>
-
-                            <?php else: ?>
-
-                                <option value="vacaciones" <?= $motivoPrevio === 'vacaciones' ? 'selected' : '' ?>>
-                                    Vacaciones
-                                </option>
-
-                                <option value="baja_laboral" <?= $motivoPrevio === 'baja_laboral' ? 'selected' : '' ?>>
-                                    Baja laboral
-                                </option>
-
-                                <option value="baja_empresa" <?= $motivoPrevio === 'baja_empresa' ? 'selected' : '' ?>>
-                                    Baja en la empresa
-                                </option>
-
-                            <?php endif; ?>
+                            <?php
+                            // Si se vuelve de un error con un motivo de
+                            // empresa, se mantienen las opciones de empresa;
+                            // si no, las de usuario.
+                            pintarOpcionesMotivo(
+                                isset(MOTIVOS_INACTIVO_EMPRESA[$motivoPrevio]) ? MOTIVOS_INACTIVO_EMPRESA : MOTIVOS_INACTIVO_USUARIO,
+                                $motivoPrevio
+                            );
+                            ?>
 
                         </select>
 

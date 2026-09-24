@@ -4,6 +4,7 @@ session_start();
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/recordarme.php';
+require_once __DIR__ . '/../../includes/accesos.php';
 
 
 // =====================================================
@@ -20,10 +21,7 @@ if ( //comprueba que la sesión tenga codigo_empresa, id_usuario_username
 ) {
     
     //si existen, construye el usuario completo
-    $usuarioBloqueo =
-        $_SESSION['codigo_empresa'] . '-' .
-        $_SESSION['id_usuario'] . '-' .
-        $_SESSION['username'];
+    $usuarioBloqueo = loginAcceso($_SESSION['codigo_empresa'], (int) $_SESSION['id_usuario'], $_SESSION['username']);
 
 }
 

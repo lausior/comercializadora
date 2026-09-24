@@ -84,7 +84,7 @@ sort($emailsFiltro);
 
 
 // =====================================================
-// ETIQUETA DE SERVICIOS (LUZ / GAS / LUZ Y GAS)
+// ETIQUETA DE SERVICIOS (LUZ / GAS / LUZ/GAS)
 // =====================================================
 //
 // Al crear/editar se exige marcar al menos uno de los dos
@@ -96,7 +96,7 @@ sort($emailsFiltro);
 function etiquetaServiciosComercializadora(array $comercializadora): string
 {
     if ($comercializadora['suministra_luz'] && $comercializadora['suministra_gas']) {
-        return 'Luz y gas';
+        return 'Luz/Gas';
     }
 
     if ($comercializadora['suministra_luz']) {
@@ -110,7 +110,9 @@ function etiquetaServiciosComercializadora(array $comercializadora): string
     return '—';
 }
 
-$serviciosFiltro = ['Luz', 'Gas', 'Luz y gas'];
+// Solo dos opciones: se puede marcar una, otra o las dos (ver
+// el filtrado de la columna Servicios en comercializadoras.js).
+$serviciosFiltro = ['Luz', 'Gas'];
 
 ?>
 
@@ -173,7 +175,7 @@ $serviciosFiltro = ['Luz', 'Gas', 'Luz y gas'];
                  RESUMEN
             ================================================== -->
 
-            <section class="dashboard-cards">
+            <section class="dashboard-cards resumen-entidad-cards">
 
                 <div class="dashboard-card">
 

@@ -88,7 +88,7 @@ $filas = array_map(
             $comercializadora['direccion'] ?? '—',
             $comercializadora['telefono'] ?? '—',
             $comercializadora['email'] ?? '—',
-            implode(' y ', $servicios),
+            implode('/', $servicios),
         ];
 
     },

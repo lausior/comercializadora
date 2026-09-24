@@ -106,7 +106,7 @@ $nuevoEstado = $empresa['estado'] === 'Activo' ? 'Inactivo' : 'Activo';
 
 $motivo = trim($_POST['motivo'] ?? '');
 
-$motivosValidos = ['impago', 'fin_contrato'];
+$motivosValidos = array_keys(MOTIVOS_INACTIVO_EMPRESA);
 
 if ($nuevoEstado === 'Inactivo') {
 
@@ -161,30 +161,10 @@ $stmtActualizar->execute([
 ]);
 
 // El usuario de acceso de la empresa (rol EMPRESA) representa
-// su login: su estado debe mantenerse sincronizado con el
-// estado mostrado en el listado de usuarios, igual que al
-// revés (ver cambiar_estado_usuario.php).
-$pdo->prepare("
-    UPDATE usuarios u
-    INNER JOIN roles r ON r.id = u.id_rol
-    SET u.estado = ?, u.motivo_inactivo = ?
-    WHERE u.id_empresa = ?
-        AND r.nombre = ?
-")->execute([
-    $nuevoEstado,
-    $nuevoEstado === 'Inactivo' ? $motivo : null,
-    $id,
-    ROL_EMPRESA,
-]);
-
-// Al inactivar la empresa se inactivan también sus empleados
-// (rol USUARIO) que estuvieran Activos; al reactivarla, se
-// reactiva solo a esos mismos (ver includes/empresas.php).
-if ($nuevoEstado === 'Inactivo') {
-    inactivarUsuariosPorEmpresa($pdo, $id);
-} else {
-    reactivarUsuariosPorEmpresa($pdo, $id);
-}
+// su login: toma el mismo estado, igual que al revés (ver
+// cambiar_estado_usuario.php). Sus empleados (rol USUARIO) se
+// inactivan/reactivan en cascada (ver includes/empresas.php).
+sincronizarUsuariosConEstadoEmpresa($pdo, $id, $nuevoEstado, $motivo);
 
 // El evento es "Empresa activada"/"Empresa desactivada" (en vez
 // de un único "Estado modificado") para que se pueda filtrar en

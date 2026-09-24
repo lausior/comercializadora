@@ -196,7 +196,7 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                  RESUMEN
             ================================================== -->
 
-            <section class="dashboard-cards">
+            <section class="dashboard-cards resumen-entidad-cards">
 
 
                 <!-- TOTAL USUARIOS -->
@@ -665,10 +665,7 @@ $estadosFiltro = ['Activo', 'Inactivo'];
 
                                     // Usuario de acceso (login): codigo_empresa-id-username,
                                     // el mismo formato que se escribe en login.php.
-                                    $usuarioAcceso =
-                                        $usuario['codigo_empresa'] . '-' .
-                                        $usuario['id'] . '-' .
-                                        $usuario['username'];
+                                    $usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 
                                     ?>
 

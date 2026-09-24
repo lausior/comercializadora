@@ -529,6 +529,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const valorFila = obtenerValorFiltroFila(fila, columna);
 
+                    // Servicios: el filtro solo ofrece "Luz" y
+                    // "Gas". Una comercializadora de "Luz/Gas"
+                    // cuenta como las dos, y tiene que suministrar
+                    // todo lo marcado: Luz -> las que dan luz
+                    // (también las de Luz/Gas); Luz + Gas ->
+                    // solo las que dan las dos cosas.
+                    if (CAMPO_POR_COLUMNA[columna] === 'servicios') {
+
+                        const serviciosFila = valorFila.split('/');
+
+                        if (!seleccionados.every(servicio => serviciosFila.includes(servicio))) {
+                            coincide = false;
+                        }
+
+                        return;
+
+                    }
+
                     if (!seleccionados.includes(valorFila)) {
                         coincide = false;
                     }

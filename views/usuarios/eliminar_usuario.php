@@ -132,10 +132,7 @@ $nombreCompleto =
     $usuario['nombre'] . ' ' . $usuario['apellidos'];
 
 // Mismo formato que se escribe en login.php.
-$usuarioAcceso =
-    $usuario['codigo_empresa'] . '-' .
-    $usuario['id'] . '-' .
-    $usuario['username'];
+$usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 
 
 // =====================================================

@@ -1,3 +1,4 @@
+==> editar_empresa.php <==
 <?php
 
 session_start();
@@ -7,6 +8,7 @@ requerirPermiso('empresas');
 
 require_once '../../config/database.php';
 require_once '../../includes/form_flash.php';
+require_once '../../includes/empresas.php';
 
 
 // =====================================================
@@ -80,6 +82,26 @@ if (
     exit;
 
 }
+
+
+// =====================================================
+// USUARIO DE ACCESO DE LA EMPRESA (USERNAME Y
+// "RESTABLECER CONTRASEÑA")
+// =====================================================
+//
+// Es el usuario con rol EMPRESA que se crea junto con la
+// empresa (ver guardar_empresa.php). Si no lo tuviera, no se
+// muestran ni el campo Username ni el botón.
+//
+// =====================================================
+
+$usuarioAcceso = obtenerUsuarioAccesoEmpresa($pdo, $idEmpresa);
+
+$tieneUsuarioAcceso = $usuarioAcceso !== null;
+
+// Para formulario_empresa.php: valores iniciales desde
+// $empresa, email opcional y textos de edición.
+$esEdicion = true;
 
 
 // =====================================================
@@ -178,209 +200,38 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
                     <input type="hidden" name="id" value="<?= (int) $empresa['id'] ?>">
 
 
-                    <!-- =========================
-                         MENSAJE DE ERROR GENERAL
-                    ========================== -->
-
-                    <div class="form-error-general" id="form-error-general" role="alert"
-                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>;">
-                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
-                    </div>
-
-
-                    <div class="form-grid">
-
-
-                        <!-- =========================
-                             CÓDIGO DE EMPRESA
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="codigo_empresa">
-                                Código de empresa
-                            </label>
-
-                            <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
-                                value="<?= htmlspecialchars($empresa['codigo_empresa']) ?>" readonly>
-
-                            <span class="field-error" id="error-codigo_empresa"></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             NOMBRE
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="nombre">
-                                Nombre
-                            </label>
-
-                            <input type="text" id="nombre" name="nombre"
-                                class="<?= claseErrorCampo($errorFormulario, 'nombre') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'nombre', $empresa['nombre']) ?>" required>
-
-                            <span class="field-error"
-                                id="error-nombre"><?= mensajeErrorCampo($errorFormulario, 'nombre') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             CIF
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="cif">
-                                CIF
-                            </label>
-
-                            <input type="text" id="cif" name="cif"
-                                class="<?= claseErrorCampo($errorFormulario, 'cif') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'cif', $empresa['cif']) ?>" required>
-
-                            <span class="field-error"
-                                id="error-cif"><?= mensajeErrorCampo($errorFormulario, 'cif') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             DIRECCIÓN
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="direccion">
-                                Dirección
-                            </label>
-
-                            <input type="text" id="direccion" name="direccion"
-                                class="<?= claseErrorCampo($errorFormulario, 'direccion') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'direccion', $empresa['direccion'] ?? '') ?>">
-
-                            <span class="field-error"
-                                id="error-direccion"><?= mensajeErrorCampo($errorFormulario, 'direccion') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             TELÉFONO
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="telefono">
-                                Teléfono
-                            </label>
-
-                            <input type="tel" id="telefono" name="telefono"
-                                class="<?= claseErrorCampo($errorFormulario, 'telefono') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'telefono', $empresa['telefono'] ?? '') ?>">
-
-                            <span class="field-error"
-                                id="error-telefono"><?= mensajeErrorCampo($errorFormulario, 'telefono') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             EMAIL
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="email">
-                                Email
-                            </label>
-
-                            <input type="email" id="email" name="email"
-                                class="<?= claseErrorCampo($errorFormulario, 'email') ?>"
-                                value="<?= valorFormulario($datosPrevios, 'email', $empresa['email'] ?? '') ?>">
-
-                            <span class="field-error"
-                                id="error-email"><?= mensajeErrorCampo($errorFormulario, 'email') ?></span>
-
-                        </div>
-
-
-                        <!-- =========================
-                             ESTADO
-                        ========================== -->
-
-                        <div class="form-group">
-
-                            <label for="estado">
-                                Estado
-                            </label>
-
-                            <?php $estadoPrevio = $datosPrevios['estado'] ?? $empresa['estado']; ?>
-
-                            <select id="estado" name="estado" class="<?= claseErrorCampo($errorFormulario, 'estado') ?>"
-                                required>
-
-                                <option value="Activo" <?= $estadoPrevio === 'Activo' ? 'selected' : '' ?>>Activo</option>
-                                <option value="Inactivo" <?= $estadoPrevio === 'Inactivo' ? 'selected' : '' ?>>Inactivo
-                                </option>
-
-                            </select>
-
-                            <span class="field-error"
-                                id="error-estado"><?= mensajeErrorCampo($errorFormulario, 'estado') ?></span>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <div class="form-group <?= $estadoPrevio === 'Inactivo' ? '' : 'hidden' ?>"
-                        id="grupo_motivo_inactivo">
-
-                        <label for="motivo_inactivo">
-                            Motivo
-                        </label>
-
-                        <select id="motivo_inactivo" name="motivo_inactivo"
-                            class="<?= claseErrorCampo($errorFormulario, 'motivo_inactivo') ?>">
-                            <option value="">Selecciona un motivo</option>
-
-                            <option value="impago" <?= valorFormulario($datosPrevios, 'motivo_inactivo', $empresa['motivo_inactivo'] ?? '') === 'impago' ? 'selected' : '' ?>>
-                                Impago
-                            </option>
-
-                            <option value="fin_contrato" <?= valorFormulario($datosPrevios, 'motivo_inactivo', $empresa['motivo_inactivo'] ?? '') === 'fin_contrato' ? 'selected' : '' ?>>
-                                Fin de contrato
-                            </option>
-
-                        </select>
-
-                        <span class="field-error"
-                            id="error-motivo_inactivo"><?= mensajeErrorCampo($errorFormulario, 'motivo_inactivo') ?></span>
-
-                    </div>
+                    <?php include 'formulario_empresa.php'; ?>
 
 
                     <!-- =================================================
                          BOTONES
+                         =================================================
+                         Mismo reparto que en editar_usuario.php:
+                         "Restablecer contraseña" a la izquierda y
+                         Guardar/Cancelar a la derecha.
                     ================================================== -->
 
-                    <div class="form-actions">
+                    <div class="form-actions <?= $tieneUsuarioAcceso ? 'form-actions-split' : '' ?>">
 
-                        <button type="submit" class="config-save-button">
-                            Guardar cambios
-                        </button>
+                        <?php if ($tieneUsuarioAcceso): ?>
 
-                        <a href="empresas.php" class="config-cancel-button">
-                            Cancelar
-                        </a>
+                            <button type="button" class="config-cancel-button" onclick="abrirModalResetPassword()">
+                                Restablecer contraseña
+                            </button>
 
+                        <?php endif; ?>
 
+                        <div class="form-actions-right">
+
+                            <button type="submit" class="config-save-button">
+                                Guardar cambios
+                            </button>
+
+                            <a href="empresas.php" class="config-cancel-button">
+                                Cancelar
+                            </a>
+
+                        </div>
 
                     </div>
 
@@ -403,7 +254,102 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
     <?php include '../../templates/footer.php'; ?>
 
 
+    <?php if ($tieneUsuarioAcceso): ?>
+
+        <!-- =====================================================
+             MODAL CONFIRMAR RESTABLECER CONTRASEÑA
+             =====================================================
+             Mismo modal que en editar_usuario.php, pero confirma
+             con un formulario POST a resetear_password_empresa.php.
+        ====================================================== -->
+
+        <div id="modalResetPassword" class="modal-overlay" style="display: none;">
+
+            <div class="modal-confirmacion">
+
+                <div class="modal-icon">
+                    🔑
+                </div>
+
+                <h2>Restablecer contraseña</h2>
+
+                <p>
+                    ¿Seguro que quieres restablecer la contraseña de acceso de
+                    <strong><?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
+                    a la contraseña inicial?
+                </p>
+
+                <p class="modal-warning">
+                    La empresa deberá cambiarla en su próximo acceso.
+                </p>
+
+                <form action="resetear_password_empresa.php" method="POST">
+
+                    <input type="hidden" name="id" value="<?= (int) $empresa['id'] ?>">
+
+                    <div class="modal-actions">
+
+                        <button type="button" class="modal-button modal-button-cancel"
+                            onclick="cerrarModalResetPassword()">
+                            Cancelar
+                        </button>
+
+                        <button type="submit" class="modal-button modal-button-primary">
+                            Restablecer contraseña
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    <?php endif; ?>
+
+
     <script src="../../js/empresas.js"></script>
+
+    <?php if ($tieneUsuarioAcceso): ?>
+
+        <script>
+
+            const modalResetPassword = document.getElementById('modalResetPassword');
+
+            window.abrirModalResetPassword = function () {
+
+                modalResetPassword.style.display = 'flex';
+                document.body.classList.add('modal-abierto');
+
+            };
+
+            window.cerrarModalResetPassword = function () {
+
+                modalResetPassword.style.display = 'none';
+                document.body.classList.remove('modal-abierto');
+
+            };
+
+            modalResetPassword.addEventListener('click', event => {
+
+                if (event.target === modalResetPassword) {
+                    window.cerrarModalResetPassword();
+                }
+
+            });
+
+            document.addEventListener('keydown', event => {
+
+                if (event.key === 'Escape' && modalResetPassword.style.display !== 'none') {
+                    window.cerrarModalResetPassword();
+                }
+
+            });
+
+        </script>
+
+    <?php endif; ?>
 
 </body>
 

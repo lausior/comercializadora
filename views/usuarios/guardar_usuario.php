@@ -365,8 +365,8 @@ if ($estado === 'Inactivo' && $rolSeleccionado) {
     // pone solo la cascada de la empresa (ver includes/empresas.php),
     // nunca se elige a mano al crear un usuario.
     $motivosValidos = $rolSeleccionado['nombre'] === ROL_EMPRESA
-        ? ['impago', 'fin_contrato']
-        : ['vacaciones', 'baja_laboral', 'baja_empresa'];
+        ? array_keys(MOTIVOS_INACTIVO_EMPRESA)
+        : array_keys(MOTIVOS_INACTIVO_USUARIO);
 
     if (!in_array($motivoInactivo, $motivosValidos, true)) {
 
@@ -425,7 +425,7 @@ if (!empty($errores)) {
 //
 // =====================================================
 
-$passwordTemporal = '123456';
+$passwordTemporal = PASSWORD_INICIAL;
 
 $passwordHash = password_hash(
     $passwordTemporal,
@@ -606,10 +606,7 @@ $iniciales = mb_strtoupper(
 //
 // =====================================================
 
-$usuarioAcceso =
-    $usuario['codigo_empresa'] . '-' .
-    $usuario['id'] . '-' .
-    $usuario['username'];
+$usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 
 
 // =====================================================

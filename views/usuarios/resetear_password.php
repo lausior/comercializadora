@@ -8,6 +8,7 @@ requerirPermiso('usuarios');
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
 require_once '../../includes/recordarme.php';
+require_once '../../includes/accesos.php';
 
 
 // =====================================================
@@ -125,7 +126,7 @@ if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_po
 //
 // =====================================================
 
-$passwordInicial = '123456';
+$passwordInicial = PASSWORD_INICIAL;
 
 $passwordHash = password_hash($passwordInicial, PASSWORD_DEFAULT);
 
@@ -160,10 +161,7 @@ registrarLog(
 
 $nombreCompleto = $usuario['nombre'] . ' ' . $usuario['apellidos'];
 
-$usuarioAcceso =
-    $usuario['codigo_empresa'] . '-' .
-    $usuario['id'] . '-' .
-    $usuario['username'];
+$usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 
 ?>
 

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 /* =========================================================
-   01. VARIABLES
+   VARIABLES
 ========================================================= */
 
 :root {
@@ -36,14 +36,14 @@
     --border-hover: #b8c3d2;
     --radius: 12px;
     --radius-sm: 8px;
-    --sidebar-width: 196px;
+    --sidebar-width: 220px;
     --topbar-height: 68px;
     --footer-height: 42px;
 }
 
 
 /* =========================================================
-   02. RESET
+   RESET
 ========================================================= */
 
 * {
@@ -95,7 +95,7 @@ img {
 
 
 /* =========================================================
-   03. FOCUS
+   FOCUS
 ========================================================= */
 
 button:focus-visible,
@@ -109,7 +109,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   04. TOPBAR
+  TOPBAR
 ========================================================= */
 
 .topbar {
@@ -296,7 +296,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   05. CONTENEDOR APP
+  CONTENEDOR APP
 ========================================================= */
 
 .app-container {
@@ -307,7 +307,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   06. SIDEBAR
+   SIDEBAR
 ========================================================= */
 
 .sidebar {
@@ -357,7 +357,11 @@ textarea:focus-visible {
     align-items: center;
     padding: 0 12px;
     border-radius: 8px;
+    width: 100%;
+    border: 0;
+    background: transparent;
     color: #d7e4f5;
+    text-align: left;
     text-decoration: none;
     transition:
         background .18s ease,
@@ -425,7 +429,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   07. CONTENIDO PRINCIPAL
+  CONTENIDO PRINCIPAL
 ========================================================= */
 
 .main-content {
@@ -437,7 +441,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   08. CABECERAS
+   CABECERAS
 ========================================================= */
 
 .page-header,
@@ -480,7 +484,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   09. FOOTER
+   FOOTER
 ========================================================= */
 
 .footer {
@@ -501,7 +505,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   10. TARJETAS GENERALES
+   TARJETAS GENERALES
 ========================================================= */
 
 .dashboard-cards,
@@ -540,6 +544,39 @@ textarea:focus-visible {
 .dashboard-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+}
+
+.resumen-entidad-cards {
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.resumen-entidad-cards .dashboard-card {
+    min-height: 82px;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.resumen-entidad-cards .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.resumen-entidad-cards .card-info {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.resumen-entidad-cards .card-info strong {
+    margin: 0;
+    font-size: 13px;
+}
+
+.resumen-entidad-cards .card-label {
+    font-size: 13px;
 }
 
 
@@ -635,7 +672,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   11. GRIDS
+  GRIDS
 ========================================================= */
 
 .dashboard-grid {
@@ -651,9 +688,22 @@ textarea:focus-visible {
     gap: 20px;
 }
 
+/* La separación entre tarjetas ya la da el gap de la
+   rejilla; su margin-bottom la duplicaba (sobre todo en
+   móvil, con una tarjeta debajo de otra). */
+.security-grid .config-card {
+    margin-bottom: 0;
+}
+
+/* Si la etiqueta de un campo ocupa dos líneas (Control de
+   accesos), los campos quedan igualmente alineados abajo. */
+.security-grid .config-grid {
+    align-items: end;
+}
+
 
 /* =========================================================
-   12. PANEL
+  PANEL
 ========================================================= */
 
 .panel {
@@ -693,7 +743,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   13. ACTIVIDAD
+  ACTIVIDAD
 ========================================================= */
 
 .activity-list,
@@ -769,7 +819,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   14. ACCIONES RÁPIDAS
+   ACCIONES RÁPIDAS
 ========================================================= */
 
 .quick-action {
@@ -811,7 +861,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   15. AYUDA
+   AYUDA
 ========================================================= */
 
 .help-grid {
@@ -904,7 +954,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   16. SEGURIDAD
+   SEGURIDAD
 ========================================================= */
 
 .security-status {
@@ -1067,7 +1117,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   17. LOGS
+   LOGS
 ========================================================= */
 
 .logs-header h1 {
@@ -1373,7 +1423,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   18. CONFIGURACIÓN
+  CONFIGURACIÓN
 ========================================================= */
 
 .config-card {
@@ -1661,20 +1711,28 @@ textarea:focus-visible {
 }
 
 .logo-empresa-acciones {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
 }
 
+/* flex-wrap: con las tarjetas a dos columnas (pantallas de
+   ~1200-1400 px) el input de archivo y "Subir logo" no caben
+   en la misma línea. */
 .logo-empresa-acciones form {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
+    min-width: 0;
 }
 
 .logo-empresa-acciones input[type="file"] {
-    max-width: 240px;
+    min-width: 0;
+    max-width: min(240px, 100%);
     font-size: 12px;
     color: var(--ink-soft);
 }
@@ -1712,7 +1770,73 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   19. PLANIFICADOR
+   CONFIGURACIÓN RESPONSIVE (MÓVIL)
+   =========================================================
+   La rejilla de tarjetas ya pasa a una columna a 1200 px y
+   los campos a 680 px (ver los @media generales); aquí se
+   apilan el bloque del logo y el pie de retención de logs,
+   con los botones a todo el ancho como en los formularios.
+========================================================= */
+
+@media (max-width: 680px) {
+
+    .config-card-header {
+        gap: 11px;
+        margin-bottom: 17px;
+    }
+
+    .config-card-header h2 {
+        font-size: 16px;
+    }
+
+    .config-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        font-size: 17px;
+    }
+
+    .logo-empresa-block {
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .logo-empresa-acciones,
+    .logo-empresa-acciones form {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .logo-empresa-acciones input[type="file"] {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .logo-empresa-acciones .config-save-button,
+    .logo-empresa-acciones .config-secondary-button {
+        width: 100%;
+    }
+
+    .logo-empresa-ayuda {
+        text-align: center;
+    }
+
+    .logs-retencion-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .logs-retencion-footer .config-secondary-button {
+        width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+  PLANIFICADOR
 ========================================================= */
 
 .planner-toolbar {
@@ -2081,7 +2205,7 @@ textarea:focus-visible {
 
 
 /* =========================================================
-   20. CLIENTES
+   CLIENTES
 ========================================================= */
 
 .clientes-filters {
@@ -2152,14 +2276,7 @@ textarea:focus-visible {
 
 /* =========================================================
    TABLA DE LISTADOS (CLIENTES / USUARIOS / EMPRESAS)
-   =========================================================
-   Regla compartida por todas las tablas de listado que
-   siguen el mismo patrón: panel + filtros por columna +
-   orden + fila con avatar. Cada vista pone su propio
-   prefijo de clase en el HTML (.clientes-table,
-   .usuarios-table...), pero el aspecto es el mismo, así
-   que viven aquí juntas en vez de repetidas por vista.
-========================================================= */
+ ========================================================= */
 
 .clientes-table-panel,
 .usuarios-table-panel,
@@ -3201,6 +3318,10 @@ textarea:focus-visible {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .resumen-entidad-cards {
+        gap: 8px;
+    }
+
     .dashboard-grid,
     .security-grid,
     .planner-grid {
@@ -3372,6 +3493,25 @@ textarea:focus-visible {
     .config-grid,
     .form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .resumen-entidad-cards {
+        gap: 6px;
+    }
+
+    .resumen-entidad-cards .dashboard-card {
+        min-height: 64px;
+        padding: 9px 11px;
+    }
+
+    .resumen-entidad-cards .card-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .resumen-entidad-cards .card-info strong {
+        font-size: 13px;
     }
 
 
@@ -5671,18 +5811,19 @@ body.modal-detalle-arrastrando .modal-detalle {
     margin-left: auto;
     display: grid;
     place-items: center;
-    border: 1px solid var(--line);
+    border: 1px solid #f2c4ca;
     border-radius: 8px;
-    background: var(--surface);
-    color: var(--muted);
+    background: var(--danger-soft);
+    color: var(--danger);
     font-size: 14px;
     cursor: pointer;
     transition: .18s ease;
 }
 
 .modal-detalle-close:hover {
-    border-color: var(--line-dark);
-    color: var(--ink);
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #ffffff;
 }
 
 .modal-detalle .usuario-detalle-grid {
@@ -5919,4 +6060,446 @@ body.modal-detalle-arrastrando .modal-detalle {
 
 .submenu-item:hover .submenu-icon {
     color: #ffffff;
+}
+
+
+
+/* =========================================================
+   TARIFAS: REJILLA TIPO EXCEL (views/tarifas/tarifas.php)
+========================================================= */
+
+/* Menú superior: Tarifas de luz / Tarifas de gas y, en la
+   misma fila, el botón "Tarifa del cliente" */
+
+.tarifas-menu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--line-dark);
+}
+
+.tarifas-servicios {
+    display: flex;
+    gap: 4px;
+}
+
+.tarifas-servicio {
+    margin-bottom: -1px;
+    padding: 10px 18px;
+    border-bottom: 3px solid transparent;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.tarifas-servicio:hover {
+    color: var(--ink);
+}
+
+.tarifas-servicio.activo {
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+}
+
+.tarifas-cliente-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    margin-bottom: 6px;
+    padding: 0 14px;
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background .18s ease,
+        color .18s ease;
+}
+
+.tarifas-cliente-toggle:hover {
+    background: var(--primary-soft);
+}
+
+/* Desplegado: relleno, como un botón pulsado */
+.tarifas-cliente-toggle.activo {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+/* Pestañas de peaje (comunes a las dos tablas) + ayuda */
+
+.tarifas-peajes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+}
+
+.tarifas-peajes .tarifas-ayuda {
+    margin: 0;
+}
+
+/* Cada tabla (cliente / comercializadoras) */
+
+.tarifas-panel {
+    margin-bottom: 20px;
+    padding: 16px;
+}
+
+.tarifas-panel[hidden] {
+    display: none;
+}
+
+.tarifas-panel-cliente {
+    border-top: 3px solid var(--success);
+}
+
+.tarifas-titulo h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.tarifas-titulo h2 span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.tarifas-titulo p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* "Comparar", debajo de la tabla del cliente */
+
+.tarifas-comparar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.tarifas-comparar-aviso {
+    flex: 1;
+    margin: 0;
+}
+
+.tarifas-comparar-boton {
+    min-width: 150px;
+}
+
+.tarifas-buscar {
+    width: 200px;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12px;
+}
+
+.tarifas-mensaje {
+    margin-bottom: 16px;
+}
+
+.tarifas-mensaje ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+}
+
+/* Título de la tabla + buscar + Guardar */
+
+.tarifas-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tarifas-tabs {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+}
+
+.tarifas-tab {
+    padding: 7px 16px;
+    border-radius: 6px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.tarifas-tab:hover {
+    color: var(--ink);
+}
+
+.tarifas-tab.activa {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.tarifas-acciones {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tarifas-estado {
+    color: var(--warning);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.tarifas-ayuda {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.tarifas-ayuda kbd {
+    padding: 1px 5px;
+    border: 1px solid var(--line-dark);
+    border-radius: 4px;
+    background: var(--surface-soft);
+    font-family: inherit;
+    font-size: 10px;
+}
+
+/* Rejilla */
+
+.tarifas-rejilla-contenedor {
+    max-height: calc(100vh - 300px);
+    min-height: 200px;
+    overflow: auto;
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius-sm);
+}
+
+.tarifas-rejilla {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+}
+
+.tarifas-rejilla th,
+.tarifas-rejilla td {
+    padding: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+/* Cabeceras fijas al hacer scroll vertical */
+
+.tarifas-rejilla thead th {
+    position: sticky;
+    z-index: 2;
+    padding: 6px 8px;
+    background: #eef2f7;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.tarifas-rejilla thead tr:first-child th {
+    top: 0;
+}
+
+.tarifas-rejilla thead tr:nth-child(2) th {
+    top: 27px;
+}
+
+.tarifas-rejilla thead th.grupo-energia {
+    background: #e3eefc;
+}
+
+.tarifas-rejilla thead th.grupo-potencia {
+    background: #fdefdc;
+}
+
+/* Columna de comercializadora fija al hacer scroll horizontal */
+
+.tarifas-rejilla .col-titular {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 190px;
+    max-width: 240px;
+    border-right: 2px solid var(--line-dark);
+}
+
+.tarifas-rejilla thead .col-titular {
+    z-index: 3;
+    text-align: left;
+}
+
+.tarifas-rejilla tbody th.col-titular {
+    padding: 0 6px 0 10px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    font-weight: 700;
+    text-align: left;
+}
+
+.nombre-titular {
+    display: inline-block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.detalle-titular {
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+/* Filas extra del mismo titular (comercializadora o
+   cliente): como celdas combinadas, sin repetir el nombre
+   ni la línea de arriba. */
+
+.tarifa-fila-extra th.col-titular .nombre-titular,
+.tarifa-fila-extra th.col-titular .detalle-titular {
+    visibility: hidden;
+}
+
+.tarifa-fila-extra th.col-titular .tarifa-nueva {
+    visibility: hidden;
+}
+
+.tarifas-rejilla tbody tr:not(.tarifa-fila-extra) th,
+.tarifas-rejilla tbody tr:not(.tarifa-fila-extra) td {
+    border-top: 1px solid var(--line-dark);
+}
+
+.tarifa-nueva {
+    float: right;
+    width: 20px;
+    height: 20px;
+    margin-top: 5px;
+    padding: 0;
+    border: 1px solid var(--line-dark);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--primary);
+    font-size: 14px;
+    line-height: 16px;
+    cursor: pointer;
+}
+
+.tarifa-nueva:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+/* Celdas editables */
+
+.tarifas-rejilla td input[type="text"] {
+    width: 100%;
+    height: 32px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+}
+
+.tarifas-rejilla td.col-precio input {
+    text-align: right;
+}
+
+.tarifas-rejilla td input[type="text"]:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--primary-soft);
+}
+
+.tarifas-rejilla td.col-nombre {
+    min-width: 170px;
+}
+
+.tarifas-rejilla td.col-precio {
+    width: 84px;
+    min-width: 84px;
+}
+
+.tarifas-rejilla .col-activa {
+    width: 56px;
+    text-align: center;
+}
+
+.tarifas-rejilla .col-acciones {
+    width: 44px;
+    text-align: center;
+}
+
+.tarifas-rejilla .col-acciones .table-action-button {
+    margin: 2px auto;
+}
+
+.tarifas-rejilla td.celda-cambiada {
+    background: var(--warning-soft);
+}
+
+.tarifas-rejilla td.celda-error {
+    background: var(--danger-soft);
+    box-shadow: inset 0 0 0 2px var(--danger);
+}
+
+/* Vista "Tarifa del cliente": columnas de su factura */
+
+.tarifas-rejilla thead th.grupo-factura {
+    background: #e2f3ea;
+}
+
+.tarifas-rejilla .inicio-factura {
+    border-left: 2px solid var(--success);
+}
+
+.tarifas-rejilla td select {
+    width: 100%;
+    height: 32px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+}
+
+.tarifas-rejilla td select:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--primary-soft);
 }

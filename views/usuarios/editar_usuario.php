@@ -735,7 +735,7 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
                                  includes/empresas.php). Se conserva tal
                                  cual al guardar el resto del formulario. -->
 
-                            <input type="hidden" name="motivo_inactivo" value="empresa_inactiva">
+                            <input type="hidden" name="motivo_inactivo" value="<?= MOTIVO_EMPRESA_INACTIVA ?>">
 
                             <div class="form-info">
                                 <p>
@@ -755,31 +755,12 @@ if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
 
                                 <option value="">Selecciona un motivo</option>
 
-                                <?php if ($usuarioEsCuentaEmpresa): ?>
-
-                                    <option value="impago" <?= $motivoPrevio === 'impago' ? 'selected' : '' ?>>
-                                        Impago
-                                    </option>
-
-                                    <option value="fin_contrato" <?= $motivoPrevio === 'fin_contrato' ? 'selected' : '' ?>>
-                                        Fin de contrato
-                                    </option>
-
-                                <?php else: ?>
-
-                                    <option value="vacaciones" <?= $motivoPrevio === 'vacaciones' ? 'selected' : '' ?>>
-                                        Vacaciones
-                                    </option>
-
-                                    <option value="baja_laboral" <?= $motivoPrevio === 'baja_laboral' ? 'selected' : '' ?>>
-                                        Baja laboral
-                                    </option>
-
-                                    <option value="baja_empresa" <?= $motivoPrevio === 'baja_empresa' ? 'selected' : '' ?>>
-                                        Baja en la empresa
-                                    </option>
-
-                                <?php endif; ?>
+                                <?php
+                                pintarOpcionesMotivo(
+                                    $usuarioEsCuentaEmpresa ? MOTIVOS_INACTIVO_EMPRESA : MOTIVOS_INACTIVO_USUARIO,
+                                    $motivoPrevio
+                                );
+                                ?>
 
                             </select>
 

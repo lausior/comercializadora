@@ -109,7 +109,7 @@ if (!in_array($estado, ['Activo', 'Inactivo'], true)) {
 
 }
 
-if ($estado === 'Inactivo' && !in_array($motivoInactivo, ['impago', 'fin_contrato'], true)) {
+if ($estado === 'Inactivo' && !in_array($motivoInactivo, array_keys(MOTIVOS_INACTIVO_EMPRESA), true)) {
 
     establecerErrorFormulario('Debes seleccionar un motivo.', $_POST, 'editar_empresa.php?id=' . $id, 'motivo_inactivo');
 
@@ -197,6 +197,41 @@ if ($stmt->fetch()) {
 
 
 // =====================================================
+// USERNAME DEL USUARIO DE ACCESO DE LA EMPRESA
+// =====================================================
+
+$usuarioAcceso = obtenerUsuarioAccesoEmpresa($pdo, $id);
+
+$usuarioUsername = trim($_POST['usuario_username'] ?? '');
+
+if ($usuarioAcceso !== null) {
+
+    if (!validarUsername($usuarioUsername)) {
+
+        establecerErrorFormulario('El username del usuario solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', $_POST, 'editar_empresa.php?id=' . $id, 'usuario_username');
+
+    }
+
+    $stmtUsername = $pdo->prepare("
+        SELECT id
+        FROM usuarios
+        WHERE username = ?
+            AND id != ?
+        LIMIT 1
+    ");
+
+    $stmtUsername->execute([$usuarioUsername, $usuarioAcceso['id']]);
+
+    if ($stmtUsername->fetch()) {
+
+        establecerErrorFormulario('El username ya existe.', $_POST, 'editar_empresa.php?id=' . $id, 'usuario_username');
+
+    }
+
+}
+
+
+// =====================================================
 // ACTUALIZAR EMPRESA
 // =====================================================
 
@@ -224,26 +259,20 @@ $stmt->execute([
     ':id'             => $id,
 ]);
 
-$pdo->prepare("
-    UPDATE usuarios u
-    INNER JOIN roles r ON r.id = u.id_rol
-    SET u.estado = ?, u.motivo_inactivo = ?
-    WHERE u.id_empresa = ?
-        AND r.nombre = ?
-")->execute([
-    $estado,
-    $estado === 'Inactivo' ? $motivoInactivo : null,
-    $id,
-    ROL_EMPRESA,
-]);
+// Su usuario de acceso toma el mismo estado y sus empleados
+// se inactivan/reactivan en cascada (ver includes/empresas.php).
+sincronizarUsuariosConEstadoEmpresa($pdo, $id, $estado, $motivoInactivo);
 
-// Al inactivar la empresa se inactivan también sus empleados
-// (rol USUARIO) que estuvieran Activos; al reactivarla, se
-// reactiva solo a esos mismos (ver includes/empresas.php).
-if ($estado === 'Inactivo') {
-    inactivarUsuariosPorEmpresa($pdo, $id);
-} else {
-    reactivarUsuariosPorEmpresa($pdo, $id);
+$usernameCambiado = $usuarioAcceso !== null && $usuarioUsername !== $usuarioAcceso['username'];
+
+if ($usernameCambiado) {
+
+    $pdo->prepare("
+        UPDATE usuarios
+        SET username = ?
+        WHERE id = ?
+    ")->execute([$usuarioUsername, $usuarioAcceso['id']]);
+
 }
 
 $stmtDatos = $pdo->prepare("
@@ -284,10 +313,36 @@ if (!$empresa) {
 
 }
 
+// Datos del login para la tarjeta (ver tarjeta_empresa.php):
+// el login completo, ya con el username nuevo si se ha
+// cambiado, y si la empresa aún tiene pendiente cambiar la
+// contraseña inicial (recién creada o restablecida). La
+// contraseña nunca se toca al editar la empresa.
+$datosLogin = null;
+$avisoLogin = null;
+
+if ($usuarioAcceso !== null) {
+
+    $passwordPendiente = (int) $usuarioAcceso['cambiar_password'] === 1;
+
+    $datosLogin = [
+        ['Username', loginAcceso($empresa['codigo_empresa'], (int) $usuarioAcceso['id'], $usuarioUsername)],
+        ['Contraseña', $passwordPendiente ? 'Pendiente de cambio' : 'Sin cambios'],
+    ];
+
+    $avisoLogin = 'La contraseña no se ha modificado al guardar estos cambios.'
+        . ($passwordPendiente ? ' La empresa todavía debe cambiar la contraseña inicial en su próximo acceso.' : '')
+        . ($usernameCambiado ? ' El username ha cambiado: la empresa deberá entrar con el nuevo.' : '');
+
+}
+
 registrarLog(
     LOG_EXITO,
     'Empresa modificada',
     'Se ha modificado la empresa "' . $nombre . '".'
+        . ($usernameCambiado
+            ? ' Username de acceso: "' . $usuarioAcceso['username'] . '" -> "' . $usuarioUsername . '".'
+            : '')
 );
 
 ?>
@@ -343,64 +398,10 @@ registrarLog(
                     </p>
                 </div>
 
-                <div class="usuario-detalle">
+                <!-- Mismos datos y orden que la tarjeta de
+                     guardar_empresa.php (empresa creada). -->
 
-                    <div class="usuario-detalle-grid">
-
-                        <div class="usuario-detalle-item">
-                            <span>ID de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['id'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Código de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['codigo_empresa'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Nombre</span>
-                            <strong><?= htmlspecialchars($empresa['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>CIF</span>
-                            <strong><?= htmlspecialchars($empresa['cif'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Dirección</span>
-                            <strong><?= htmlspecialchars($empresa['direccion'] ?? 'No indicada', ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Teléfono</span>
-                            <strong><?= htmlspecialchars($empresa['telefono'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Email</span>
-                            <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado', ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item empresa-estado-item">
-                            <span>Estado</span>
-                            <strong class="<?= $empresa['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
-                                <?= htmlspecialchars($empresa['estado'], ENT_QUOTES, 'UTF-8') ?>
-                            </strong>
-                        </div>
-
-                        <?php if ($empresa['estado'] === 'Inactivo'): ?>
-
-                            <div class="usuario-detalle-item empresa-motivo-item">
-                                <span>Motivo</span>
-                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo']), ENT_QUOTES, 'UTF-8') ?></strong>
-                            </div>
-
-                        <?php endif; ?>
-
-                    </div>
-
-                </div>
+                <?php include 'tarjeta_empresa.php'; ?>
 
                 <div class="form-actions">
 

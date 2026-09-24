@@ -37,8 +37,6 @@ $email           = trim($_POST['email'] ?? '');
 $estado          = trim($_POST['estado'] ?? '');
 $motivoInactivo  = trim($_POST['motivo_inactivo'] ?? '');
 
-$estadosValidos = ['Activo', 'Inactivo'];
-
 // Acceso de la empresa (rol EMPRESA): no es un usuario
 // aparte que "pertenece" a la empresa, es el login de la
 // propia empresa, así que se crea a la vez y no hace falta
@@ -65,69 +63,24 @@ $usuarioUsername = trim($_POST['usuario_username'] ?? '');
 
 $errores = [];
 
-if (
-    $codigoEmpresa === '' ||
-    $nombre === '' ||
-    $cif === '' ||
-    $email === ''
-) {
-
-    $errores[] = ['mensaje' => 'Faltan datos obligatorios.', 'campo' => null];
-
-}
-
 if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
 
     $errores[] = ['mensaje' => 'El código de empresa no es válido.', 'campo' => null];
 
 }
 
-if (!validarNombreEmpresa($nombre)) {
-
-    $errores[] = [
-        'mensaje' => !preg_match('/^[\p{L}\p{N}]/u', $nombre)
-            ? 'El nombre de la empresa debe empezar con una letra o un número.'
-            : 'El nombre de la empresa no es válido. Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.',
-        'campo' => 'nombre',
-    ];
-
-}
-
-if (!validarCIF($cif)) {
-
-    $errores[] = ['mensaje' => 'El CIF no es válido.', 'campo' => 'cif'];
-
-}
-
-if ($direccion !== '' && !validarDireccion($direccion)) {
-
-    $errores[] = ['mensaje' => 'La dirección no es válida.', 'campo' => 'direccion'];
-
-}
-
-if ($telefono !== '' && !validarTelefono($telefono)) {
-
-    $errores[] = ['mensaje' => 'El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', 'campo' => 'telefono'];
-
-}
-
-if (!validarEmail($email)) {
-
-    $errores[] = ['mensaje' => 'El email no es válido.', 'campo' => 'email'];
-
-}
-
-if (!in_array($estado, $estadosValidos, true)) {
-
-    $errores[] = ['mensaje' => 'El estado seleccionado no es válido.', 'campo' => 'estado'];
-
-}
-
-if ($estado === 'Inactivo' && !in_array($motivoInactivo, ['impago', 'fin_contrato'], true)) {
-
-    $errores[] = ['mensaje' => 'Debes seleccionar un motivo.', 'campo' => 'motivo_inactivo'];
-
-}
+// Nombre, CIF, dirección, teléfono, email, estado y motivo:
+// mismas reglas que al editar (ver includes/empresas.php). Al
+// crear, el email es obligatorio: es también el del acceso.
+$errores = array_merge($errores, validarDatosEmpresa([
+    'nombre'          => $nombre,
+    'cif'             => $cif,
+    'direccion'       => $direccion,
+    'telefono'        => $telefono,
+    'email'           => $email,
+    'estado'          => $estado,
+    'motivo_inactivo' => $motivoInactivo,
+], true));
 
 
 // =====================================================
@@ -238,14 +191,7 @@ if ($stmtCodigo->fetch()) {
 // SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
 // =====================================================
 
-if (!empty($errores)) {
-
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'crear_empresa.php', $primerCampo);
-
-}
+volverConErroresEmpresa($errores, 'crear_empresa.php');
 
 
 // =====================================================
@@ -326,7 +272,7 @@ try {
     // Misma contraseña inicial fija que guardar_usuario.php y
     // resetear_password.php, para que sea consistente en toda
     // la app. cambiar_password obliga a cambiarla al entrar.
-    $passwordTemporal = '123456';
+    $passwordTemporal = PASSWORD_INICIAL;
 
     $passwordHash = password_hash($passwordTemporal, PASSWORD_DEFAULT);
 
@@ -438,10 +384,15 @@ $usuarioCreado = $stmtDatosUsuario->fetch(PDO::FETCH_ASSOC);
 
 // Usuario de acceso (login): codigo_empresa-id-username, el
 // mismo formato que se escribe en login.php.
-$usuarioAcceso =
-    $empresa['codigo_empresa'] . '-' .
-    $usuarioCreado['id'] . '-' .
-    $usuarioCreado['username'];
+$usuarioAcceso = loginAcceso($empresa['codigo_empresa'], (int) $usuarioCreado['id'], $usuarioCreado['username']);
+
+// Datos del login para la tarjeta (ver tarjeta_empresa.php).
+$datosLogin = [
+    ['Username', $usuarioAcceso],
+    ['Contraseña', 'Pendiente de cambio'],
+];
+
+$avisoLogin = 'La contraseña inicial se ha asignado automáticamente. La empresa deberá cambiarla en su primer acceso.';
 
 registrarLog(
     LOG_EXITO,
@@ -517,109 +468,14 @@ registrarLog(
 
                         <strong>
                             <?= htmlspecialchars($empresa['nombre']) ?>
-                        </strong>
-
-                        se ha creado correctamente.
+                        </strong> se ha creado correctamente.
 
                     </p>
 
                 </div>
 
 
-                <h2 class="confirmation-section-title">Datos de la empresa</h2>
-
-                <div class="usuario-detalle">
-
-                    <div class="usuario-detalle-grid">
-
-                        <div class="usuario-detalle-item">
-                            <span>ID de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['id']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Código de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['codigo_empresa']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Nombre</span>
-                            <strong><?= htmlspecialchars($empresa['nombre']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>CIF</span>
-                            <strong><?= htmlspecialchars($empresa['cif']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Dirección</span>
-                            <strong><?= htmlspecialchars($empresa['direccion'] ?? 'No indicada') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Teléfono</span>
-                            <strong><?= htmlspecialchars($empresa['telefono'] ?? 'No indicado') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Email</span>
-                            <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item empresa-estado-item">
-                            <span>Estado</span>
-                            <strong class="<?= $empresa['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
-                                <?= htmlspecialchars($empresa['estado']) ?>
-                            </strong>
-                        </div>
-
-                        <?php if ($empresa['estado'] === 'Inactivo'): ?>
-
-                            <div class="usuario-detalle-item empresa-motivo-item">
-                                <span>Motivo</span>
-                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo'])) ?></strong>
-                            </div>
-
-                        <?php endif; ?>
-
-                    </div>
-
-                </div>
-
-
-                <div class="access-section">
-
-                    <h2 class="confirmation-section-title">Datos del login</h2>
-
-                <div class="usuario-detalle">
-
-                    <div class="usuario-detalle-grid">
-
-                        <div class="usuario-detalle-item">
-                            <span>Username</span>
-                            <strong><?= htmlspecialchars($usuarioAcceso) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Contraseña</span>
-                            <strong>Pendiente de cambio</strong>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="form-info">
-
-                    <p>
-                        La contraseña inicial se ha asignado automáticamente.
-                        La empresa deberá cambiarla en su primer acceso.
-                    </p>
-
-                </div>
-
-                </div>
+                <?php include 'tarjeta_empresa.php'; ?>
 
 
                 <div class="form-actions">

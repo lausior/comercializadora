@@ -91,30 +91,9 @@ $stmtEmpresa->execute([$id]);
 
 $empresa = $stmtEmpresa->fetch(PDO::FETCH_ASSOC);
 
-$stmtUsuario = $pdo->prepare("
-    SELECT
-        u.id,
-        u.username,
-        u.nombre,
-        u.apellidos,
-        u.email,
-        u.telefono,
-        u.estado,
-        u.motivo_inactivo,
-        r.nombre AS rol
-    FROM usuarios u
-
-    INNER JOIN roles r
-        ON u.id_rol = r.id
-
-    WHERE u.id_empresa = ?
-    ORDER BY u.id
-    LIMIT 1
-");
-
-$stmtUsuario->execute([$id]);
-
-$usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC) ?: null;
+// Usuario de acceso (rol EMPRESA), para mostrar su login en la
+// confirmación. Se elimina junto con la empresa, más abajo.
+$usuario = obtenerUsuarioAccesoEmpresa($pdo, $id);
 
 
 // =====================================================
@@ -191,42 +170,35 @@ registrarLog(
         '.'
 );
 
+// Datos del login para la confirmación (la notificación del
+// listado y la página, ver tarjeta_empresa.php). La contraseña
+// no se muestra: la cuenta ya no existe.
+$datosLogin = $usuario !== null
+    ? [['Username', loginAcceso($empresa['codigo_empresa'], (int) $usuario['id'], $usuario['username'])]]
+    : null;
+
+$avisoLogin = 'El acceso de la empresa se ha eliminado junto con ella: ya no podrá iniciar sesión con este usuario.';
+
 if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
     header('Content-Type: application/json; charset=UTF-8');
 
+    // Mismos campos y orden que las tarjetas (camposDatosEmpresa()).
     $seccionesRespuesta = [
         [
             'titulo' => 'Datos de la empresa',
-            'campos' => [
-                ['ID de empresa', $empresa['id']],
-                ['Código de empresa', $empresa['codigo_empresa']],
-                ['Nombre', $empresa['nombre']],
-                ['CIF', $empresa['cif']],
-                ['Dirección', $empresa['direccion'] ?? 'No indicada'],
-                ['Teléfono', $empresa['telefono'] ?? 'No indicado'],
-                ['Email', $empresa['email'] ?? 'No indicado'],
-                [null, null],
-                ['Estado', $empresa['estado']],
-                ...($empresa['estado'] === 'Inactivo'
-                    ? [['Motivo', etiquetaMotivoInactivo($empresa['motivo_inactivo'])]]
-                    : []),
-            ],
+            'campos' => array_map(
+                fn(array $campo): array => [$campo['etiqueta'], $campo['valor']],
+                camposDatosEmpresa($empresa)
+            ),
         ],
     ];
 
-    if ($usuario) {
-
-        $usuarioAcceso =
-            $empresa['codigo_empresa'] . '-' .
-            $usuario['id'] . '-' .
-            $usuario['username'];
+    if ($datosLogin !== null) {
 
         $seccionesRespuesta[] = [
             'titulo' => 'Datos del login',
-            'campos' => [
-                ['Username', $usuarioAcceso],
-            ],
+            'campos' => $datosLogin,
         ];
 
     }
@@ -295,17 +267,19 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                 <div>
 
-                    <h1>
-                        Empresas
-                    </h1>
+                    <h1>Empresas</h1>
 
+                    <p>
+                        Empresa eliminada correctamente
+                    </p>
 
                 </div>
 
-
                 <div class="page-header-actions">
 
-                   
+                    <a href="crear_empresa.php" class="config-save-button">
+                        + Añadir empresa
+                    </a>
 
                 </div>
 
@@ -314,14 +288,13 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
             <!-- =================================================
                  CONFIRMACIÓN
+                 =================================================
+                 Misma tarjeta que guardar_empresa.php y
+                 actualizar_empresa.php (empresa creada /
+                 actualizada), para que las tres se vean igual.
             ================================================== -->
 
-            <div class="config-card deletion-confirmation-card" id="deletion-confirmation-card">
-
-
-                <h2 data-drag-handle>
-                    Empresa eliminada
-                </h2>
+            <div class="config-card confirmation-card">
 
 
                 <div class="form-info registration-success">
@@ -341,97 +314,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                 </div>
 
 
-                <p class="confirmation-section-label">Datos de la empresa</p>
-
-                <div class="usuario-detalle">
-
-                    <div class="usuario-detalle-grid">
-
-                        <div class="usuario-detalle-item">
-                            <span>ID de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['id']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Código de empresa</span>
-                            <strong><?= htmlspecialchars($empresa['codigo_empresa']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Nombre</span>
-                            <strong><?= htmlspecialchars($empresa['nombre']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>CIF</span>
-                            <strong><?= htmlspecialchars($empresa['cif']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Dirección</span>
-                            <strong><?= htmlspecialchars($empresa['direccion'] ?? 'No indicada') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Teléfono</span>
-                            <strong><?= htmlspecialchars($empresa['telefono'] ?? 'No indicado') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>Email</span>
-                            <strong><?= htmlspecialchars($empresa['email'] ?? 'No indicado') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item"></div>
-
-                        <div class="usuario-detalle-item empresa-estado-item">
-                            <span>Estado</span>
-                            <strong class="<?= $empresa['estado'] === 'Activo' ? 'text-success' : 'text-danger' ?>">
-                                <?= htmlspecialchars($empresa['estado']) ?>
-                            </strong>
-                        </div>
-
-                        <?php if ($empresa['estado'] === 'Inactivo'): ?>
-
-                            <div class="usuario-detalle-item empresa-motivo-item">
-                                <span>Motivo</span>
-                                <strong><?= htmlspecialchars(etiquetaMotivoInactivo($empresa['motivo_inactivo'])) ?></strong>
-                            </div>
-
-                        <?php endif; ?>
-
-                    </div>
-
-                </div>
-
-
-                <?php if ($usuario): ?>
-
-                    <?php
-
-                    $usuarioAcceso =
-                        $empresa['codigo_empresa'] . '-' .
-                        $usuario['id'] . '-' .
-                        $usuario['username'];
-
-                    ?>
-
-                    <p class="confirmation-section-label">Datos del login</p>
-
-                    <div class="usuario-detalle">
-
-                        <div class="usuario-detalle-grid">
-
-                            <div class="usuario-detalle-item">
-                                <span>Username</span>
-                                <strong><?= htmlspecialchars($usuarioAcceso) ?></strong>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                <?php endif; ?>
+                <?php include 'tarjeta_empresa.php'; ?>
 
 
                 <!-- =================================================
@@ -440,16 +323,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
                 <div class="form-actions">
 
-
-                    <a href="crear_empresa.php" class="config-save-button">
-                        + Añadir empresa
-                    </a>
-
-
                     <a href="empresas.php" class="config-cancel-button">
-                        Volver
+                        Volver a empresas
                     </a>
-
 
                 </div>
 
@@ -468,55 +344,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
     ================================================== -->
 
     <?php include '../../templates/footer.php'; ?>
-
-
-<script>
-    const confirmationCard = document.getElementById('deletion-confirmation-card');
-    const dragHandle = confirmationCard?.querySelector('[data-drag-handle]');
-
-    if (confirmationCard && dragHandle) {
-        let isDragging = false;
-        let offsetX = 0;
-        let offsetY = 0;
-
-        dragHandle.addEventListener('pointerdown', (event) => {
-            const cardRect = confirmationCard.getBoundingClientRect();
-
-            isDragging = true;
-            offsetX = event.clientX - cardRect.left;
-            offsetY = event.clientY - cardRect.top;
-
-            confirmationCard.style.position = 'fixed';
-            confirmationCard.style.margin = '0';
-            confirmationCard.style.left = `${cardRect.left}px`;
-            confirmationCard.style.top = `${cardRect.top}px`;
-            confirmationCard.classList.add('is-dragging');
-            dragHandle.setPointerCapture(event.pointerId);
-        });
-
-        dragHandle.addEventListener('pointermove', (event) => {
-            if (!isDragging) {
-                return;
-            }
-
-            const maxLeft = window.innerWidth - confirmationCard.offsetWidth;
-            const maxTop = window.innerHeight - confirmationCard.offsetHeight;
-
-            confirmationCard.style.left = `${Math.max(0, Math.min(event.clientX - offsetX, maxLeft))}px`;
-            confirmationCard.style.top = `${Math.max(0, Math.min(event.clientY - offsetY, maxTop))}px`;
-        });
-
-        dragHandle.addEventListener('pointerup', () => {
-            isDragging = false;
-            confirmationCard.classList.remove('is-dragging');
-        });
-
-        dragHandle.addEventListener('pointercancel', () => {
-            isDragging = false;
-            confirmationCard.classList.remove('is-dragging');
-        });
-    }
-</script>
 
 </body>
 
