@@ -59,46 +59,49 @@ if ($id <= 0) {
 
 }
 
+// Se acumulan TODOS los errores (como en
+// guardar_comercializadora.php) y se marcan todos los campos
+// a la vez al volver al formulario.
+$errores = [];
+
 if (!validarNombreEmpresa($nombre)) {
 
-    establecerErrorFormulario(
-        $nombre !== '' && !preg_match('/^[\p{L}\p{N}]/u', $nombre)
+    $errores[] = [
+        'mensaje' => $nombre !== '' && !preg_match('/^[\p{L}\p{N}]/u', $nombre)
             ? 'El nombre debe empezar con una letra o un número.'
             : 'El nombre es obligatorio y debe tener entre 2 y 150 caracteres. Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.',
-        $_POST,
-        'editar_comercializadora.php?id=' . $id,
-        'nombre'
-    );
+        'campo' => 'nombre',
+    ];
 
 }
 
 if (!validarCIF($cif)) {
 
-    establecerErrorFormulario('El CIF no es válido.', $_POST, 'editar_comercializadora.php?id=' . $id, 'cif');
+    $errores[] = ['mensaje' => 'El CIF no es válido.', 'campo' => 'cif'];
 
 }
 
 if ($direccion !== '' && !validarDireccion($direccion)) {
 
-    establecerErrorFormulario('La dirección no es válida.', $_POST, 'editar_comercializadora.php?id=' . $id, 'direccion');
+    $errores[] = ['mensaje' => 'La dirección no es válida.', 'campo' => 'direccion'];
 
 }
 
 if ($telefono !== '' && !validarTelefono($telefono)) {
 
-    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'editar_comercializadora.php?id=' . $id, 'telefono');
+    $errores[] = ['mensaje' => 'El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', 'campo' => 'telefono'];
 
 }
 
 if ($email !== '' && !validarEmail($email)) {
 
-    establecerErrorFormulario('El email no es válido.', $_POST, 'editar_comercializadora.php?id=' . $id, 'email');
+    $errores[] = ['mensaje' => 'El email no es válido.', 'campo' => 'email'];
 
 }
 
 if (!$suministraLuz && !$suministraGas) {
 
-    establecerErrorFormulario('Debes marcar al menos un servicio (luz o gas).', $_POST, 'editar_comercializadora.php?id=' . $id, 'suministra_luz');
+    $errores[] = ['mensaje' => 'Debes marcar al menos un servicio (luz o gas).', 'campo' => 'suministra_luz'];
 
 }
 
@@ -178,7 +181,18 @@ $stmt->execute([$cif, $id]);
 
 if ($stmt->fetch()) {
 
-    establecerErrorFormulario('Ya existe otra comercializadora con ese CIF.', $_POST, 'editar_comercializadora.php?id=' . $id, 'cif');
+    $errores[] = ['mensaje' => 'Ya existe otra comercializadora con ese CIF.', 'campo' => 'cif'];
+
+}
+
+
+// =====================================================
+// SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
+// =====================================================
+
+if (!empty($errores)) {
+
+    establecerErroresFormulario($errores, $_POST, 'editar_comercializadora.php?id=' . $id);
 
 }
 
@@ -296,11 +310,6 @@ registrarLog(
                         <div class="usuario-detalle-item">
                             <span>Nombre</span>
                             <strong><?= htmlspecialchars($comercializadora['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>ID</span>
-                            <strong><?= htmlspecialchars($comercializadora['id'], ENT_QUOTES, 'UTF-8') ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">

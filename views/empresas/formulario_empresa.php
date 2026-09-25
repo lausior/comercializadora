@@ -85,9 +85,11 @@ $camposTexto = [
         </label>
 
         <input type="text" id="codigo_empresa" name="codigo_empresa" maxlength="6"
+            class="<?= claseErrorCampo($errorFormulario, 'codigo_empresa') ?>"
             value="<?= htmlspecialchars((string) ($empresa['codigo_empresa'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" readonly>
 
-        <span class="field-error" id="error-codigo_empresa"></span>
+        <span class="field-error"
+            id="error-codigo_empresa"><?= mensajeErrorCampo($errorFormulario, 'codigo_empresa') ?></span>
 
     </div>
 

@@ -372,14 +372,21 @@ document.addEventListener('DOMContentLoaded', () => {
        11. FILTROS
     ========================================================= */
 
+    // Recordar los filtros al recargar la página (mismo
+    // comportamiento que Usuarios; ver crearMemoriaFiltros() en
+    // js/multi-select-filter.js).
+    const memoriaFiltros = window.crearMemoriaFiltros('filtrosLogs', filtros);
+
     filtros.forEach(filtro => {
 
         filtro.addEventListener('input', () => {
+            memoriaFiltros.guardar();
             paginaActual = 1;
             mostrarPagina();
         });
 
         filtro.addEventListener('change', () => {
+            memoriaFiltros.guardar();
             paginaActual = 1;
             mostrarPagina();
         });
@@ -401,6 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
             filtros.forEach(filtro => {
                 window.limpiarMultiFiltro(filtro);
             });
+
+            memoriaFiltros.olvidar();
 
             paginaActual = 1;
             mostrarPagina();
@@ -689,6 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
        18. PAGINACIÓN INICIAL
     ========================================================= */
 
+    memoriaFiltros.restaurar();
     mostrarPagina();
 
 });

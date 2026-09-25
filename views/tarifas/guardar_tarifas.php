@@ -41,8 +41,10 @@ $esClientes = $ambito === 'clientes';
 // Al volver, la tabla del cliente sigue abierta si se ha
 // guardado ella o si estaba desplegada al guardar la de
 // comercializadoras (campo cliente_abierto, ver js/tarifas.js).
+// También se conserva el cliente elegido en su buscador
+// (id_cliente), para volver a su fila.
 $clienteAbierto = $esClientes || ($_POST['cliente_abierto'] ?? '') === '1';
-$urlVolver = urlRejillaTarifas($servicio, $peaje, $clienteAbierto);
+$urlVolver = urlRejillaTarifas($servicio, $peaje, $clienteAbierto, (int) ($_POST['id_cliente'] ?? 0));
 $claveRejilla = $ambito . '|' . $servicio . '|' . $peaje;
 
 
@@ -171,7 +173,7 @@ if (!empty($errores)) {
 
     establecerResultadoTarifas([
         'rejilla' => $claveRejilla,
-        'mensaje' => 'No se ha guardado nada: corrige las celdas marcadas en rojo y vuelve a guardar.',
+        'mensaje' => 'El formulario contiene errores. Revísalos antes de enviarlo (no se ha guardado nada: corrige las celdas marcadas en rojo).',
         'detalle' => $detalle,
         'filas'   => $filas,
         'errores' => $errores,
@@ -214,12 +216,45 @@ $stmtFactura = $pdo->prepare('
     ON DUPLICATE KEY UPDATE ' . implode(', ', array_map(fn(string $columna): string => $columna . ' = VALUES(' . $columna . ')', $columnasFactura)) . '
 ');
 
+$stmtBorrarFactura = $pdo->prepare('DELETE FROM datos_factura WHERE id_tarifa = ?');
+
 /**
  * Guarda los datos de factura de una tarifa. Devuelve si ha
  * cambiado algo (MySQL: 1 = insertada, 2 = actualizada,
  * 0 = ya estaba igual).
+ *
+ * Una fila sin ningún dato de factura escrito (y con el IVA y
+ * el impuesto eléctrico por defecto, que los desplegables
+ * siempre envían) no se guarda: si no, cada tarifa de
+ * comercializadora tendría una fila vacía y el primer
+ * guardado las contaría todas como "modificadas". Si había
+ * una, se borra.
  */
-$guardarFactura = function (int $idTarifa, array $datos) use ($stmtFactura, $columnasFactura): bool {
+$guardarFactura = function (int $idTarifa, array $datos) use ($stmtFactura, $stmtBorrarFactura, $columnasFactura): bool {
+
+    $desplegables = [
+        'iva'                => IVA_POR_DEFECTO,
+        'impuesto_electrico' => IMPUESTO_ELECTRICO_POR_DEFECTO,
+    ];
+
+    $tieneDatos = false;
+
+    foreach ($columnasFactura as $columna) {
+
+        $valor = $datos[$columna] ?? null;
+
+        if (isset($desplegables[$columna])) {
+            $tieneDatos = $tieneDatos || ($valor !== null && (float) $valor !== (float) $desplegables[$columna]);
+        } else {
+            $tieneDatos = $tieneDatos || $valor !== null;
+        }
+
+    }
+
+    if (!$tieneDatos) {
+        $stmtBorrarFactura->execute([$idTarifa]);
+        return $stmtBorrarFactura->rowCount() > 0;
+    }
 
     $stmtFactura->execute(array_intersect_key($datos, array_flip($columnasFactura)) + ['id_tarifa' => $idTarifa]);
 

@@ -145,7 +145,7 @@ if ($id_empresa <= 0) {
 // =====================================================
 
 if (
-    in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true) &&
+    (rolActual() === ROL_NG || esGestorEmpresa()) &&
     $id_empresa !== (int) ($_SESSION['id_empresa'] ?? 0)
 ) {
 
@@ -297,17 +297,23 @@ if ($id_rol > 0) {
 // COMPROBAR QUE PUEDE ASIGNAR ESE ROL
 // =====================================================
 //
-// Ni EMPRESA ni NG eligen rol en el formulario: todo lo
-// que crean desde la sección Usuarios es rol USUARIO
-// (equipo simple, de su propia empresa). SRG no tiene esta
-// restricción.
+// NG solo da de alta rol USUARIO (su equipo interno).
+// EMPRESA y ADMIN eligen entre USUARIO y ADMIN
+// (ROLES_EQUIPO_EMPRESA); nunca otra cuenta EMPRESA. SRG no
+// tiene esta restricción.
 //
 // =====================================================
 
+$rolesAsignables = match (true) {
+    rolActual() === ROL_NG => [ROL_USUARIO],
+    esGestorEmpresa()      => ROLES_EQUIPO_EMPRESA,
+    default                => null,
+};
+
 if (
-    in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true) &&
+    $rolesAsignables !== null &&
     $rolSeleccionado &&
-    $rolSeleccionado['nombre'] !== ROL_USUARIO
+    !in_array($rolSeleccionado['nombre'], $rolesAsignables, true)
 ) {
 
     $errores[] = ['mensaje' => 'No puedes asignar ese rol.', 'campo' => 'id_rol'];
@@ -390,7 +396,7 @@ if ($estado === 'Inactivo' && $rolSeleccionado) {
 if (
     $estado === 'Activo' &&
     $rolSeleccionado &&
-    $rolSeleccionado['nombre'] === ROL_USUARIO &&
+    in_array($rolSeleccionado['nombre'], ROLES_EQUIPO_EMPRESA, true) &&
     $empresaSeleccionada &&
     $empresaSeleccionada['estado'] === 'Inactivo'
 ) {
@@ -406,10 +412,7 @@ if (
 
 if (!empty($errores)) {
 
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'crear_usuario.php', $primerCampo);
+    establecerErroresFormulario($errores, $_POST, 'crear_usuario.php');
 
 }
 
@@ -620,7 +623,7 @@ $usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $
 //
 // =====================================================
 
-$esRolUsuario = $usuario['rol'] === ROL_USUARIO;
+$esRolUsuario = in_array($usuario['rol'], ROLES_EQUIPO_EMPRESA, true);
 
 $estadoPassword = (int) $usuario['cambiar_password'] === 1
     ? 'Pendiente de cambio'

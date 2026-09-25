@@ -117,7 +117,7 @@ if (!$usuario) {
 // COMPROBAR QUE PUEDE ELIMINAR ESTE USUARIO
 // =====================================================
 
-if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+if (!puedeVerUsuario($usuario)) {
 
     responderErrorEliminarUsuario('No tienes permiso para eliminar este usuario.');
 

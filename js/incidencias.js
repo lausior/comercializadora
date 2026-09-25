@@ -264,153 +264,52 @@ function obtenerCliente(incidencia) {
    06. OBTENER INCIDENCIAS FILTRADAS
 ========================================================= */
 
-function obtenerIncidenciasFiltradas() {
+// Mismo criterio que los filtros de Usuarios: dentro de un
+// filtro vale CUALQUIERA de las opciones marcadas (sin
+// ninguna marcada, no filtra); entre filtros, deben
+// cumplirse todos.
+function coincideSeleccion(filtro, valor) {
 
-    const texto =
-        buscarIncidencia
-            ? normalizar(
-                buscarIncidencia.value
-            )
-            : '';
+    if (!filtro) {
+        return true;
+    }
 
-    const estado =
-        filtroEstado
-            ? normalizar(
-                filtroEstado.value
-            )
-            : '';
+    const seleccionados = window.obtenerSeleccionMultiFiltro(filtro).map(normalizar);
 
-    const prioridad =
-        filtroPrioridad
-            ? normalizar(
-                filtroPrioridad.value
-            )
-            : '';
-
-    const responsable =
-        filtroResponsable
-            ? normalizar(
-                filtroResponsable.value
-            )
-            : '';
-
-
-    return incidencias.filter(
-        incidencia => {
-
-            /* ---------------------------------------------
-               BÚSQUEDA GENERAL
-            --------------------------------------------- */
-
-            if (texto !== '') {
-
-                const titulo =
-                    normalizar(
-                        obtenerTitulo(incidencia)
-                    );
-
-                const cliente =
-                    normalizar(
-                        obtenerCliente(incidencia)
-                    );
-
-                const descripcion =
-                    normalizar(
-                        obtenerDescripcion(incidencia)
-                    );
-
-                const id =
-                    normalizar(
-                        obtenerId(incidencia)
-                    );
-
-
-                const coincideTexto =
-                    titulo.includes(texto) ||
-                    cliente.includes(texto) ||
-                    descripcion.includes(texto) ||
-                    id.includes(texto);
-
-
-                if (!coincideTexto) {
-                    return false;
-                }
-
-            }
-
-
-            /* ---------------------------------------------
-               ESTADO
-            --------------------------------------------- */
-
-            if (
-                estado !== '' &&
-                estado !== 'todos los estados'
-            ) {
-
-                if (
-                    normalizar(
-                        obtenerEstado(incidencia)
-                    ) !== estado
-                ) {
-
-                    return false;
-
-                }
-
-            }
-
-
-            /* ---------------------------------------------
-               PRIORIDAD
-            --------------------------------------------- */
-
-            if (
-                prioridad !== '' &&
-                prioridad !== 'todas las prioridades'
-            ) {
-
-                if (
-                    normalizar(
-                        obtenerPrioridad(incidencia)
-                    ) !== prioridad
-                ) {
-
-                    return false;
-
-                }
-
-            }
-
-
-            /* ---------------------------------------------
-               RESPONSABLE
-            --------------------------------------------- */
-
-            if (
-                responsable !== '' &&
-                responsable !== 'todos'
-            ) {
-
-                if (
-                    normalizar(
-                        obtenerResponsable(incidencia)
-                    ) !== responsable
-                ) {
-
-                    return false;
-
-                }
-
-            }
-
-
-            return true;
-
-        }
-    );
+    return seleccionados.length === 0 || seleccionados.includes(normalizar(valor));
 
 }
+
+function obtenerIncidenciasFiltradas() {
+
+    const texto = buscarIncidencia ? normalizar(buscarIncidencia.value) : '';
+
+    return incidencias.filter(incidencia => {
+
+        // Búsqueda general (título, cliente, descripción o nº).
+        if (texto !== '') {
+
+            const coincideTexto = [
+                obtenerTitulo(incidencia),
+                obtenerCliente(incidencia),
+                obtenerDescripcion(incidencia),
+                obtenerId(incidencia)
+            ].some(valor => normalizar(valor).includes(texto));
+
+            if (!coincideTexto) {
+                return false;
+            }
+
+        }
+
+        return coincideSeleccion(filtroEstado, obtenerEstado(incidencia))
+            && coincideSeleccion(filtroPrioridad, obtenerPrioridad(incidencia))
+            && coincideSeleccion(filtroResponsable, obtenerResponsable(incidencia));
+
+    });
+
+}
+
 
 
 /* =========================================================
@@ -688,11 +587,27 @@ if (btnBuscar) {
    Mientras se escribe también se actualiza el listado.
 ========================================================= */
 
+// Recordar búsqueda y filtros al recargar la página (mismo
+// comportamiento que Usuarios; ver crearMemoriaFiltros() en
+// js/multi-select-filter.js).
+const filtrosSeleccion = [
+    filtroEstado,
+    filtroPrioridad,
+    filtroResponsable
+].filter(Boolean);
+
+const memoriaFiltros = window.crearMemoriaFiltros(
+    'filtrosIncidencias',
+    [buscarIncidencia, ...filtrosSeleccion].filter(Boolean)
+);
+
 if (buscarIncidencia) {
 
     buscarIncidencia.addEventListener(
         'input',
         () => {
+
+            memoriaFiltros.guardar();
 
             paginaActual = 1;
 
@@ -705,33 +620,35 @@ if (buscarIncidencia) {
 
 
 /* =========================================================
-   13. CAMBIO DE FILTROS SELECT
+   13. CAMBIO DE FILTROS
 ========================================================= */
 
-[
-    filtroEstado,
-    filtroPrioridad,
-    filtroResponsable
-].forEach(
-    filtro => {
+filtrosSeleccion.forEach(filtro => {
 
-        if (!filtro) {
-            return;
-        }
+    filtro.addEventListener('change', () => {
 
+        memoriaFiltros.guardar();
 
-        filtro.addEventListener(
-            'change',
-            () => {
+        paginaActual = 1;
 
-                paginaActual = 1;
+        mostrarIncidencias();
 
-                mostrarIncidencias();
+    });
 
-            }
-        );
+});
+
+// Vacía búsqueda y filtros (botones Limpiar y "Ver todas").
+function limpiarFiltrosIncidencias() {
+
+    if (buscarIncidencia) {
+        buscarIncidencia.value = '';
     }
-);
+
+    filtrosSeleccion.forEach(filtro => window.limpiarMultiFiltro(filtro));
+
+    memoriaFiltros.olvidar();
+
+}
 
 
 /* =========================================================
@@ -797,38 +714,9 @@ if (btnLimpiar) {
         'click',
         () => {
 
-            if (buscarIncidencia) {
+            limpiarFiltrosIncidencias();
 
-                buscarIncidencia.value =
-                    '';
-
-            }
-
-
-            if (filtroEstado) {
-
-                filtroEstado.selectedIndex =
-                    0;
-
-            }
-
-
-            if (filtroPrioridad) {
-
-                filtroPrioridad.selectedIndex =
-                    0;
-
-            }
-
-
-            if (filtroResponsable) {
-
-                filtroResponsable.selectedIndex =
-                    0;
-
-            }
-
-                    paginaActual = 1;
+            paginaActual = 1;
 
 
             mostrarIncidencias();
@@ -850,38 +738,9 @@ if (btnVerTodas) {
         'click',
         () => {
 
-            if (buscarIncidencia) {
+            limpiarFiltrosIncidencias();
 
-                buscarIncidencia.value =
-                    '';
-
-            }
-
-
-            if (filtroEstado) {
-
-                filtroEstado.selectedIndex =
-                    0;
-
-            }
-
-
-            if (filtroPrioridad) {
-
-                filtroPrioridad.selectedIndex =
-                    0;
-
-            }
-
-
-            if (filtroResponsable) {
-
-                filtroResponsable.selectedIndex =
-                    0;
-
-            }
-
-                    paginaActual = 1;
+            paginaActual = 1;
 
 
             mostrarIncidencias();
@@ -990,6 +849,7 @@ if (btnNuevaIncidencia) {
    18. INICIALIZACIÓN
 ========================================================= */
 
+memoriaFiltros.restaurar();
 mostrarIncidencias();
 
 

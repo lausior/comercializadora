@@ -51,4 +51,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+
+    // Control de accesos: mismos rangos que
+    // guardar_intentos_login.php (usa js/validacion-formulario.js).
+    const entero = (minimo, maximo) => (valor, input) => {
+
+        if (valor === '' && !(input.validity && input.validity.badInput)) {
+            return 'Este campo es obligatorio.';
+        }
+
+        const numero = Number(valor);
+
+        return /^\d+$/.test(valor) && numero >= minimo && numero <= maximo
+            ? null
+            : `Introduce un número entero entre ${minimo} y ${maximo}.`;
+
+    };
+
+    if (typeof inicializarValidacionFormulario === 'function') {
+
+        inicializarValidacionFormulario(document.getElementById('formIntentosLogin'), {
+            intentos_login_max: entero(1, 20),
+            minutos_bloqueo_intentos: entero(1, 1440)
+        });
+
+    }
+
 });

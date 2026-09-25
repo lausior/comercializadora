@@ -60,60 +60,21 @@ if ($id <= 0) {
 
 }
 
-if (
-    $nombre === '' ||
-    $cif === ''
-) {
+// Se acumulan TODOS los errores (formato, CIF y username
+// repetidos) y se vuelve al formulario una sola vez, al
+// final, igual que al crear (guardar_empresa.php). Mismas
+// reglas que al crear, salvo el email, que aquí es opcional.
+$urlEditar = 'editar_empresa.php?id=' . $id;
 
-    establecerErrorFormulario('Faltan datos obligatorios.', $_POST, 'editar_empresa.php?id=' . $id);
-
-}
-
-if (!validarNombreEmpresa($nombre)) {
-
-    if (!preg_match('/^[\p{L}\p{N}]/u', $nombre)) {
-        establecerErrorFormulario('El nombre de la empresa debe empezar con una letra o un número.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
-    }
-
-    establecerErrorFormulario('El nombre de la empresa no es válido. Solo se permiten letras, números, espacios y los símbolos . , \' - & ( ) /.', $_POST, 'editar_empresa.php?id=' . $id, 'nombre');
-
-}
-
-if (!validarCIF($cif)) {
-
-    establecerErrorFormulario('El CIF no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'cif');
-
-}
-
-if ($direccion !== '' && !validarDireccion($direccion)) {
-
-    establecerErrorFormulario('La dirección no es válida.', $_POST, 'editar_empresa.php?id=' . $id, 'direccion');
-
-}
-
-if ($telefono !== '' && !validarTelefono($telefono)) {
-
-    establecerErrorFormulario('El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', $_POST, 'editar_empresa.php?id=' . $id, 'telefono');
-
-}
-
-if ($email !== '' && !validarEmail($email)) {
-
-    establecerErrorFormulario('El email no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'email');
-
-}
-
-if (!in_array($estado, ['Activo', 'Inactivo'], true)) {
-
-    establecerErrorFormulario('El estado seleccionado no es válido.', $_POST, 'editar_empresa.php?id=' . $id, 'estado');
-
-}
-
-if ($estado === 'Inactivo' && !in_array($motivoInactivo, array_keys(MOTIVOS_INACTIVO_EMPRESA), true)) {
-
-    establecerErrorFormulario('Debes seleccionar un motivo.', $_POST, 'editar_empresa.php?id=' . $id, 'motivo_inactivo');
-
-}
+$errores = validarDatosEmpresa([
+    'nombre'          => $nombre,
+    'cif'             => $cif,
+    'direccion'       => $direccion,
+    'telefono'        => $telefono,
+    'email'           => $email,
+    'estado'          => $estado,
+    'motivo_inactivo' => $motivoInactivo,
+], false);
 
 
 // =====================================================
@@ -191,7 +152,7 @@ $stmt->execute([$cif, $id]);
 
 if ($stmt->fetch()) {
 
-    establecerErrorFormulario('Ya existe otra empresa con ese CIF.', $_POST, 'editar_empresa.php?id=' . $id, 'cif');
+    $errores[] = ['mensaje' => 'Ya existe otra empresa con ese CIF.', 'campo' => 'cif'];
 
 }
 
@@ -208,7 +169,7 @@ if ($usuarioAcceso !== null) {
 
     if (!validarUsername($usuarioUsername)) {
 
-        establecerErrorFormulario('El username del usuario solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', $_POST, 'editar_empresa.php?id=' . $id, 'usuario_username');
+        $errores[] = ['mensaje' => 'El username del usuario solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', 'campo' => 'usuario_username'];
 
     }
 
@@ -224,11 +185,18 @@ if ($usuarioAcceso !== null) {
 
     if ($stmtUsername->fetch()) {
 
-        establecerErrorFormulario('El username ya existe.', $_POST, 'editar_empresa.php?id=' . $id, 'usuario_username');
+        $errores[] = ['mensaje' => 'El username ya existe.', 'campo' => 'usuario_username'];
 
     }
 
 }
+
+
+// =====================================================
+// SI HAY ALGÚN ERROR, VOLVER AL FORMULARIO CON TODOS
+// =====================================================
+
+volverConErroresEmpresa($errores, $urlEditar);
 
 
 // =====================================================

@@ -81,7 +81,7 @@ if (!$usuario) {
 //
 // =====================================================
 
-if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+if (!puedeVerUsuario($usuario)) {
 
     header('Location: usuarios.php?error=sin_permiso');
     exit;
@@ -163,7 +163,7 @@ $bloqueadoPorEmpresa = $usuario['estado'] === 'Inactivo' && (int) $usuario['inac
 //
 // =====================================================
 
-$empresaDelUsuarioInactiva = $usuario['rol'] === ROL_USUARIO && $usuario['empresa_estado'] === 'Inactivo';
+$empresaDelUsuarioInactiva = in_array($usuario['rol'], ROLES_EQUIPO_EMPRESA, true) && $usuario['empresa_estado'] === 'Inactivo';
 
 if (!$empresaYRolFijos && !$usuarioEsCuentaEmpresa) {
 

@@ -7,6 +7,7 @@ requerirPermiso('usuarios');
 
 require_once '../../config/database.php';
 require_once '../../includes/logs.php';
+require_once '../../includes/validaciones.php';
 require_once '../../includes/form_flash.php';
 require_once '../../includes/empresas.php';
 
@@ -146,17 +147,64 @@ if ($usuarioExiste['rol'] === ROL_EMPRESA) {
 
 $errores = [];
 
-if (
-    $username === '' ||
-    $nombre === '' ||
-    ($apellidos === '' && $usuarioExiste['rol'] !== ROL_EMPRESA) ||
-    $email === '' ||
-    $idEmpresa <= 0 ||
-    $idRol <= 0 ||
-    !in_array($estado, $estadosValidos, true)
-) {
+// Cada campo muestra un solo error (el primero): un
+// obligatorio vacío avisa de eso y no de su formato.
+$obligatorios = [
+    'username'  => $username !== '',
+    'nombre'    => $nombre !== '',
+    'apellidos' => $apellidos !== '' || $usuarioExiste['rol'] === ROL_EMPRESA,
+    'email'     => $email !== '',
+    'id_empresa' => $idEmpresa > 0,
+    'id_rol'    => $idRol > 0,
+    'estado'    => in_array($estado, $estadosValidos, true),
+];
 
-    $errores[] = ['mensaje' => 'Todos los campos obligatorios deben estar completos.', 'campo' => null];
+foreach ($obligatorios as $campo => $relleno) {
+
+    if (!$relleno) {
+        $errores[] = ['mensaje' => 'Este campo es obligatorio.', 'campo' => $campo];
+    }
+
+}
+
+if ($username !== '' && !validarUsername($username)) {
+
+    $errores[] = ['mensaje' => 'El username solo puede contener letras minúsculas (incluida la ñ), sin números, espacios ni otros caracteres especiales.', 'campo' => 'username'];
+
+}
+
+// Nombre, apellidos y teléfono de una cuenta EMPRESA son los
+// de su empresa (se han fijado arriba): no se validan como
+// los de una persona.
+if ($usuarioExiste['rol'] !== ROL_EMPRESA) {
+
+    if ($nombre !== '' && !validarNombre($nombre)) {
+
+        $errores[] = [
+            'mensaje' => preg_match("/^[-']/", $nombre)
+                ? 'El nombre debe empezar con una letra.'
+                : 'El nombre debe tener entre 2 y 50 caracteres. Solo se permiten letras, espacios, guiones y apóstrofes.',
+            'campo' => 'nombre',
+        ];
+
+    }
+
+    if ($apellidos !== '' && !validarApellidos($apellidos)) {
+
+        $errores[] = [
+            'mensaje' => preg_match("/^[-']/", $apellidos)
+                ? 'Los apellidos deben empezar con una letra.'
+                : 'Los apellidos deben tener entre 2 y 100 caracteres. Solo se permiten letras, espacios, guiones y apóstrofes.',
+            'campo' => 'apellidos',
+        ];
+
+    }
+
+    if ($telefono !== '' && !validarTelefono($telefono)) {
+
+        $errores[] = ['mensaje' => 'El teléfono no es válido. Introduce un número nacional o internacional (7 a 15 dígitos).', 'campo' => 'telefono'];
+
+    }
 
 }
 
@@ -181,7 +229,7 @@ if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // COMPROBAR QUE PUEDE EDITAR ESTE USUARIO
 // =====================================================
 
-if (!puedeVerUsuario($usuarioExiste['creado_por'] !== null ? (int) $usuarioExiste['creado_por'] : null)) {
+if (!puedeVerUsuario($usuarioExiste)) {
 
     die('
         <h2>Error</h2>
@@ -340,13 +388,18 @@ if ($idRol > 0) {
 // =====================================================
 
 if (
-    in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true) &&
+    rolActual() === ROL_NG &&
     $idRol !== (int) $usuarioExiste['id_rol']
 ) {
 
     $errores[] = ['mensaje' => 'No puedes cambiar el rol de este usuario.', 'campo' => 'id_rol'];
 
 }
+
+// EMPRESA y ADMIN sí pueden pasar a su gente de Usuario a
+// Admin y al revés, pero nada más (ver
+// ROLES_EQUIPO_EMPRESA): el rol elegido se comprueba más
+// abajo, cuando ya se ha leído de la tabla roles.
 
 
 // =====================================================
@@ -358,6 +411,16 @@ if (
 // a él mismo si es precisamente el que ya tenía ese rol.
 //
 // =====================================================
+
+if (
+    esGestorEmpresa() &&
+    $rol &&
+    !in_array($rol['nombre'], ROLES_EQUIPO_EMPRESA, true)
+) {
+
+    $errores[] = ['mensaje' => 'No puedes asignar ese rol.', 'campo' => 'id_rol'];
+
+}
 
 if ($rol && $rol['nombre'] === ROL_EMPRESA) {
 
@@ -427,7 +490,7 @@ if ($estado === 'Inactivo' && $rol) {
 if (
     $estado === 'Activo' &&
     $rol &&
-    $rol['nombre'] === ROL_USUARIO &&
+    in_array($rol['nombre'], ROLES_EQUIPO_EMPRESA, true) &&
     $empresa &&
     $empresa['estado'] === 'Inactivo'
 ) {
@@ -443,10 +506,7 @@ if (
 
 if (!empty($errores)) {
 
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'editar_usuario.php?id=' . $id, $primerCampo);
+    establecerErroresFormulario($errores, $_POST, 'editar_usuario.php?id=' . $id);
 
 }
 
@@ -617,7 +677,7 @@ $usuarioEsCuentaEmpresa = $usuario['rol'] === ROL_EMPRESA;
 // Igual que arriba, pero para el rol USUARIO: su tarjeta se
 // organiza en "Datos del usuario" / "Datos del login" en vez
 // del listado plano que usan SRG y NG.
-$esRolUsuario = $usuario['rol'] === ROL_USUARIO;
+$esRolUsuario = in_array($usuario['rol'], ROLES_EQUIPO_EMPRESA, true);
 
 $usuarioAcceso = loginAcceso($usuario['codigo_empresa'], (int) $usuario['id'], $usuario['username']);
 

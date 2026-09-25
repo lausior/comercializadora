@@ -136,6 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
+    // Mismas reglas que el servidor (validarEmail() en
+    // includes/validaciones.php: filter_var con
+    // FILTER_VALIDATE_EMAIL), para que el error salga al
+    // escribir y no al guardar:
+    //   - antes de la @: hasta 64 caracteres, sin tildes ni ñ;
+    //     el punto no puede ir al principio, al final ni doble
+    //   - después de la @: al menos un punto; cada parte con
+    //     letras, números y guiones (no al principio ni al
+    //     final, sin "_"); la terminación no solo de números
+    //   - máximo 150 caracteres en total
+    // (Los emails con IP entre corchetes, que PHP admite, no
+    // se aceptan: una comercializadora no los usa.)
     function validarEmailComercializadora(valor) {
 
         const texto = valor.trim();
@@ -145,8 +157,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
 
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) {
-            return 'Introduce un email con un formato válido.';
+        if (texto.length > 150) {
+            return 'El email no puede tener más de 150 caracteres.';
+        }
+
+        const partes = texto.split('@');
+
+        if (partes.length !== 2) {
+            return 'Introduce un email con un formato válido (por ejemplo, info@empresa.com).';
+        }
+
+        const [usuario, dominio] = partes;
+
+        const usuarioValido = usuario.length <= 64
+            && /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*$/.test(usuario);
+
+        const etiquetaDominio = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
+
+        const dominioValido = dominio.length <= 253
+            && new RegExp('^(?:' + etiquetaDominio + '\\.)+' + etiquetaDominio + '$').test(dominio)
+            && !/\.[0-9]+$/.test(dominio);
+
+        if (!usuarioValido || !dominioValido) {
+            return 'Introduce un email con un formato válido (por ejemplo, info@empresa.com), sin tildes, ñ ni espacios.';
         }
 
         return null;
@@ -351,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 mostrarMensajeGeneralComercializadora(
                     formulario,
-                    'Hay campos obligatorios sin completar o con un formato incorrecto. Revisa los campos marcados en rojo.'
+                    'El formulario contiene errores. Revísalos antes de enviarlo.'
                 );
 
                 const mensajeGeneral = formulario.querySelector('#form-error-general');

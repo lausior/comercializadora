@@ -5,6 +5,8 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('partes');
 
+require_once __DIR__ . '/../includes/filtro_multiselect.php';
+
 ?>
 <!DOCTYPE html>
 
@@ -230,18 +232,7 @@ requerirPermiso('partes');
                         Estado
                     </label>
 
-                    <select
-                        id="filtroEstado"
-                        class="planner-select"
-                    >
-
-                        <option>Todos</option>
-                        <option>Pendiente</option>
-                        <option>En curso</option>
-                        <option>Completado</option>
-                        <option>Cerrado</option>
-
-                    </select>
+                    <?php filtroMultiSelect('filtroEstado', 0, 'Todos', ['Pendiente', 'En curso', 'Completado', 'Cerrado']); ?>
 
                 </div>
 
@@ -252,19 +243,7 @@ requerirPermiso('partes');
                         Tipo de parte
                     </label>
 
-                    <select
-                        id="filtroTipo"
-                        class="planner-select"
-                    >
-
-                        <option>Todos</option>
-                        <option>Instalación</option>
-                        <option>Mantenimiento</option>
-                        <option>Revisión</option>
-                        <option>Visita</option>
-                        <option>Avería</option>
-
-                    </select>
+                    <?php filtroMultiSelect('filtroTipo', 1, 'Todos', ['Instalación', 'Mantenimiento', 'Revisión', 'Visita', 'Avería']); ?>
 
                 </div>
 
@@ -275,17 +254,7 @@ requerirPermiso('partes');
                         Responsable
                     </label>
 
-                    <select
-                        id="filtroResponsable"
-                        class="planner-select"
-                    >
-
-                        <option>Todos</option>
-                        <option>Administrador</option>
-                        <option>Juan García</option>
-                        <option>María López</option>
-
-                    </select>
+                    <?php filtroMultiSelect('filtroResponsable', 2, 'Todos', ['Administrador', 'Juan García', 'María López']); ?>
 
                 </div>
 
@@ -296,17 +265,7 @@ requerirPermiso('partes');
                         Prioridad
                     </label>
 
-                    <select
-                        id="filtroPrioridad"
-                        class="planner-select"
-                    >
-
-                        <option>Todas</option>
-                        <option>Alta</option>
-                        <option>Media</option>
-                        <option>Baja</option>
-
-                    </select>
+                    <?php filtroMultiSelect('filtroPrioridad', 3, 'Todas', ['Alta', 'Media', 'Baja']); ?>
 
                 </div>
 
@@ -1193,6 +1152,7 @@ requerirPermiso('partes');
 <?php include '../templates/footer.php'; ?>
 
 
+<script src="../js/multi-select-filter.js"></script>
 <script src="../js/partes.js"></script>
 
 

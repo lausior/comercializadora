@@ -65,7 +65,7 @@ $errores = [];
 
 if (!preg_match('/^[0-9]{6}$/', $codigoEmpresa)) {
 
-    $errores[] = ['mensaje' => 'El código de empresa no es válido.', 'campo' => null];
+    $errores[] = ['mensaje' => 'El código de empresa no es válido.', 'campo' => 'codigo_empresa'];
 
 }
 
@@ -182,7 +182,7 @@ $stmtCodigo->execute([$codigoEmpresa]);
 
 if ($stmtCodigo->fetch()) {
 
-    $errores[] = ['mensaje' => 'El código de empresa ya no está disponible, vuelve a intentarlo.', 'campo' => null];
+    $errores[] = ['mensaje' => 'El código de empresa ya no está disponible, vuelve a intentarlo.', 'campo' => 'codigo_empresa'];
 
 }
 

@@ -71,7 +71,6 @@ if ($id <= 0) {
 
 $stmtComercializadora = $pdo->prepare("
     SELECT
-        id,
         nombre,
         cif,
         direccion,
@@ -158,7 +157,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
             [
                 'titulo' => 'Datos de la comercializadora',
                 'campos' => [
-                    ['ID', $comercializadora['id']],
                     ['Nombre', $comercializadora['nombre']],
                     ['CIF', $comercializadora['cif']],
                     ['Dirección', $comercializadora['direccion'] ?? 'No indicada'],
@@ -253,11 +251,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                         <div class="usuario-detalle-item">
                             <span>Nombre</span>
                             <strong><?= htmlspecialchars($comercializadora['nombre']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>ID</span>
-                            <strong><?= htmlspecialchars($comercializadora['id']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">

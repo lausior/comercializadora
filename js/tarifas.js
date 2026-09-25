@@ -3,8 +3,10 @@
    =========================================================
    La página tiene dos tablas con el mismo funcionamiento,
    cada una en su propio <form class="tarifas-form">:
-     - "Tarifa del cliente" (desplegable, botón de arriba)
-     - "Tarifas de las comercializadoras"
+     - "Tarifa del cliente" (desplegable, botón de arriba):
+       una sola fila, con buscador de cliente
+     - "Tarifas de las comercializadoras", con casillas para
+       elegir cuáles entran al pulsar "Comparar"
    Filas = tarifas de cada titular (cliente o
    comercializadora), columnas = precios del peaje de la
    pestaña y, si la tabla los lleva, datos de factura. Cada
@@ -20,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     inicializarModalEliminarTarifa();
     inicializarPanelCliente();
+    inicializarBuscadorCliente();
+    inicializarComparar(rejillas);
 
     // Aviso al salir de la página (o cambiar de peaje/servicio)
     // con cambios sin guardar en cualquiera de las tablas.
@@ -146,7 +150,7 @@ function inicializarModalEliminarTarifa() {
 
 
 /* =========================================================
-   BOTÓN "TARIFA DEL CLIENTE" Y "COMPARAR"
+   BOTÓN "TARIFA DEL CLIENTE"
    =========================================================
    Despliega / oculta la tabla del cliente encima de la de
    comercializadoras sin recargar. El estado se refleja en la
@@ -206,18 +210,219 @@ function inicializarPanelCliente() {
 
     });
 
-    // Comparar: la comparativa aún no existe; de momento solo
-    // se avisa (ver aviso #compararAviso en tarifas.php).
-    const btnComparar = document.getElementById('btnComparar');
-    const aviso = document.getElementById('compararAviso');
+}
 
-    if (btnComparar && aviso) {
 
-        btnComparar.addEventListener('click', () => {
-            aviso.hidden = false;
-        });
+/* =========================================================
+   BUSCADOR DE CLIENTE (CELDA "CLIENTE" DE SU TABLA)
+   =========================================================
+   Un <input list="listaClientesTarifa"> con las opciones
+   "Nombre Apellidos · NIF" (cada <option> lleva data-id). Al
+   elegir una se recarga la página con ese id_cliente, que
+   muestra su fila (su tarifa actual, o una en blanco).
+   Con Enter se elige la primera que contenga lo escrito.
+========================================================= */
+
+function normalizarTextoTarifas(texto) {
+    return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+function inicializarBuscadorCliente() {
+
+    const lista = document.getElementById('listaClientesTarifa');
+
+    if (!lista) {
+        return;
+    }
+
+    const opciones = Array.from(lista.options);
+
+    function irACliente(idCliente) {
+
+        const url = new URL(window.location.href);
+
+        url.searchParams.set('cliente', '1');
+        url.searchParams.set('id_cliente', idCliente);
+
+        // Otro cliente: la comparativa anterior ya no vale.
+        ['comparar', 'otros', 'comp[]'].forEach(parametro => url.searchParams.delete(parametro));
+        url.hash = '';
+
+        window.location.href = url.toString();
 
     }
+
+    document.querySelectorAll('.buscador-cliente').forEach(buscador => {
+
+        const valorInicial = buscador.value;
+
+        // Elegido de la lista (coincide exactamente con una opción).
+        buscador.addEventListener('input', () => {
+
+            const opcion = opciones.find(opcionActual => opcionActual.value === buscador.value);
+
+            if (opcion) {
+                irACliente(opcion.dataset.id);
+            }
+
+        });
+
+        buscador.addEventListener('keydown', event => {
+
+            if (event.key === 'Escape') {
+                buscador.value = valorInicial;
+                return;
+            }
+
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            // Enter nunca envía el formulario de la tabla.
+            event.preventDefault();
+
+            const buscado = normalizarTextoTarifas(buscador.value);
+
+            if (buscado === '') {
+                return;
+            }
+
+            const opcion = opciones.find(opcionActual => normalizarTextoTarifas(opcionActual.value).includes(buscado));
+
+            if (opcion) {
+                irACliente(opcion.dataset.id);
+            }
+
+        });
+
+        // Al salir sin elegir, vuelve a mostrar el cliente actual.
+        buscador.addEventListener('blur', () => {
+
+            if (!opciones.some(opcionActual => opcionActual.value === buscador.value)) {
+                buscador.value = valorInicial;
+            }
+
+        });
+
+        // Al entrar se selecciona el texto, para escribir otro
+        // nombre directamente.
+        buscador.addEventListener('focus', () => buscador.select());
+
+    });
+
+}
+
+
+/* =========================================================
+   COMPARAR
+   =========================================================
+   - Casillas de la tabla de comercializadoras: cuáles entran
+     en la comparativa (la de la cabecera marca o desmarca
+     todas). Solo cuentan las de la primera fila de cada
+     comercializadora (las filas extra la ocultan).
+   - Botón "Comparar" (bajo la tabla del cliente): recarga la
+     página con comparar=1, comp[] (las marcadas) y otros=1
+     si se mantienen sus otros conceptos; el resultado sale
+     bajo la tabla del cliente (#resultadoComparativa).
+     La comparativa usa lo guardado, así que antes se pide
+     guardar si hay cambios pendientes.
+========================================================= */
+
+function inicializarComparar(rejillas) {
+
+    const casillaTodas = document.querySelector('[data-comparar-todas]');
+
+    function casillasComercializadoras() {
+        return Array.from(document.querySelectorAll('tr.tarifa-fila:not(.tarifa-fila-extra) [data-comparar-comercializadora]'));
+    }
+
+    function actualizarCasillaTodas() {
+
+        if (!casillaTodas) {
+            return;
+        }
+
+        const casillas = casillasComercializadoras();
+        const marcadas = casillas.filter(casilla => casilla.checked).length;
+
+        casillaTodas.checked = casillas.length > 0 && marcadas === casillas.length;
+        casillaTodas.indeterminate = marcadas > 0 && marcadas < casillas.length;
+
+    }
+
+    if (casillaTodas) {
+
+        casillaTodas.addEventListener('change', () => {
+            casillasComercializadoras().forEach(casilla => {
+                casilla.checked = casillaTodas.checked;
+            });
+        });
+
+        document.addEventListener('change', event => {
+            if (event.target.matches('[data-comparar-comercializadora]')) {
+                actualizarCasillaTodas();
+            }
+        });
+
+        actualizarCasillaTodas();
+
+    }
+
+    const boton = document.getElementById('btnComparar');
+    const aviso = document.getElementById('compararAviso');
+
+    if (!boton) {
+        return;
+    }
+
+    function avisar(texto) {
+        aviso.textContent = texto;
+        aviso.hidden = false;
+    }
+
+    boton.addEventListener('click', () => {
+
+        aviso.hidden = true;
+
+        if (rejillas.some(rejilla => rejilla.hayCambios())) {
+            avisar('Hay cambios sin guardar. Guarda antes de comparar: la comparativa usa los datos guardados.');
+            return;
+        }
+
+        const filaCliente = document.querySelector('form.tarifas-form[data-ambito="clientes"] tr.tarifa-fila');
+
+        if (!filaCliente || !filaCliente.dataset.id) {
+            avisar('Rellena y guarda la tarifa actual del cliente antes de comparar.');
+            return;
+        }
+
+        const marcadas = casillasComercializadoras()
+            .filter(casilla => casilla.checked)
+            .map(casilla => casilla.value);
+
+        if (marcadas.length === 0) {
+            avisar('Marca al menos una comercializadora en la tabla "Tarifas de las comercializadoras".');
+            return;
+        }
+
+        const url = new URL(window.location.href);
+
+        url.searchParams.set('cliente', '1');
+        url.searchParams.set('comparar', '1');
+        url.searchParams.delete('comp[]');
+        marcadas.forEach(id => url.searchParams.append('comp[]', id));
+
+        if (document.getElementById('compararOtros')?.checked) {
+            url.searchParams.set('otros', '1');
+        } else {
+            url.searchParams.delete('otros');
+        }
+
+        url.hash = 'resultadoComparativa';
+
+        window.location.href = url.toString();
+
+    });
 
 }
 
@@ -366,15 +571,145 @@ function inicializarRejillaTarifas(formulario) {
 
     }
 
+    /* -----------------------------------------------------
+       VALIDACIÓN DE CADA CELDA
+       Mismas reglas que normalizarValorTarifa() y
+       validarDatosTarifa() (includes/tarifas.php). Todas las
+       celdas son opcionales: solo se comprueba el formato de
+       lo escrito. El error se ve en rojo en la celda y, al
+       pasar el ratón, su mensaje (title).
+    ----------------------------------------------------- */
+
+    const TIPOS_VALOR = {
+        precio:   { patron: /^\d{1,4}(\.\d{1,6})?$/, ejemplo: '0,1099' },
+        cantidad: { patron: /^\d{1,9}(\.\d{1,3})?$/, ejemplo: '85,59' },
+        importe:  { patron: /^\d{1,7}(\.\d{1,2})?$/, ejemplo: '0,83' },
+        dias:     { patron: /^\d{1,3}$/, ejemplo: '31' }
+    };
+
+    const PRECIO_MAXIMO = 100;
+
+    function errorCelda(input) {
+
+        const tipo = input.dataset.tipo;
+        const etiqueta = input.dataset.etiqueta || 'el valor';
+
+        if (tipo === 'nombre') {
+            return input.value.trim().length > 150
+                ? 'El nombre de la tarifa no puede tener más de 150 caracteres.'
+                : null;
+        }
+
+        const reglas = TIPOS_VALOR[tipo];
+
+        if (!reglas) {
+            return null;
+        }
+
+        let valor = input.value.trim().replace(/[\s €%]/g, '');
+
+        if (valor === '') {
+            return null;
+        }
+
+        if (input.dataset.negativo === '1' && valor.startsWith('-')) {
+            valor = valor.slice(1);
+        }
+
+        // "1.234,56" (miles con punto, como copia Excel).
+        if (valor.includes(',')) {
+            valor = valor.replace(/\./g, '').replace(',', '.');
+        }
+
+        const valido = reglas.patron.test(valor)
+            && !(tipo === 'precio' && Number(valor) > PRECIO_MAXIMO)
+            && !(tipo === 'dias' && (Number(valor) < 1 || Number(valor) > 366));
+
+        return valido ? null : `Revisa ${etiqueta}: no es un valor válido (usa por ejemplo ${reglas.ejemplo}).`;
+
+    }
+
+    function validarCelda(input) {
+
+        const celda = input.closest('td');
+        const error = errorCelda(input);
+
+        if (celda) {
+            celda.classList.toggle('celda-error', Boolean(error));
+            if (error) {
+                celda.title = error;
+            } else {
+                celda.removeAttribute('title');
+            }
+        }
+
+        input.setAttribute('aria-invalid', error ? 'true' : 'false');
+
+        return !error;
+
+    }
+
+    // Aviso general encima de la tabla (el mismo sitio donde
+    // el servidor pinta el suyo).
+    function mostrarAvisoErrores(mostrar) {
+
+        let aviso = formulario.previousElementSibling;
+
+        if (!aviso || !aviso.classList.contains('tarifas-mensaje')) {
+
+            if (!mostrar) {
+                return;
+            }
+
+            aviso = document.createElement('div');
+            aviso.className = 'form-info tarifas-mensaje';
+            formulario.before(aviso);
+
+        }
+
+        if (!mostrar) {
+            if (aviso.dataset.cliente === '1') {
+                aviso.remove();
+            }
+            return;
+        }
+
+        aviso.dataset.cliente = '1';
+        aviso.classList.remove('registration-success');
+        aviso.classList.add('form-error-general');
+        aviso.setAttribute('role', 'alert');
+        aviso.style.display = 'block';
+        aviso.innerHTML = '<p>El formulario contiene errores. Revísalos antes de enviarlo (las celdas marcadas en rojo muestran su error al pasar el ratón).</p>';
+
+    }
+
+    // Al salir de una celda (clic fuera, Tab, Enter...).
+    tbody.addEventListener('focusout', event => {
+
+        if (event.target.matches('input[data-tipo]')) {
+            validarCelda(event.target);
+        }
+
+    });
+
     tbody.addEventListener('input', event => {
 
         const celda = event.target.closest('td');
 
-        // Al corregir una celda marcada en rojo por el
-        // servidor, se le quita la marca.
+        // Al corregir una celda marcada en rojo (por el
+        // servidor o al salir de ella), se le quita la marca en
+        // cuanto el valor es válido.
         if (celda && celda.classList.contains('celda-error')) {
-            celda.classList.remove('celda-error');
-            celda.removeAttribute('title');
+
+            if (event.target.matches('input[data-tipo]') ? errorCelda(event.target) === null : true) {
+                celda.classList.remove('celda-error');
+                celda.removeAttribute('title');
+            }
+
+        }
+
+        if (!tbody.querySelector('.celda-error')) {
+            mostrarAvisoErrores(false);
         }
 
         actualizarEstado();
@@ -585,6 +920,14 @@ function inicializarRejillaTarifas(formulario) {
     // seguir rellenando.
     function quitarFila(fila) {
 
+        // Tabla del cliente (una sola fila y sin plantilla):
+        // se recarga para que su fila vuelva en blanco.
+        if (!plantilla) {
+            enviando = true;
+            window.location.reload();
+            return;
+        }
+
         const quedanOtras = filas().some(otra => otra !== fila && otra.dataset.titular === fila.dataset.titular);
 
         if (!quedanOtras) {
@@ -646,19 +989,15 @@ function inicializarRejillaTarifas(formulario) {
        al guardar se envían todas las filas igualmente.
     ===================================================== */
 
-    function normalizarBusqueda(texto) {
-        return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-    }
-
     if (buscador) {
 
         buscador.addEventListener('input', () => {
 
-            const buscado = normalizarBusqueda(buscador.value);
+            const buscado = normalizarTextoTarifas(buscador.value);
 
             filas().forEach(fila => {
 
-                const texto = normalizarBusqueda(fila.querySelector('.col-titular').textContent);
+                const texto = normalizarTextoTarifas(fila.querySelector('.col-titular').textContent);
 
                 fila.hidden = buscado !== '' && !texto.includes(buscado);
 
@@ -690,6 +1029,27 @@ function inicializarRejillaTarifas(formulario) {
         if (enviando) {
             event.preventDefault();
             return;
+        }
+
+        // Se validan TODAS las celdas (sin cortar en la
+        // primera) para marcarlas todas a la vez.
+        const resultados = Array.from(tbody.querySelectorAll('input[data-tipo]')).map(validarCelda);
+
+        if (!resultados.every(Boolean)) {
+
+            event.preventDefault();
+
+            mostrarAvisoErrores(true);
+
+            const primera = tbody.querySelector('.celda-error input');
+
+            if (primera) {
+                primera.focus({ preventScroll: true });
+                primera.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }
+
+            return;
+
         }
 
         const datos = {};

@@ -88,14 +88,10 @@ $logoEmpresaSesion = isset($_SESSION['id_empresa'])
             'UTF-8'
         );
 
-        $rolesLegibles = [
-            'SRG'          => 'SRG',
-            'NG_ASESORES'  => 'NG Asesores',
-            'EMPRESA'      => 'Empresa',
-            'USUARIO'      => 'Usuario',
-        ];
-
-        $rolLegible = $rolesLegibles[$_SESSION['rol'] ?? ''] ?? ($_SESSION['rol'] ?? '');
+        // etiquetaRol() está en config/permisos.php.
+        $rolLegible = function_exists('etiquetaRol')
+            ? etiquetaRol($_SESSION['rol'] ?? '')
+            : ($_SESSION['rol'] ?? '');
 
         ?>
 

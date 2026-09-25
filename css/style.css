@@ -3599,10 +3599,29 @@ textarea:focus-visible {
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
+        width: 100%;
+    }
+
+    .help-row strong,
+    .help-row span {
+        flex: 1 1 100%;
+        width: 100%;
     }
 
     .help-row strong {
         flex: none;
+    }
+
+    .support-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .support-icon {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
     }
 
 
@@ -5280,6 +5299,10 @@ body.sidebar-collapsed .submenu {
     display: none !important;
 }
 
+body.sidebar-collapsed .submenu.open {
+    display: flex !important;
+}
+
 
 /* =========================================================
    SEPARADORES
@@ -5321,7 +5344,7 @@ body.sidebar-collapsed .menu-item:hover::after {
 @media (max-width: 680px) {
 
     :root {
-        --sidebar-width: 64px;
+        --sidebar-width: 220px;
     }
 
     .sidebar {
@@ -5334,16 +5357,30 @@ body.sidebar-collapsed .menu-item:hover::after {
     }
 
     .menu-item {
+        justify-content: flex-start;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .menu-label {
+        display: inline-flex;
+    }
+
+    body.sidebar-collapsed .menu-item {
         justify-content: center;
         padding-left: 0;
         padding-right: 0;
     }
 
-    .menu-label {
+    body.sidebar-collapsed .menu-label {
         display: none;
     }
 
     .menu-icon {
+        margin-right: 10px;
+    }
+
+    body.sidebar-collapsed .menu-icon {
         margin-right: 0;
     }
 
@@ -5355,6 +5392,10 @@ body.sidebar-collapsed .menu-item:hover::after {
     .main-content {
         width: calc(100% - var(--sidebar-width));
         margin-left: var(--sidebar-width);
+    }
+
+    .sidebar-resizer {
+        display: flex;
     }
 
 }
@@ -5613,7 +5654,7 @@ body.sidebar-collapsed .sidebar-resizer-arrow {
 @media (max-width: 680px) {
 
     .sidebar-resizer {
-        display: none;
+        display: flex;
     }
 
 }
@@ -6022,6 +6063,10 @@ body.modal-detalle-arrastrando .modal-detalle {
     display: flex;
 }
 
+body.sidebar-collapsed .submenu.open {
+    display: flex !important;
+}
+
 
 .submenu-item {
     min-height: 44px;
@@ -6191,10 +6236,6 @@ body.modal-detalle-arrastrando .modal-detalle {
     margin-top: 14px;
 }
 
-.tarifas-comparar-aviso {
-    flex: 1;
-    margin: 0;
-}
 
 .tarifas-comparar-boton {
     min-width: 150px;
@@ -6502,4 +6543,211 @@ body.modal-detalle-arrastrando .modal-detalle {
     outline: 2px solid var(--primary);
     outline-offset: -2px;
     background: var(--primary-soft);
+}
+
+
+/* =========================================================
+   TARIFAS: BUSCADOR DE CLIENTE, CASILLAS DE COMPARAR Y
+   RESULTADO DE LA COMPARATIVA (views/tarifas/tarifas.php)
+========================================================= */
+
+/* Buscador en la celda "Cliente" (tabla del cliente) */
+
+.tarifas-rejilla .buscador-cliente {
+    width: 100%;
+    min-width: 200px;
+    height: 30px;
+    margin: 4px 0;
+    padding: 0 8px;
+    border: 1px solid var(--line-dark);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+}
+
+.tarifas-rejilla .buscador-cliente:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -1px;
+}
+
+.tarifas-rejilla .col-titular .detalle-titular {
+    display: block;
+    margin: 0 0 4px;
+}
+
+.tarifa-buscador-ayuda {
+    padding: 0 12px !important;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Casillas "comparar" (tabla de comercializadoras) */
+
+.tarifas-rejilla .comparar-casilla {
+    margin-right: 6px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.tarifa-fila-extra .comparar-casilla {
+    visibility: hidden;
+}
+
+.comparar-todas {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* Botón Comparar y aviso */
+
+.tarifas-comparar {
+    flex-wrap: wrap;
+}
+
+.tarifas-comparar-aviso {
+    flex-basis: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft);
+    color: var(--warning);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.comparar-opcion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-soft);
+    font-size: 12px;
+}
+
+/* Resultado */
+
+.comparar-resultado {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.comparar-resultado h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+}
+
+.comparar-ayuda {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.comparar-resumen {
+    margin-bottom: 12px;
+}
+
+.comparar-etiqueta {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.comparar-mejor {
+    margin-left: 6px;
+    background: var(--success);
+    color: #ffffff;
+}
+
+.comparar-tabla-contenedor {
+    overflow-x: auto;
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius-sm);
+}
+
+.comparar-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.comparar-tabla th,
+.comparar-tabla td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.comparar-tabla th {
+    background: #eef2f7;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.comparar-tabla .col-texto {
+    text-align: left;
+    white-space: normal;
+}
+
+.comparar-fila-actual td {
+    background: var(--surface-soft);
+    border-bottom: 2px solid var(--line-dark);
+}
+
+.comparar-fila-mejor td {
+    background: var(--success-soft);
+}
+
+.comparar-nota {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.ahorro-positivo {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.ahorro-negativo {
+    color: var(--danger);
+}
+
+.comparar-incompletas {
+    margin-top: 12px;
+}
+
+.comparar-incompletas ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+}
+
+/* La tabla del cliente tiene una sola fila: sin la altura
+   mínima de la rejilla, que dejaría un hueco en blanco. */
+.tarifas-panel-cliente .tarifas-rejilla-contenedor {
+    min-height: 0;
+}
+
+/* Título del resultado de la comparativa + "Exportar PDF" */
+.comparar-resultado-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.comparar-resultado-cabecera h2 {
+    margin: 0;
 }

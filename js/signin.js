@@ -658,7 +658,7 @@ function validarPasswordConfirm() {
         if (!formularioValido) {
 
             mostrarErrorGeneral(
-                'Revisa los datos introducidos antes de continuar.'
+                'El formulario contiene errores. Revísalos antes de enviarlo.'
             );
 
             const primerError =

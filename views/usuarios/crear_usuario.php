@@ -19,25 +19,28 @@ $datosPrevios = $errorFormulario['datos'] ?? [];
 
 
 // =====================================================
-// EMPRESA: NI EMPRESA NI ROL SON ELEGIBLES
+// QUÉ EMPRESA Y QUÉ ROL SE PUEDEN ELEGIR
 // =====================================================
 //
-// Un usuario con rol EMPRESA solo puede dar de alta
-// usuarios de su propia empresa y con rol USUARIO (equipo
-// simple). Lo mismo aplica a NG con SU propia empresa (NG
-// Asesores): desde la sección Usuarios, NG solo da de alta
-// a su propio equipo interno (rol USUARIO) — para el resto
-// de empresas (sus clientes), el acceso ya se crea junto a
-// la empresa (ver guardar_empresa.php). Así que en ninguno
-// de los dos casos se muestran la empresa ni el rol como
-// campos del formulario: se fijan directamente al guardar
-// (ver guardar_usuario.php).
+// - EMPRESA y ADMIN solo dan de alta gente de su propia
+//   empresa (la empresa va oculta) y eligen entre Usuario y
+//   Admin (ROLES_EQUIPO_EMPRESA). La cuenta EMPRESA no se
+//   elige: es única y se crea junto a la empresa.
+// - NG, desde la sección Usuarios, solo da de alta a su
+//   propio equipo interno (rol USUARIO) — para el resto de
+//   empresas (sus clientes), el acceso ya se crea junto a
+//   la empresa (ver guardar_empresa.php). Empresa y rol van
+//   ocultos.
+// - SRG elige cualquier empresa y cualquier rol.
+//
+// guardar_usuario.php vuelve a comprobarlo todo.
 //
 // =====================================================
 
-$empresaYRolFijos = in_array(rolActual(), [ROL_EMPRESA, ROL_NG], true);
+$empresaFija = rolActual() === ROL_NG || esGestorEmpresa();
+$rolFijo = rolActual() === ROL_NG;
 
-if ($empresaYRolFijos) {
+if ($rolFijo) {
 
     $stmtRolUsuario = $pdo->prepare("
         SELECT id
@@ -49,6 +52,21 @@ if ($empresaYRolFijos) {
     $stmtRolUsuario->execute([ROL_USUARIO]);
 
     $idRolUsuario = (int) $stmtRolUsuario->fetchColumn();
+
+} elseif ($empresaFija) {
+
+    $marcadores = implode(',', array_fill(0, count(ROLES_EQUIPO_EMPRESA), '?'));
+
+    $stmtRoles = $pdo->prepare("
+        SELECT id, nombre
+        FROM roles
+        WHERE nombre IN ($marcadores)
+        ORDER BY id
+    ");
+
+    $stmtRoles->execute(ROLES_EQUIPO_EMPRESA);
+
+    $roles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC);
 
 } else {
 
@@ -311,21 +329,27 @@ if ($empresaYRolFijos) {
                         </div>
 
 
-                        <?php if ($empresaYRolFijos): ?>
+                        <?php if ($empresaFija): ?>
 
-                            <!-- Un usuario con rol EMPRESA (o NG, para su
-                                 propia empresa) siempre da de alta usuarios
-                                 de su propia empresa y con rol USUARIO: no
-                                 hay nada que elegir, así que se envían como
-                                 campos ocultos. -->
+                            <!-- EMPRESA, ADMIN y NG siempre dan de alta
+                                 gente de su propia empresa: no hay nada que
+                                 elegir, así que va como campo oculto. -->
 
                             <input type="hidden" id="id_empresa" name="id_empresa"
                                 value="<?= (int) $_SESSION['id_empresa'] ?>">
 
+                        <?php endif; ?>
+
+                        <?php if ($rolFijo): ?>
+
+                            <!-- NG solo da de alta rol USUARIO. -->
+
                             <input type="hidden" id="id_rol" name="id_rol"
                                 value="<?= $idRolUsuario ?>">
 
-                        <?php else: ?>
+                        <?php endif; ?>
+
+                        <?php if (!$empresaFija): ?>
 
                             <!-- =========================
                                  EMPRESA
@@ -361,6 +385,9 @@ if ($empresaYRolFijos) {
 
                             </div>
 
+                        <?php endif; ?>
+
+                        <?php if (!$rolFijo): ?>
 
                             <!-- =========================
                                  ROL
@@ -384,7 +411,7 @@ if ($empresaYRolFijos) {
 
                                         <option value="<?= $rol['id'] ?>" data-rol="<?= htmlspecialchars($rol['nombre']) ?>"
                                             <?= (($datosPrevios['id_rol'] ?? '') == $rol['id']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($rol['nombre']) ?>
+                                            <?= htmlspecialchars(etiquetaRol($rol['nombre'])) ?>
                                         </option>
 
                                     <?php endforeach; ?>
@@ -523,7 +550,7 @@ if ($empresaYRolFijos) {
 
     <script src="../../js/usuarios.js"></script>
 
-    <?php if (!$empresaYRolFijos): ?>
+    <?php if (!$empresaFija): ?>
 
         <!-- =================================================
              BLOQUEAR ROL A "USUARIO" SEGÚN LA EMPRESA ELEGIDA

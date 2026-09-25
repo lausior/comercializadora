@@ -456,4 +456,113 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
+
+    /* =========================================================
+       RECORDAR FILTROS ENTRE RECARGAS
+       =========================================================
+       Mismo comportamiento que usuarios.js/empresas.js/
+       comercializadoras.js: los filtros marcados se guardan en
+       sessionStorage (solo duran lo que la pestaña) para que
+       no se pierdan al volver al listado tras editar, eliminar,
+       activar/desactivar o cambiar de mes.
+
+       Uso:
+         const memoria = window.crearMemoriaFiltros('filtrosX', filtros);
+         memoria.restaurar();   // al cargar, antes de pintar
+         memoria.guardar();     // en cada cambio de filtro
+         memoria.olvidar();     // en "Limpiar filtros"
+
+       "filtros" pueden ser filtros múltiples (.multi-select-filter)
+       o <input>/<select> normales. Se identifican por su
+       data-column (los de escritorio y móvil de una misma
+       columna comparten valor) o, si no tienen, por su id.
+    ========================================================= */
+
+    window.crearMemoriaFiltros = function (clave, filtros) {
+
+        const lista = Array.from(filtros);
+
+        const claveFiltro = filtro => filtro.dataset.column !== undefined
+            ? 'columna-' + filtro.dataset.column
+            : filtro.id;
+
+        const esMultiple = filtro => filtro.classList.contains('multi-select-filter');
+
+        return {
+
+            guardar() {
+
+                const datos = {};
+
+                lista.forEach(filtro => {
+
+                    const valor = esMultiple(filtro)
+                        ? window.obtenerSeleccionMultiFiltro(filtro)
+                        : filtro.value;
+
+                    const vacio = Array.isArray(valor) ? valor.length === 0 : valor === '';
+                    const id = claveFiltro(filtro);
+
+                    // Escritorio y móvil comparten clave; el vacío
+                    // de uno no debe pisar el valor del otro.
+                    if (!vacio || datos[id] === undefined) {
+                        datos[id] = valor;
+                    }
+
+                });
+
+                try {
+                    sessionStorage.setItem(clave, JSON.stringify(datos));
+                } catch (error) {
+                    // Sin almacenamiento (modo privado...): no se recuerdan.
+                }
+
+            },
+
+            restaurar() {
+
+                let datos = null;
+
+                try {
+                    datos = JSON.parse(sessionStorage.getItem(clave));
+                } catch (error) {
+                    datos = null;
+                }
+
+                if (!datos) {
+                    return;
+                }
+
+                lista.forEach(filtro => {
+
+                    const id = claveFiltro(filtro);
+
+                    if (!(id in datos)) {
+                        return;
+                    }
+
+                    if (esMultiple(filtro)) {
+                        window.marcarSeleccionMultiFiltro(filtro, datos[id]);
+                    } else if (typeof datos[id] === 'string') {
+                        filtro.value = datos[id];
+                    }
+
+                });
+
+            },
+
+            olvidar() {
+
+                try {
+                    sessionStorage.removeItem(clave);
+                } catch (error) {
+                    // Nada que limpiar.
+                }
+
+            }
+
+        };
+
+    };
+
 });

@@ -69,9 +69,7 @@ if (!empty($ids)) {
 $usuarios = array_values(array_filter(
     $usuarios,
     fn(array $usuario): bool =>
-        puedeVerUsuario(
-            $usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null
-        )
+        puedeVerUsuario($usuario)
 ));
 
 

@@ -7,20 +7,31 @@ requerirPermiso('tarifas');
 
 require_once '../../config/database.php';
 require_once '../../includes/tarifas.php';
+require_once '../../includes/comparativa.php';
 
 
 // =====================================================
 // QUÉ SE ESTÁ VIENDO
 // =====================================================
 //
-//   servicio -> luz / gas (menú superior)
-//   peaje    -> pestaña: cada peaje tiene sus propias
-//               columnas, así que no caben en la misma tabla.
-//               Es la misma para las dos tablas: se compara
-//               siempre dentro del mismo peaje.
-//   cliente  -> "1" si la tabla "Tarifa del cliente" está
-//               desplegada encima de la de comercializadoras
-//               (botón "Tarifa del cliente", ver js/tarifas.js)
+// Flujo de la página:
+//   1. Tarifas: se ven las tarifas de las comercializadoras
+//      del servicio (luz / gas) y peaje (pestaña) elegidos.
+//   2. "Tarifa del cliente": se despliega encima una tabla de
+//      una sola fila; en su celda Cliente se busca y elige el
+//      cliente, y se rellena o corrige su tarifa actual y su
+//      factura.
+//   3. En la tabla de comercializadoras se marcan las que se
+//      quieren comparar, y "Comparar" muestra el resultado
+//      bajo la tabla del cliente.
+//
+// Parámetros (GET):
+//   servicio, peaje -> menú superior y pestaña
+//   cliente=1       -> tabla del cliente desplegada
+//   id_cliente      -> cliente elegido en el buscador
+//   comparar=1      -> mostrar el resultado de la comparativa,
+//                      con comp[] (comercializadoras marcadas)
+//                      y otros=1 (mantener otros conceptos)
 //
 // =====================================================
 
@@ -31,9 +42,20 @@ $peaje = in_array($_GET['peaje'] ?? '', $peajes, true) ? $_GET['peaje'] : $peaje
 
 $resultado = obtenerResultadoTarifas();
 
-// Si se vuelve de guardar la tabla del cliente, se abre
-// aunque la URL no lo diga, para ver el mensaje.
+// Clientes que puede ver el rol actual (para su buscador) y
+// el elegido, si lo hay.
+$clientes = obtenerTitularesTarifas($pdo, 'clientes', $servicio);
+$idCliente = (int) ($_GET['id_cliente'] ?? 0);
+$clienteElegido = $clientes[$idCliente] ?? null;
+
+if ($clienteElegido === null) {
+    $idCliente = 0;
+}
+
+// Se abre la tabla del cliente si se pide, si hay un cliente
+// elegido o si se vuelve de guardarla (para ver el mensaje).
 $clienteAbierto = ($_GET['cliente'] ?? '') === '1'
+    || $clienteElegido !== null
     || str_starts_with($resultado['rejilla'] ?? '', 'clientes|');
 
 $etiquetaServicio = $servicio === 'gas' ? 'gas' : 'luz';
@@ -44,15 +66,19 @@ $etiquetaServicio = $servicio === 'gas' ? 'gas' : 'luz';
  * 'comercializadoras') listos para pintarla: titulares,
  * columnas y filas agrupadas por titular.
  *
+ * En la de clientes solo entra el cliente elegido en el
+ * buscador ($idCliente; ninguno si es 0) y con una sola fila.
+ *
  * Si $resultado es de esta tabla y trae filas (guardado con
  * errores), se pintan tal como se enviaron para no perder lo
  * escrito; si no, desde la base de datos. Cada titular sin
  * tarifa recibe una fila en blanco lista para rellenar.
  */
-function prepararRejillaTarifas(PDO $pdo, string $ambito, string $servicio, string $peaje, ?array $resultado): array
+function prepararRejillaTarifas(PDO $pdo, string $ambito, string $servicio, string $peaje, ?array $resultado, int $idCliente = 0): array
 {
     $gruposColumnas = gruposColumnasTarifa($servicio, $peaje, $ambito);
     $columnas = columnasRejillaTarifa($servicio, $peaje, $ambito);
+    $esClientes = $ambito === 'clientes';
 
     // Dos filas de cabecera si algún grupo tiene subcolumnas
     // (Energía P1..Pn); si no, basta con una.
@@ -65,6 +91,10 @@ function prepararRejillaTarifas(PDO $pdo, string $ambito, string $servicio, stri
     }
 
     $titulares = obtenerTitularesTarifas($pdo, $ambito, $servicio);
+
+    if ($esClientes) {
+        $titulares = isset($titulares[$idCliente]) ? [$idCliente => $titulares[$idCliente]] : [];
+    }
 
     if ($resultado !== null && ($resultado['rejilla'] ?? '') !== $ambito . '|' . $servicio . '|' . $peaje) {
         $resultado = null;
@@ -109,19 +139,26 @@ function prepararRejillaTarifas(PDO $pdo, string $ambito, string $servicio, stri
     foreach ($filasPorTitular as $idTitular => $filas) {
 
         if (empty($filas)) {
+
             $filasPorTitular[$idTitular][] = [
                 'clave'      => 'n' . $idTitular,
                 'id'         => '',
                 'id_titular' => $idTitular,
                 'activa'     => '1',
             ];
+
+        } elseif ($esClientes) {
+
+            // Una sola fila por cliente: su tarifa actual.
+            $filasPorTitular[$idTitular] = array_slice($filas, 0, 1);
+
         }
 
     }
 
     return [
         'ambito'          => $ambito,
-        'es_clientes'     => $ambito === 'clientes',
+        'es_clientes'     => $esClientes,
         'grupos'          => $gruposColumnas,
         'columnas'        => $columnas,
         'cabecera_doble'  => $cabeceraDoble,
@@ -132,18 +169,79 @@ function prepararRejillaTarifas(PDO $pdo, string $ambito, string $servicio, stri
     ];
 }
 
-$rejillaClientes = prepararRejillaTarifas($pdo, 'clientes', $servicio, $peaje, $resultado);
+$rejillaClientes = prepararRejillaTarifas($pdo, 'clientes', $servicio, $peaje, $resultado, $idCliente);
 $rejillaComercializadoras = prepararRejillaTarifas($pdo, 'comercializadoras', $servicio, $peaje, $resultado);
+
+
+// =====================================================
+// COMPARATIVA (AL PULSAR "COMPARAR")
+// =====================================================
+
+$comparar = ($_GET['comparar'] ?? '') === '1' && $clienteElegido !== null;
+$incluirOtros = ($_GET['otros'] ?? '') === '1';
+
+// Comercializadoras marcadas para comparar: las de comp[] al
+// volver de Comparar; si no, todas.
+$compararMarcadas = $comparar
+    ? array_values(array_intersect(
+        array_map('intval', (array) ($_GET['comp'] ?? [])),
+        array_keys($rejillaComercializadoras['titulares'])
+    ))
+    : array_keys($rejillaComercializadoras['titulares']);
+
+$comparativa = null;
+$avisoComparar = null;
+$tarifaCliente = null;
+
+if ($comparar) {
+
+    // Mismo cálculo que la exportación a PDF
+    // (exportar_comparativa_pdf.php).
+    $datosComparativa = prepararComparativaCliente($pdo, $servicio, $peaje, $idCliente, $compararMarcadas, $incluirOtros);
+
+    $tarifaCliente = $datosComparativa['tarifa_cliente'];
+    $avisoComparar = $datosComparativa['aviso'];
+    $comparativa = $datosComparativa['comparativa'];
+
+}
+
+// Enlace "Exportar PDF" del resultado: los mismos parámetros
+// que la comparativa en pantalla.
+$urlExportarPdf = 'exportar_comparativa_pdf.php?' . http_build_query([
+    'servicio'   => $servicio,
+    'peaje'      => $peaje,
+    'id_cliente' => $idCliente,
+    'comp'       => $compararMarcadas,
+    'otros'      => $incluirOtros ? '1' : '0',
+]);
+
+
+/**
+ * Buscador de cliente (celda "Cliente" de su tabla): elige
+ * el cliente de la lista #listaClientesTarifa (ver
+ * js/tarifas.js, que al elegirlo recarga con su id_cliente).
+ */
+function pintarBuscadorCliente(string $valor): void
+{
+    ?>
+    <input type="search" class="buscador-cliente" list="listaClientesTarifa"
+        value="<?= htmlspecialchars($valor, ENT_QUOTES, 'UTF-8') ?>"
+        placeholder="Buscar cliente…" aria-label="Buscar cliente por nombre o NIF" autocomplete="off">
+    <?php
+}
 
 
 /**
  * Pinta una fila de la rejilla. $fila trae los valores tal
  * como se muestran ("0,1099"); $primera indica si es la
- * primera fila de su titular (la que lleva el nombre y el
- * botón de añadir otra tarifa). $columnas: ver
- * columnasRejillaTarifa().
+ * primera fila de su titular (la que lleva el nombre, la
+ * casilla de comparar y el botón de añadir otra tarifa).
+ * $columnas: ver columnasRejillaTarifa().
+ *
+ * En la tabla de clientes, la celda del titular es el
+ * buscador de cliente (y no hay "+": una sola fila).
  */
-function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $columnas, bool $conActiva, string $placeholderNombre, array $errores): void
+function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $columnas, bool $esClientes, string $placeholderNombre, array $errores, bool $compararMarcada = true): void
 {
     $clave = $fila['clave'];
     $prefijo = 'filas[' . $clave . ']';
@@ -179,6 +277,11 @@ function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $col
                 . ' value="' . $e($valor) . '"'
                 . ' placeholder="' . $e($placeholder) . '"'
                 . ($info['tipo'] === 'nombre' ? ' maxlength="150"' : ' inputmode="decimal"')
+                // Para validar la celda en el navegador (js/tarifas.js)
+                // con las mismas reglas que validarDatosTarifa().
+                . ' data-tipo="' . $e($info['tipo']) . '"'
+                . ' data-etiqueta="' . $e($info['etiqueta'] ?? 'el nombre') . '"'
+                . (!empty($info['negativo']) ? ' data-negativo="1"' : '')
                 . ' data-campo="' . $e($campo) . '" autocomplete="off">';
 
         }
@@ -196,14 +299,36 @@ function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $col
         data-titular="<?= $e((string) $fila['id_titular']) ?>">
 
         <th scope="row" class="col-titular">
-            <span class="nombre-titular"><?= $e($titular['nombre']) ?></span>
-            <?php if ($titular['detalle'] !== ''): ?>
-                <span class="detalle-titular"><?= $e($titular['detalle']) ?></span>
+
+            <?php if ($esClientes): ?>
+
+                <?php pintarBuscadorCliente($titular['nombre']); ?>
+
+                <?php if ($titular['detalle'] !== ''): ?>
+                    <span class="detalle-titular"><?= $e($titular['detalle']) ?></span>
+                <?php endif; ?>
+
+            <?php else: ?>
+
+                <input type="checkbox" class="comparar-casilla" data-comparar-comercializadora
+                    value="<?= $e((string) $fila['id_titular']) ?>"
+                    title="Incluir en la comparativa" aria-label="Incluir <?= $e($titular['nombre']) ?> en la comparativa"
+                    <?= $compararMarcada ? 'checked' : '' ?>>
+
+                <span class="nombre-titular"><?= $e($titular['nombre']) ?></span>
+
+                <?php if ($titular['detalle'] !== ''): ?>
+                    <span class="detalle-titular"><?= $e($titular['detalle']) ?></span>
+                <?php endif; ?>
+
+                <button type="button" class="tarifa-nueva" data-nueva-tarifa title="<?= $e($textoAnadir) ?>"
+                    aria-label="<?= $e($textoAnadir) ?>">+</button>
+
             <?php endif; ?>
-            <button type="button" class="tarifa-nueva" data-nueva-tarifa title="<?= $e($textoAnadir) ?>"
-                aria-label="<?= $e($textoAnadir) ?>">+</button>
+
             <input type="hidden" name="<?= $e($prefijo) ?>[id]" value="<?= $e((string) ($fila['id'] ?? '')) ?>">
             <input type="hidden" name="<?= $e($prefijo) ?>[id_titular]" value="<?= $e((string) $fila['id_titular']) ?>">
+
         </th>
 
         <?php $celda('nombre', ['tipo' => 'nombre', 'clase' => 'col-nombre'], $placeholderNombre); ?>
@@ -212,7 +337,7 @@ function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $col
             <?php $celda($columna, ['clase' => 'col-precio ' . $info['clase']] + $info, ''); ?>
         <?php endforeach; ?>
 
-        <?php if ($conActiva): ?>
+        <?php if (!$esClientes): ?>
             <td class="col-activa">
                 <input type="hidden" name="<?= $e($prefijo) ?>[activa]" value="0">
                 <input type="checkbox" name="<?= $e($prefijo) ?>[activa]" value="1" data-campo="activa"
@@ -238,7 +363,7 @@ function pintarFilaTarifa(array $fila, array $titular, bool $primera, array $col
  * del último guardado y rejilla) dentro de su propio
  * formulario: cada tabla se guarda por separado.
  */
-function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, string $etiquetaServicio, bool $clienteAbierto): void
+function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, string $etiquetaServicio, bool $clienteAbierto, int $idCliente, array $clientes, array $compararMarcadas): void
 {
     $e = fn(string $valor): string => htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
 
@@ -248,7 +373,14 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
     $hayErrores = !empty($rejilla['errores']);
     $filasCabecera = $rejilla['cabecera_doble'] ? 2 : 1;
     $placeholderNombre = $esClientes ? 'Comercializadora / tarifa' : 'Nombre tarifa';
-    $textoBuscar = $esClientes ? 'Buscar cliente o NIF' : 'Buscar comercializadora';
+
+    // En la de clientes, sin cliente elegido solo hay buscador:
+    // no hay nada que guardar todavía.
+    $sinCliente = $esClientes && empty($rejilla['titulares']);
+
+    // Columnas de la tabla (para el colspan de la fila del
+    // buscador): titular, tarifa, precios/factura, acciones.
+    $totalColumnas = 3 + count($rejilla['columnas']) + ($esClientes ? 0 : 1);
 
     ?>
     <?php if ($resultado !== null): ?>
@@ -275,6 +407,7 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
         <input type="hidden" name="servicio" value="<?= $e($servicio) ?>">
         <input type="hidden" name="peaje" value="<?= $e($peaje) ?>">
         <input type="hidden" name="cliente_abierto" value="<?= $clienteAbierto ? '1' : '0' ?>">
+        <input type="hidden" name="id_cliente" value="<?= $idCliente ?>">
 
 
         <!-- TÍTULO + BUSCAR + GUARDAR -->
@@ -283,47 +416,69 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
             <div class="tarifas-titulo">
                 <h2>
-                    <?= $esClientes ? 'Tarifa actual de los clientes' : 'Tarifas de las comercializadoras' ?>
+                    <?= $esClientes ? 'Tarifa del cliente' : 'Tarifas de las comercializadoras' ?>
                     <span>(<?= $e($etiquetaServicio . ' · ' . $peaje) ?>)</span>
                 </h2>
                 <p>
                     <?= $esClientes
-                        ? 'Precios y factura que cada cliente paga hoy.'
-                        : 'Precios que ofrece cada comercializadora.' ?>
+                        ? 'Busca el cliente y rellena o corrige su tarifa actual y su factura.'
+                        : 'Precios que ofrece cada comercializadora. Marca las que quieras usar al comparar.' ?>
                 </p>
             </div>
 
-            <div class="tarifas-acciones">
+            <?php if (!$sinCliente): ?>
 
-                <input type="search" class="tarifas-buscar"
-                    placeholder="<?= $e($textoBuscar) ?>" aria-label="<?= $e($textoBuscar) ?>">
+                <div class="tarifas-acciones">
 
-                <span class="tarifas-estado" aria-live="polite">
-                    <?= $hayErrores ? 'Hay errores sin guardar' : '' ?>
-                </span>
+                    <?php if (!$esClientes): ?>
+                        <input type="search" class="tarifas-buscar"
+                            placeholder="Buscar comercializadora" aria-label="Buscar comercializadora">
+                    <?php endif; ?>
 
-                <button type="submit" class="config-save-button">
-                    Guardar
-                </button>
+                    <span class="tarifas-estado" aria-live="polite">
+                        <?= $hayErrores ? 'Hay errores sin guardar' : '' ?>
+                    </span>
 
-            </div>
+                    <button type="submit" class="config-save-button">
+                        Guardar
+                    </button>
+
+                </div>
+
+            <?php endif; ?>
 
         </div>
 
 
-        <?php if (empty($rejilla['titulares'])): ?>
+        <?php if ($esClientes): ?>
+
+            <!-- Opciones del buscador de cliente: "Nombre Apellidos · NIF" -->
+            <datalist id="listaClientesTarifa">
+                <?php foreach ($clientes as $idOpcion => $opcion): ?>
+                    <option value="<?= $e($opcion['nombre'] . ' · ' . $opcion['detalle']) ?>" data-id="<?= (int) $idOpcion ?>"></option>
+                <?php endforeach; ?>
+            </datalist>
+
+        <?php endif; ?>
+
+
+        <?php if ($esClientes && empty($clientes)): ?>
 
             <div class="form-info">
                 <p>
-                    <?php if ($esClientes): ?>
-                        Todavía no hay clientes.
-                        <a href="../clientes/crear_cliente.php">Añade uno</a>
-                        para introducir su tarifa actual.
-                    <?php else: ?>
-                        No hay comercializadoras que suministren <?= $e($etiquetaServicio) ?>.
-                        <a href="../comercializadoras/comercializadoras.php">Añade o edita una</a>
-                        para poder introducir sus tarifas.
-                    <?php endif; ?>
+                    Todavía no hay clientes.
+                    <a href="../clientes/crear_cliente.php">Añade uno</a>
+                    para introducir su tarifa actual.
+                </p>
+            </div>
+
+        <?php elseif (!$esClientes && empty($rejilla['titulares'])): ?>
+
+            <div class="form-info">
+                <p>
+                    No hay comercializadoras que suministren <?= $e($etiquetaServicio) ?>.
+                    <a href="../comercializadoras/comercializadoras.php">Añade o edita una</a>
+                    para poder introducir sus tarifas.
                 </p>
             </div>
 
@@ -337,7 +492,15 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
                         <tr>
                             <th rowspan="<?= $filasCabecera ?>" class="col-titular">
-                                <?= $esClientes ? 'Cliente' : 'Comercializadora' ?>
+                                <?php if ($esClientes): ?>
+                                    Cliente
+                                <?php else: ?>
+                                    <label class="comparar-todas" title="Marcar o desmarcar todas para comparar">
+                                        <input type="checkbox" class="comparar-casilla" data-comparar-todas
+                                            <?= count($compararMarcadas) === count($rejilla['titulares']) ? 'checked' : '' ?>>
+                                        Comercializadora
+                                    </label>
+                                <?php endif; ?>
                             </th>
                             <th rowspan="<?= $filasCabecera ?>" class="col-nombre">
                                 <?= $esClientes ? 'Tarifa actual' : 'Tarifa' ?>
@@ -375,48 +538,71 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
                     </thead>
 
-                    <tbody class="tarifas-body">
+                    <?php if ($sinCliente): ?>
 
-                        <?php foreach ($rejilla['filas'] as $idTitular => $filas): ?>
-                            <?php foreach ($filas as $indice => $fila): ?>
-                                <?php
-                                pintarFilaTarifa(
-                                    $fila,
-                                    $rejilla['titulares'][$idTitular],
-                                    $indice === 0,
-                                    $rejilla['columnas'],
-                                    !$esClientes,
-                                    $placeholderNombre,
-                                    $rejilla['errores'][$fila['clave']] ?? []
-                                );
-                                ?>
+                        <!-- Sin cliente elegido: solo el buscador -->
+                        <tbody>
+                            <tr class="tarifa-fila-buscador">
+                                <th scope="row" class="col-titular">
+                                    <?php pintarBuscadorCliente(''); ?>
+                                </th>
+                                <td colspan="<?= $totalColumnas - 1 ?>" class="tarifa-buscador-ayuda">
+                                    ← Busca y elige un cliente para ver o introducir su tarifa actual.
+                                </td>
+                            </tr>
+                        </tbody>
+
+                    <?php else: ?>
+
+                        <tbody class="tarifas-body">
+
+                            <?php foreach ($rejilla['filas'] as $idTitular => $filas): ?>
+                                <?php foreach ($filas as $indice => $fila): ?>
+                                    <?php
+                                    pintarFilaTarifa(
+                                        $fila,
+                                        $rejilla['titulares'][$idTitular],
+                                        $indice === 0,
+                                        $rejilla['columnas'],
+                                        $esClientes,
+                                        $placeholderNombre,
+                                        $rejilla['errores'][$fila['clave']] ?? [],
+                                        in_array((int) $idTitular, $compararMarcadas, true)
+                                    );
+                                    ?>
+                                <?php endforeach; ?>
                             <?php endforeach; ?>
-                        <?php endforeach; ?>
 
-                    </tbody>
+                        </tbody>
+
+                    <?php endif; ?>
 
                 </table>
 
             </div>
 
 
-            <!-- Plantilla de fila nueva (botón +). js/tarifas.js
-                 cambia __CLAVE__ y __TITULAR__ por los valores
-                 reales y copia el nombre del titular. -->
+            <?php if (!$esClientes): ?>
 
-            <template class="plantilla-fila-tarifa">
-                <?php
-                pintarFilaTarifa(
-                    ['clave' => '__CLAVE__', 'id' => '', 'id_titular' => '__TITULAR__', 'activa' => '1'],
-                    ['nombre' => '', 'detalle' => ''],
-                    false,
-                    $rejilla['columnas'],
-                    !$esClientes,
-                    $placeholderNombre,
-                    []
-                );
-                ?>
-            </template>
+                <!-- Plantilla de fila nueva (botón +). js/tarifas.js
+                     cambia __CLAVE__ y __TITULAR__ por los valores
+                     reales y copia el nombre del titular. -->
+
+                <template class="plantilla-fila-tarifa">
+                    <?php
+                    pintarFilaTarifa(
+                        ['clave' => '__CLAVE__', 'id' => '', 'id_titular' => '__TITULAR__', 'activa' => '1'],
+                        ['nombre' => '', 'detalle' => ''],
+                        false,
+                        $rejilla['columnas'],
+                        false,
+                        $placeholderNombre,
+                        []
+                    );
+                    ?>
+                </template>
+
+            <?php endif; ?>
 
         <?php endif; ?>
 
@@ -461,7 +647,8 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
                     <h1>Tarifas</h1>
 
                     <p>
-                        Rellena o cambia las celdas y pulsa Guardar.
+                        Tarifas de las comercializadoras. Con "Tarifa del cliente" puedes compararlas
+                        con lo que paga hoy un cliente.
                     </p>
 
                 </div>
@@ -481,7 +668,7 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
                 <nav class="tarifas-servicios" aria-label="Servicio">
                     <?php foreach (['luz' => '⚡ Tarifas de luz', 'gas' => '🔥 Tarifas de gas'] as $opcionServicio => $textoServicio): ?>
-                        <a href="<?= htmlspecialchars(urlRejillaTarifas($opcionServicio, null, $clienteAbierto), ENT_QUOTES, 'UTF-8') ?>"
+                        <a href="<?= htmlspecialchars(urlRejillaTarifas($opcionServicio, null, $clienteAbierto, $idCliente), ENT_QUOTES, 'UTF-8') ?>"
                             data-enlace-tarifas
                             class="tarifas-servicio<?= $opcionServicio === $servicio ? ' activo' : '' ?>"
                             <?= $opcionServicio === $servicio ? 'aria-current="page"' : '' ?>>
@@ -508,7 +695,7 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
                 <nav class="tarifas-tabs" aria-label="Tipo de tarifa">
                     <?php foreach ($peajes as $opcionPeaje): ?>
-                        <a href="<?= htmlspecialchars(urlRejillaTarifas($servicio, $opcionPeaje, $clienteAbierto), ENT_QUOTES, 'UTF-8') ?>"
+                        <a href="<?= htmlspecialchars(urlRejillaTarifas($servicio, $opcionPeaje, $clienteAbierto, $idCliente), ENT_QUOTES, 'UTF-8') ?>"
                             data-enlace-tarifas
                             class="tarifas-tab<?= $opcionPeaje === $peaje ? ' activa' : '' ?>"
                             <?= $servicio === 'gas' ? 'title="' . htmlspecialchars(PEAJES_GAS[$opcionPeaje], ENT_QUOTES, 'UTF-8') . '"' : '' ?>
@@ -536,21 +723,39 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
             <section class="panel tarifas-panel tarifas-panel-cliente" id="panelTarifaCliente"
                 <?= $clienteAbierto ? '' : 'hidden' ?>>
 
-                <?php pintarRejillaTarifas($rejillaClientes, $servicio, $peaje, $etiquetaServicio, $clienteAbierto); ?>
+                <?php pintarRejillaTarifas($rejillaClientes, $servicio, $peaje, $etiquetaServicio, $clienteAbierto, $idCliente, $clientes, $compararMarcadas); ?>
 
-                <div class="tarifas-comparar">
+                <?php if ($clienteElegido !== null): ?>
 
-                    <p class="form-info tarifas-comparar-aviso" id="compararAviso" role="status" hidden>
-                        La comparativa todavía está por construir: aquí se calculará la factura de cada
-                        cliente con las tarifas activas de las comercializadoras de este peaje.
-                    </p>
+                    <!-- Comparar: con el cliente de arriba y las
+                         comercializadoras marcadas en la tabla de
+                         abajo (ver js/tarifas.js, que monta la URL
+                         con comparar=1, comp[] y otros). -->
 
-                    <button type="button" class="config-save-button tarifas-comparar-boton" id="btnComparar">
-                        <i class="bi bi-bar-chart"></i>
-                        Comparar
-                    </button>
+                    <div class="tarifas-comparar">
 
-                </div>
+                        <p class="tarifas-comparar-aviso" id="compararAviso" role="alert" hidden></p>
+
+                        <label class="comparar-opcion">
+                            <input type="checkbox" id="compararOtros" <?= $incluirOtros ? 'checked' : '' ?>>
+                            Mantener sus "otros conceptos" en las ofertas
+                        </label>
+
+                        <button type="button" class="config-save-button tarifas-comparar-boton" id="btnComparar">
+                            <i class="bi bi-bar-chart"></i>
+                            Comparar
+                        </button>
+
+                    </div>
+
+                    <?php if ($comparar): ?>
+                        <?php
+                        $nombreCliente = $clienteElegido['nombre'];
+                        include 'resultado_comparativa.php';
+                        ?>
+                    <?php endif; ?>
+
+                <?php endif; ?>
 
             </section>
 
@@ -561,7 +766,7 @@ function pintarRejillaTarifas(array $rejilla, string $servicio, string $peaje, s
 
             <section class="panel tarifas-panel">
 
-                <?php pintarRejillaTarifas($rejillaComercializadoras, $servicio, $peaje, $etiquetaServicio, $clienteAbierto); ?>
+                <?php pintarRejillaTarifas($rejillaComercializadoras, $servicio, $peaje, $etiquetaServicio, $clienteAbierto, $idCliente, $clientes, $compararMarcadas); ?>
 
             </section>
 

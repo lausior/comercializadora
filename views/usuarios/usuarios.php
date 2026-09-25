@@ -49,9 +49,9 @@ $usuarios = $stmtUsuarios->fetchAll(PDO::FETCH_ASSOC);
 // FILTRAR SEGÚN QUÉ USUARIOS PUEDE VER EL ROL ACTUAL
 // =====================================================
 //
-// SRG los ve a todos. NG y EMPRESA solo ven a los que
-// ellos mismos han dado de alta (ver puedeVerUsuario()
-// en permisos.php). Y en este LISTADO, además, nadie se
+// SRG los ve a todos. NG solo a los que él mismo ha dado
+// de alta; EMPRESA y ADMIN, a los ADMIN/USUARIO de su
+// empresa (ver puedeVerUsuario() en permisos.php). Y en este LISTADO, además, nadie se
 // ve a sí mismo — sigue siendo gestionable si se entra a
 // su edición por la URL directamente, solo se oculta aquí.
 //
@@ -61,9 +61,7 @@ $usuarios = array_values(array_filter(
     $usuarios,
     fn(array $usuario): bool =>
         (int) $usuario['id'] !== (int) ($_SESSION['id_usuario'] ?? 0)
-        && puedeVerUsuario(
-            $usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null
-        )
+        && puedeVerUsuario($usuario)
 ));
 
 
@@ -775,7 +773,7 @@ $estadosFiltro = ['Activo', 'Inactivo'];
                                                     <i class="bi bi-key"></i>
                                                 </button>
 
-                                                <?php if ($usuario['rol'] === ROL_USUARIO && $usuario['empresa_estado'] === 'Inactivo'): ?>
+                                                <?php if (in_array($usuario['rol'], ROLES_EQUIPO_EMPRESA, true) && $usuario['empresa_estado'] === 'Inactivo'): ?>
 
                                                     <!-- Su empresa está inactiva: no se puede
                                                          activar/desactivar a este usuario suelto,

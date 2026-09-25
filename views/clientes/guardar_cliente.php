@@ -32,7 +32,7 @@ $apellidos = trim($_POST['apellidos'] ?? '');
 $direccion = trim($_POST['direccion'] ?? '');
 $telefono  = trim($_POST['telefono'] ?? '');
 $email     = trim($_POST['email'] ?? '');
-$nif       = trim($_POST['nif'] ?? '');
+$nif       = strtoupper(trim($_POST['nif'] ?? ''));
 
 
 // =====================================================
@@ -48,14 +48,13 @@ $nif       = trim($_POST['nif'] ?? '');
 
 $errores = [];
 
-if (
-    $nombre === '' ||
-    $apellidos === '' ||
-    $email === '' ||
-    $nif === ''
-) {
+// Cada campo muestra un solo error (el primero): un
+// obligatorio vacío avisa de eso y no de su formato.
+foreach (['nombre' => $nombre, 'apellidos' => $apellidos, 'nif' => $nif, 'email' => $email] as $campo => $valor) {
 
-    $errores[] = ['mensaje' => 'Faltan datos obligatorios.', 'campo' => null];
+    if ($valor === '') {
+        $errores[] = ['mensaje' => 'Este campo es obligatorio.', 'campo' => $campo];
+    }
 
 }
 
@@ -132,10 +131,7 @@ if ($stmt->fetch()) {
 
 if (!empty($errores)) {
 
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'crear_cliente.php', $primerCampo);
+    establecerErroresFormulario($errores, $_POST, 'crear_cliente.php');
 
 }
 
@@ -295,11 +291,6 @@ registrarLog(
                         <div class="usuario-detalle-item">
                             <span>Apellidos</span>
                             <strong><?= htmlspecialchars($cliente['apellidos']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>ID de cliente</span>
-                            <strong><?= htmlspecialchars($cliente['id']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">

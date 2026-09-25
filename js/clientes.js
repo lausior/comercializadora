@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 mostrarMensajeGeneralCliente(
                     formulario,
-                    'Hay campos obligatorios sin completar o con un formato incorrecto. Revisa los campos marcados en rojo.'
+                    'El formulario contiene errores. Revísalos antes de enviarlo.'
                 );
 
                 const mensajeGeneral = formulario.querySelector('#form-error-general');
@@ -914,11 +914,18 @@ document.addEventListener('DOMContentLoaded', () => {
        volvemos a la página 1 y recalculamos la vista.
     ========================================================= */
 
+    // Recordar los filtros al volver al listado tras editar o
+    // eliminar (mismo comportamiento que Usuarios; ver
+    // crearMemoriaFiltros() en js/multi-select-filter.js).
+    const memoriaFiltros = window.crearMemoriaFiltros('filtrosClientes', filtros);
+
     filtros.forEach(filtro => {
 
         filtro.addEventListener(
             'input',
             () => {
+
+                memoriaFiltros.guardar();
 
                 paginaActual = 1;
 
@@ -931,6 +938,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filtro.addEventListener(
             'change',
             () => {
+
+                memoriaFiltros.guardar();
 
                 paginaActual = 1;
 
@@ -968,6 +977,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     }
                 );
+
+                memoriaFiltros.olvidar();
 
 
                 paginaActual = 1;
@@ -1475,9 +1486,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================================
        16. PAGINACIÓN INICIAL
-       Pinta la tabla en cuanto el DOM está listo.
+       Pinta la tabla en cuanto el DOM está listo (con los
+       filtros que hubiera marcados antes de recargar).
     ========================================================= */
 
+    memoriaFiltros.restaurar();
     mostrarPagina();
 
 });

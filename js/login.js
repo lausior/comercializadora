@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!usuarioCorrecto || !passwordCorrecta) {
 
             mostrarMensajeGeneralLogin(
-                'Hay campos con errores. Revisa los campos marcados en rojo.'
+                'El formulario contiene errores. Revísalos antes de enviarlo.'
             );
 
             if (!usuarioCorrecto) {

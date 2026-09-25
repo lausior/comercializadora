@@ -119,34 +119,95 @@ document.addEventListener('DOMContentLoaded', () => {
        EVENTOS
     ========================================================= */
 
-    passwordNueva.addEventListener('input', () => {
+    /* -----------------------------------------------
+       ERROR DE CADA CAMPO
+       Al salir del campo (blur) se marca en rojo con su
+       mensaje debajo; al enviar, se marcan los dos.
+    ------------------------------------------------ */
 
-        actualizarRequisitos();
-        ocultarMensaje();
+    const VALIDADORES = new Map([
+        [passwordNueva, valor => {
+            if (valor === '') return 'Este campo es obligatorio.';
+            const cumpleTodos = Object.keys(REQUISITOS)
+                .filter(requisito => requisito !== 'coinciden')
+                .every(requisito => REQUISITOS[requisito](valor));
+            return cumpleTodos ? null : 'La contraseña no cumple todos los requisitos de la lista.';
+        }],
+        [passwordConfirmar, valor => {
+            if (valor === '') return 'Este campo es obligatorio.';
+            return valor === passwordNueva.value ? null : 'Las contraseñas no coinciden.';
+        }]
+    ]);
 
-    });
+    function validarCampo(input) {
 
-    passwordConfirmar.addEventListener('input', () => {
+        const error = VALIDADORES.get(input)(input.value);
+        const envoltorio = input.closest('.password-wrapper') || input;
+        let contenedor = envoltorio.nextElementSibling;
 
-        actualizarRequisitos();
-        ocultarMensaje();
+        if (!contenedor || !contenedor.classList.contains('login-field-error')) {
+            contenedor = null;
+        }
+
+        input.classList.toggle('input-error', Boolean(error));
+
+        if (error && !contenedor) {
+            contenedor = document.createElement('small');
+            contenedor.className = 'login-field-error';
+            envoltorio.insertAdjacentElement('afterend', contenedor);
+        }
+
+        if (contenedor) {
+            if (error) {
+                contenedor.textContent = error;
+            } else {
+                contenedor.remove();
+            }
+        }
+
+        return !error;
+
+    }
+
+    VALIDADORES.forEach((validador, input) => {
+
+        input.addEventListener('blur', () => validarCampo(input));
+
+        input.addEventListener('input', () => {
+
+            actualizarRequisitos();
+
+            // Mientras se escribe solo se QUITAN errores; la
+            // confirmación depende también de la nueva.
+            [passwordNueva, passwordConfirmar].forEach(campo => {
+                if (campo.classList.contains('input-error') && VALIDADORES.get(campo)(campo.value) === null) {
+                    validarCampo(campo);
+                }
+            });
+
+            if (!passwordNueva.classList.contains('input-error') && !passwordConfirmar.classList.contains('input-error')) {
+                ocultarMensaje();
+            }
+
+        });
 
     });
 
 
     form.addEventListener('submit', event => {
 
-        const requisitosCumplidos = actualizarRequisitos();
+        actualizarRequisitos();
 
-        if (!requisitosCumplidos) {
+        const nuevaValida = validarCampo(passwordNueva);
+        const confirmarValida = validarCampo(passwordConfirmar);
+
+        if (!nuevaValida || !confirmarValida) {
 
             event.preventDefault();
 
-            mostrarMensaje(
-                'La contraseña nueva no cumple todos los requisitos marcados en la lista.'
-            );
+            mostrarMensaje('El formulario contiene errores. Revísalos antes de enviarlo.');
 
-            passwordNueva.focus();
+            (nuevaValida ? passwordConfirmar : passwordNueva).focus();
 
         }
 

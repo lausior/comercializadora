@@ -36,6 +36,10 @@ require_once __DIR__ . '/../config/permisos.php';
             </a>
         <?php endif; ?>
 
+        
+        <!-- SEPARADOR -->
+        <div class="menu-separator"></div>
+
 
         <!-- COMERCIALIZADORAS -->
         <?php if (tienePermiso('comercializadoras')): ?>
@@ -55,30 +59,11 @@ require_once __DIR__ . '/../config/permisos.php';
         <?php endif; ?>
 
 
-        <!-- PLANIFICADOR -->
-        <?php if (tienePermiso('planificador')): ?>
-            <a href="/comercializadora/views/planificador/planificador.php" class="menu-item"
-                title="Planificador de tareas">
-                <span class="menu-icon"><i class="bi bi-calendar3"></i></span>
-                <span class="menu-label">Planificador</span>
-            </a>
-        <?php endif; ?>
-
-
-        <!-- PARTES -->
-        <?php if (tienePermiso('partes')): ?>
-            <a href="/comercializadora/views/partes.php" class="menu-item" title="Gestión de partes">
-                <span class="menu-icon"><i class="bi bi-clipboard-check"></i></span>
-                <span class="menu-label">Partes</span>
-            </a>
-        <?php endif; ?>
-
-
-        <!-- INCIDENCIAS -->
-        <?php if (tienePermiso('incidencias')): ?>
-            <a href="/comercializadora/views/incidencias.php" class="menu-item" title=" Gestión de incidencias">
-                <span class="menu-icon"><i class="bi bi-exclamation-triangle"></i></span>
-                <span class="menu-label">Incidencias</span>
+        <!-- OFERTAS -->
+        <?php if (tienePermiso('ofertas')): ?>
+            <a href="/comercializadora/views/ofertas/ofertas.php" class="menu-item" title="Gestión de ofertas">
+                <span class="menu-icon"><i class="bi bi-tag"></i></span>
+                <span class="menu-label">Ofertas</span>
             </a>
         <?php endif; ?>
 
@@ -287,7 +272,7 @@ require_once __DIR__ . '/../config/permisos.php';
 
             <div class="menu-group">
 
-                <button type="button" class="menu-item menu-toggle" id="ayuda-toggle" title="Ayuda">
+                <button type="button" class="menu-item menu-toggle" id="ayuda-toggle" title="Ayuda" aria-expanded="false" aria-controls="ayuda-submenu">
 
                     <span class="menu-icon">
                         <i class="bi bi-question-circle"></i>

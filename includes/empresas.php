@@ -174,10 +174,7 @@ function volverConErroresEmpresa(array $errores, string $redirigirA): void
         return;
     }
 
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, $redirigirA, $primerCampo);
+    establecerErroresFormulario($errores, $_POST, $redirigirA);
 }
 
 
@@ -317,9 +314,9 @@ function inactivarUsuariosPorEmpresa(PDO $pdo, int $idEmpresa): void
             u.motivo_inactivo = ?,
             u.inactivo_por_empresa = 1
         WHERE u.id_empresa = ?
-            AND r.nombre = ?
+            AND r.nombre IN (?, ?)
             AND u.estado = 'Activo'
-    ")->execute([MOTIVO_EMPRESA_INACTIVA, $idEmpresa, ROL_USUARIO]);
+    ")->execute([MOTIVO_EMPRESA_INACTIVA, $idEmpresa, ...ROLES_EQUIPO_EMPRESA]);
 }
 
 

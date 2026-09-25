@@ -755,8 +755,9 @@ function obtenerTarifaVisible(PDO $pdo, int $idTarifa): ?array
  * URL de la página de tarifas para un servicio/peaje.
  * $clienteAbierto: la tabla "Tarifa del cliente" se muestra
  * desplegada encima de la de comercializadoras (cliente=1).
+ * $idCliente: cliente elegido en su buscador (id_cliente).
  */
-function urlRejillaTarifas(string $servicio, ?string $peaje = null, bool $clienteAbierto = false): string
+function urlRejillaTarifas(string $servicio, ?string $peaje = null, bool $clienteAbierto = false, int $idCliente = 0): string
 {
     $parametros = ['servicio' => $servicio];
 
@@ -766,6 +767,10 @@ function urlRejillaTarifas(string $servicio, ?string $peaje = null, bool $client
 
     if ($clienteAbierto) {
         $parametros['cliente'] = '1';
+    }
+
+    if ($idCliente > 0) {
+        $parametros['id_cliente'] = $idCliente;
     }
 
     return 'tarifas.php?' . http_build_query($parametros);

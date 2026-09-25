@@ -90,9 +90,9 @@ unset($_SESSION['cambio_password_error']); //elimina el mensaje de error de la s
 
                 <div class="form-group">
 
-                    <label for="password_nueva">
+                    <!-- <label for="password_nueva">
                         Contraseña nueva
-                    </label>
+                    </label> -->
 
                     <div class="password-wrapper">
 
@@ -109,9 +109,9 @@ unset($_SESSION['cambio_password_error']); //elimina el mensaje de error de la s
 
                     <div class="form-group">
 
-                    <label for="password_confirmar">
+                    <!-- <label for="password_confirmar">
                         Repite la contraseña nueva
-                    </label>
+                    </label> -->
 
                     <div class="password-wrapper">
 

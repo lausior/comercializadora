@@ -9,6 +9,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/seguridad.php';
 require_once __DIR__ . '/../includes/logs.php';
 require_once __DIR__ . '/../includes/empresas.php';
+require_once __DIR__ . '/../includes/form_flash.php';
 
 $minutosBloqueoAutomatico = obtenerBloqueoAutomaticoMinutos($pdo);
 
@@ -20,6 +21,11 @@ $logoEmpresa     = obtenerLogoEmpresa($pdo, $idEmpresaSesion);
 
 $logoError = $_SESSION['logo_error'] ?? '';
 unset($_SESSION['logo_error']);
+
+// Errores del formulario "Control de accesos" (ver
+// guardar_intentos_login.php).
+$errorFormulario = obtenerErrorFormulario();
+$datosPrevios = $errorFormulario['datos'] ?? [];
 
 $retencionLogsDias = obtenerRetencionLogsDias($pdo);
 $ultimoBorradoLogs = obtenerUltimoBorradoLogs($pdo);
@@ -320,7 +326,7 @@ $mensajeBorrado = $retencionLogsDias > 0
 
             <!-- CONTROL DE ACCESOS -->
 
-            <section class="config-card">
+            <section class="config-card" id="control-accesos">
 
                 <div class="config-card-header">
 
@@ -335,7 +341,12 @@ $mensajeBorrado = $retencionLogsDias > 0
 
                 </div>
 
-                <form action="guardar_intentos_login.php" method="POST">
+                <form action="guardar_intentos_login.php" method="POST" id="formIntentosLogin" novalidate>
+
+                    <div class="form-error-general" id="form-error-general" role="alert"
+                        style="display: <?= $errorFormulario ? 'block' : 'none' ?>; margin-bottom: 17px;">
+                        <?= $errorFormulario ? htmlspecialchars($errorFormulario['mensaje'], ENT_QUOTES, 'UTF-8') : '' ?>
+                    </div>
 
                     <div class="config-grid">
 
@@ -346,8 +357,10 @@ $mensajeBorrado = $retencionLogsDias > 0
                             </label>
 
                             <input type="number" name="intentos_login_max" id="intentos_login_max"
-                                class="security-select" min="1" max="20"
-                                value="<?= $intentosLoginMax ?>" required>
+                                class="security-select <?= claseErrorCampo($errorFormulario, 'intentos_login_max') ?>" min="1" max="20"
+                                value="<?= valorFormulario($datosPrevios, 'intentos_login_max', (string) $intentosLoginMax) ?>" required>
+
+                            <span class="field-error" id="error-intentos_login_max"><?= mensajeErrorCampo($errorFormulario, 'intentos_login_max') ?></span>
 
                         </div>
 
@@ -358,8 +371,10 @@ $mensajeBorrado = $retencionLogsDias > 0
                             </label>
 
                             <input type="number" name="minutos_bloqueo_intentos" id="minutos_bloqueo_intentos"
-                                class="security-select" min="1" max="1440"
-                                value="<?= $minutosBloqueoIntentos ?>" required>
+                                class="security-select <?= claseErrorCampo($errorFormulario, 'minutos_bloqueo_intentos') ?>" min="1" max="1440"
+                                value="<?= valorFormulario($datosPrevios, 'minutos_bloqueo_intentos', (string) $minutosBloqueoIntentos) ?>" required>
+
+                            <span class="field-error" id="error-minutos_bloqueo_intentos"><?= mensajeErrorCampo($errorFormulario, 'minutos_bloqueo_intentos') ?></span>
 
                         </div>
 
@@ -430,6 +445,7 @@ $mensajeBorrado = $retencionLogsDias > 0
 
 <?php include '../templates/footer.php'; ?>
 
+<script src="../js/validacion-formulario.js"></script>
 <script src="../js/configuracion.js"></script>
 
 </body>

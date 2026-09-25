@@ -313,190 +313,50 @@ document.addEventListener('DOMContentLoaded', () => {
        07. OBTENER PARTES FILTRADOS
     ========================================================= */
 
+    // Mismo criterio que los filtros de Usuarios: dentro de un
+    // filtro vale CUALQUIERA de las opciones marcadas (sin
+    // ninguna marcada, no filtra); entre filtros, deben
+    // cumplirse todos.
+    function coincideSeleccion(filtro, valor) {
+
+        if (!filtro) {
+            return true;
+        }
+
+        const seleccionados = window.obtenerSeleccionMultiFiltro(filtro).map(normalizar);
+
+        return seleccionados.length === 0 || seleccionados.includes(normalizar(valor));
+
+    }
+
     function obtenerPartesFiltrados() {
 
-        const texto =
-            buscarParte
-                ? normalizar(
-                    buscarParte.value
-                )
-                : '';
+        const texto = buscarParte ? normalizar(buscarParte.value) : '';
 
+        return partes.filter(parte => {
 
-        const estado =
-            filtroEstado
-                ? normalizar(
-                    filtroEstado.value
-                )
-                : '';
+            // Búsqueda general (título, cliente, descripción o nº).
+            if (texto !== '') {
 
+                const coincideTexto = [
+                    obtenerTitulo(parte),
+                    obtenerCliente(parte),
+                    obtenerDescripcion(parte),
+                    obtenerId(parte)
+                ].some(valor => normalizar(valor).includes(texto));
 
-        const tipo =
-            filtroTipo
-                ? normalizar(
-                    filtroTipo.value
-                )
-                : '';
-
-
-        const responsable =
-            filtroResponsable
-                ? normalizar(
-                    filtroResponsable.value
-                )
-                : '';
-
-
-        const prioridad =
-            filtroPrioridad
-                ? normalizar(
-                    filtroPrioridad.value
-                )
-                : '';
-
-
-
-        return partes.filter(
-            parte => {
-
-
-                /* ---------------------------------------------
-                   BÚSQUEDA GENERAL
-                --------------------------------------------- */
-
-                if (texto !== '') {
-
-                    const titulo =
-                        normalizar(
-                            obtenerTitulo(parte)
-                        );
-
-
-                    const cliente =
-                        normalizar(
-                            obtenerCliente(parte)
-                        );
-
-
-                    const descripcion =
-                        normalizar(
-                            obtenerDescripcion(parte)
-                        );
-
-
-                    const id =
-                        normalizar(
-                            obtenerId(parte)
-                        );
-
-
-                    const coincideTexto =
-                        titulo.includes(texto) ||
-                        cliente.includes(texto) ||
-                        descripcion.includes(texto) ||
-                        id.includes(texto);
-
-
-                    if (!coincideTexto) {
-                        return false;
-                    }
-
+                if (!coincideTexto) {
+                    return false;
                 }
-
-
-
-                /* ---------------------------------------------
-                   ESTADO
-                --------------------------------------------- */
-
-                if (
-                    estado !== '' &&
-                    estado !== 'todos los estados'
-                ) {
-
-                    if (
-                        normalizar(
-                            obtenerEstado(parte)
-                        ) !== estado
-                    ) {
-
-                        return false;
-
-                    }
-
-                }
-
-
-
-                /* ---------------------------------------------
-                   TIPO
-                --------------------------------------------- */
-
-                if (
-                    tipo !== '' &&
-                    tipo !== 'todos los tipos'
-                ) {
-
-                    if (
-                        obtenerTipo(parte) !== tipo
-                    ) {
-
-                        return false;
-
-                    }
-
-                }
-
-
-
-                /* ---------------------------------------------
-                   RESPONSABLE
-                --------------------------------------------- */
-
-                if (
-                    responsable !== '' &&
-                    responsable !== 'todos'
-                ) {
-
-                    if (
-                        normalizar(
-                            obtenerResponsable(parte)
-                        ) !== responsable
-                    ) {
-
-                        return false;
-
-                    }
-
-                }
-
-
-                /* ---------------------------------------------
-                   PRIORIDAD
-                --------------------------------------------- */
-
-                if (
-                    prioridad !== '' &&
-                    prioridad !== 'todas las prioridades'
-                ) {
-
-                    if (
-                        normalizar(
-                            obtenerPrioridad(parte)
-                        ) !== prioridad
-                    ) {
-
-                        return false;
-
-                    }
-
-                }
-
-
-                return true;
 
             }
-        );
+
+            return coincideSeleccion(filtroEstado, obtenerEstado(parte))
+                && coincideSeleccion(filtroTipo, obtenerTipo(parte))
+                && coincideSeleccion(filtroResponsable, obtenerResponsable(parte))
+                && coincideSeleccion(filtroPrioridad, obtenerPrioridad(parte));
+
+        });
 
     }
 
@@ -840,11 +700,28 @@ document.addEventListener('DOMContentLoaded', () => {
        14. BÚSQUEDA EN TIEMPO REAL
     ========================================================= */
 
+    // Recordar búsqueda y filtros al recargar la página (mismo
+    // comportamiento que Usuarios; ver crearMemoriaFiltros() en
+    // js/multi-select-filter.js).
+    const filtrosSeleccion = [
+        filtroEstado,
+        filtroTipo,
+        filtroResponsable,
+        filtroPrioridad
+    ].filter(Boolean);
+
+    const memoriaFiltros = window.crearMemoriaFiltros(
+        'filtrosPartes',
+        [buscarParte, ...filtrosSeleccion].filter(Boolean)
+    );
+
     if (buscarParte) {
 
         buscarParte.addEventListener(
             'input',
             () => {
+
+                memoriaFiltros.guardar();
 
                 paginaActual = 1;
 
@@ -861,33 +738,32 @@ document.addEventListener('DOMContentLoaded', () => {
        15. CAMBIO DE FILTROS
     ========================================================= */
 
-    [
-        filtroEstado,
-        filtroTipo,
-        filtroResponsable,
-        filtroPrioridad
+    filtrosSeleccion.forEach(filtro => {
 
-    ].forEach(
-        filtro => {
+        filtro.addEventListener('change', () => {
 
-            if (!filtro) {
-                return;
-            }
+            memoriaFiltros.guardar();
 
+            paginaActual = 1;
 
-            filtro.addEventListener(
-                'change',
-                () => {
+            mostrarPartes();
 
-                    paginaActual = 1;
+        });
 
-                    mostrarPartes();
+    });
 
-                }
-            );
+    // Vacía búsqueda y filtros (botón Limpiar).
+    function limpiarFiltrosPartes() {
 
+        if (buscarParte) {
+            buscarParte.value = '';
         }
-    );
+
+        filtrosSeleccion.forEach(filtro => window.limpiarMultiFiltro(filtro));
+
+        memoriaFiltros.olvidar();
+
+    }
 
 
 
@@ -1001,45 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'click',
             () => {
 
-                if (buscarParte) {
-
-                    buscarParte.value =
-                        '';
-
-                }
-
-
-                if (filtroEstado) {
-
-                    filtroEstado.selectedIndex =
-                        0;
-
-                }
-
-
-                if (filtroTipo) {
-
-                    filtroTipo.selectedIndex =
-                        0;
-
-                }
-
-
-                if (filtroResponsable) {
-
-                    filtroResponsable.selectedIndex =
-                        0;
-
-                }
-
-
-                if (filtroPrioridad) {
-
-                    filtroPrioridad.selectedIndex =
-                        0;
-
-                }
-
+                limpiarFiltrosPartes();
 
                 paginaActual = 1;
 
@@ -1141,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
        21. INICIALIZACIÓN
     ========================================================= */
 
+    memoriaFiltros.restaurar();
     mostrarPartes();
 
 

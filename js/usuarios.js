@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 mostrarMensajeGeneral(
                     formulario,
-                    'Hay campos obligatorios sin completar o con un formato incorrecto. Revisa los campos marcados en rojo.'
+                    'El formulario contiene errores. Revísalos antes de enviarlo.'
                 );
 
                 const mensajeGeneral = formulario.querySelector('#form-error-general');
@@ -2099,6 +2099,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 motivoDesactivarUsuario.focus();
 
+            }
+
+        });
+
+        motivoDesactivarUsuario.addEventListener('blur', () => {
+
+            // Al salir sin elegir, mismo aviso que al enviar.
+            if (motivoDesactivarUsuario.value === '') {
+                motivoDesactivarUsuario.classList.add('input-error');
+                const contenedorError = document.getElementById('error-motivoDesactivarUsuario');
+                if (contenedorError) {
+                    contenedorError.textContent = 'Debes seleccionar un motivo.';
+                }
             }
 
         });

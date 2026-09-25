@@ -125,10 +125,7 @@ if (validarCIF($cif)) {
 
 if (!empty($errores)) {
 
-    $mensajes = array_unique(array_column($errores, 'mensaje'));
-    $primerCampo = array_values(array_filter(array_column($errores, 'campo')))[0] ?? null;
-
-    establecerErrorFormulario(implode(' ', $mensajes), $_POST, 'crear_comercializadora.php', $primerCampo);
+    establecerErroresFormulario($errores, $_POST, 'crear_comercializadora.php');
 
 }
 
@@ -285,11 +282,6 @@ registrarLog(
                         <div class="usuario-detalle-item">
                             <span>Nombre</span>
                             <strong><?= htmlspecialchars($comercializadora['nombre']) ?></strong>
-                        </div>
-
-                        <div class="usuario-detalle-item">
-                            <span>ID</span>
-                            <strong><?= htmlspecialchars($comercializadora['id']) ?></strong>
                         </div>
 
                         <div class="usuario-detalle-item">

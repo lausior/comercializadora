@@ -50,11 +50,16 @@ $stmtUsuario = $pdo->prepare("
         u.nombre,
         u.apellidos,
         u.creado_por,
+        u.id_empresa,
+        r.nombre AS rol,
         e.codigo_empresa
     FROM usuarios u
 
     INNER JOIN empresas e
         ON u.id_empresa = e.id
+
+    INNER JOIN roles r
+        ON r.id = u.id_rol
 
     WHERE u.id = ?
 ");
@@ -97,7 +102,7 @@ if (!$usuario) {
 //
 // =====================================================
 
-if (!puedeVerUsuario($usuario['creado_por'] !== null ? (int) $usuario['creado_por'] : null)) {
+if (!puedeVerUsuario($usuario)) {
 
     die('
         <h2>Error</h2>

@@ -27,7 +27,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function aplicarEstadoSegunTamano() {
 
         if (esMovil()) {
-            document.body.classList.add('sidebar-collapsed');
+            const colapsado = localStorage.getItem('sidebarCollapsed');
+            document.body.classList.toggle(
+                'sidebar-collapsed',
+                colapsado === null ? true : colapsado === 'true'
+            );
             return;
         }
 
@@ -62,10 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     resizer.addEventListener('click', function () {
 
-        if (esMovil()) {
-            return;
-        }
-
         const comprimido = document.body.classList.toggle('sidebar-collapsed');
 
         localStorage.setItem('sidebarCollapsed', comprimido ? 'true' : 'false');
@@ -79,14 +79,22 @@ document.addEventListener('DOMContentLoaded', function () {
  * Submenú de Ayuda (Acerca de / Manual de usuario)
  */
 
-const ayudaToggle = document.getElementById('ayuda-toggle');
-const ayudaSubmenu = document.getElementById('ayuda-submenu');
+document.addEventListener('DOMContentLoaded', function () {
+    const ayudaToggle = document.getElementById('ayuda-toggle');
+    const ayudaSubmenu = document.getElementById('ayuda-submenu');
 
-if (ayudaToggle && ayudaSubmenu) {
+    if (ayudaToggle && ayudaSubmenu) {
+        const actualizarEstadoAyuda = function () {
+            const abierto = ayudaSubmenu.classList.contains('open');
+            ayudaToggle.classList.toggle('open', abierto);
+            ayudaToggle.setAttribute('aria-expanded', String(abierto));
+        };
 
-    ayudaToggle.addEventListener('click', function () {
-        ayudaToggle.classList.toggle('open');
-        ayudaSubmenu.classList.toggle('open');
-    });
+        ayudaToggle.addEventListener('click', function () {
+            ayudaSubmenu.classList.toggle('open');
+            actualizarEstadoAyuda();
+        });
 
-}
+        actualizarEstadoAyuda();
+    }
+});

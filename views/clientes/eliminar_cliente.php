@@ -72,7 +72,6 @@ if ($id <= 0) {
 
 $stmtCliente = $pdo->prepare("
     SELECT
-        id,
         nombre,
         apellidos,
         nif,
@@ -160,7 +159,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
             [
                 'titulo' => 'Datos del cliente',
                 'campos' => [
-                    ['ID de cliente', $cliente['id']],
                     ['DNI/NIE', $cliente['nif']],
                     ['Email', $cliente['email']],
                     ['Teléfono', $cliente['telefono']],
@@ -264,14 +262,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
                 <div class="form-info registration-success">
 
                     <p>
-
                         El cliente
-
                         <strong>
                             <?= htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']) ?>
-                        </strong>
-
-                        ha sido eliminado correctamente.
+                        </strong> ha sido eliminado correctamente.
 
                     </p>
 
@@ -282,57 +276,32 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
 
 
                     <p>
-
-                        ID de cliente:
-
-                        <strong>
-                            <?= htmlspecialchars($cliente['id']) ?>
-                        </strong>
-
-                    </p>
-
-
-                    <p>
-
-                        DNI/NIE:
-
+                         DNI/NIE:
                         <strong>
                             <?= htmlspecialchars($cliente['nif']) ?>
                         </strong>
 
                     </p>
 
-
                     <p>
-
                         Email:
-
                         <strong>
                             <?= htmlspecialchars($cliente['email']) ?>
                         </strong>
-
                     </p>
 
-
                     <p>
-
                         Teléfono:
-
                         <strong>
                             <?= htmlspecialchars($cliente['telefono'] ?? 'No indicado') ?>
                         </strong>
-
                     </p>
 
-
                     <p>
-
                         Dirección:
-
                         <strong>
                             <?= htmlspecialchars($cliente['direccion'] ?? 'No indicado') ?>
                         </strong>
-
                     </p>
 
 

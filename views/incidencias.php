@@ -5,6 +5,8 @@ session_start();
 require_once __DIR__ . '/../config/permisos.php';
 requerirPermiso('incidencias');
 
+require_once __DIR__ . '/../includes/filtro_multiselect.php';
+
 ?>
 <!DOCTYPE html>
 
@@ -237,18 +239,7 @@ requerirPermiso('incidencias');
                     Estado
                 </label>
 
-                <select
-                    id="filtroEstado"
-                    class="planner-select"
-                >
-
-                    <option>Todos los estados</option>
-                    <option>Pendiente</option>
-                    <option>En curso</option>
-                    <option>Resuelta</option>
-                    <option>Cerrada</option>
-
-                </select>
+                <?php filtroMultiSelect('filtroEstado', 0, 'Todos los estados', ['Pendiente', 'En curso', 'Resuelta', 'Cerrada']); ?>
 
             </div>
 
@@ -259,17 +250,7 @@ requerirPermiso('incidencias');
                     Prioridad
                 </label>
 
-                <select
-                    id="filtroPrioridad"
-                    class="planner-select"
-                >
-
-                    <option>Todas las prioridades</option>
-                    <option>Alta</option>
-                    <option>Media</option>
-                    <option>Baja</option>
-
-                </select>
+                <?php filtroMultiSelect('filtroPrioridad', 1, 'Todas las prioridades', ['Alta', 'Media', 'Baja']); ?>
 
             </div>
 
@@ -280,17 +261,7 @@ requerirPermiso('incidencias');
                     Responsable
                 </label>
 
-                <select
-                    id="filtroResponsable"
-                    class="planner-select"
-                >
-
-                    <option>Todos</option>
-                    <option>Administrador</option>
-                    <option>Juan García</option>
-                    <option>María López</option>
-
-                </select>
+                <?php filtroMultiSelect('filtroResponsable', 2, 'Todos', ['Administrador', 'Juan García', 'María López']); ?>
 
             </div>
 
@@ -1059,6 +1030,7 @@ requerirPermiso('incidencias');
 
 <?php include '../templates/footer.php'; ?>
 
+<script src="../js/multi-select-filter.js"></script>
 <script src="../js/incidencias.js"></script>
 
 </body>

@@ -98,22 +98,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ? window.obtenerSeleccionMultiFiltro(filtroEstado).map(normalizar)
             : [];
 
-        const responsableBuscado = filtroResponsable
-            ? normalizar(filtroResponsable.value)
-            : '';
+        const responsablesSeleccionados = filtroResponsable
+            ? window.obtenerSeleccionMultiFiltro(filtroResponsable).map(normalizar)
+            : [];
 
+        // Mismo criterio que los filtros de Usuarios: dentro de
+        // un filtro vale CUALQUIERA de las opciones marcadas;
+        // entre filtros, deben cumplirse todos.
         function coincide(elemento) {
 
             const estado = normalizar(elemento.dataset.estado || '');
-            const responsable = normalizar(elemento.dataset.responsable || '');
+            const responsable = normalizar(elemento.dataset.responsable || '') || 'sin responsable';
 
             const coincideEstado =
                 estadosSeleccionados.length === 0 ||
                 estadosSeleccionados.includes(estado);
 
             const coincideResponsable =
-                responsableBuscado === '' ||
-                responsable.includes(responsableBuscado);
+                responsablesSeleccionados.length === 0 ||
+                responsablesSeleccionados.includes(responsable);
 
             return coincideEstado && coincideResponsable;
 
@@ -125,12 +128,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    if (filtroEstado) {
-        filtroEstado.addEventListener('change', aplicarFiltrosPlanificador);
+    const filtrosPlanificador = [filtroEstado, filtroResponsable].filter(Boolean);
+
+    if (filtrosPlanificador.length > 0 && typeof window.crearMemoriaFiltros === 'function') {
+
+        // Recordar los filtros al cambiar de mes o volver de
+        // crear/editar una tarea (la página se recarga).
+        const memoriaFiltros = window.crearMemoriaFiltros('filtrosPlanificador', filtrosPlanificador);
+
+        filtrosPlanificador.forEach(filtro => {
+            filtro.addEventListener('change', () => {
+                memoriaFiltros.guardar();
+                aplicarFiltrosPlanificador();
+            });
+        });
+
+        const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
+
+        if (btnLimpiarFiltros) {
+            btnLimpiarFiltros.addEventListener('click', () => {
+                filtrosPlanificador.forEach(filtro => window.limpiarMultiFiltro(filtro));
+                memoriaFiltros.olvidar();
+                aplicarFiltrosPlanificador();
+            });
+        }
+
+        memoriaFiltros.restaurar();
+        aplicarFiltrosPlanificador();
+
     }
 
-    if (filtroResponsable) {
-        filtroResponsable.addEventListener('input', aplicarFiltrosPlanificador);
+
+    /* =========================================================
+       03. FORMULARIO CREAR / EDITAR TAREA
+       Mismas reglas que validarDatosTarea() (includes/
+       tareas.php). Usa js/validacion-formulario.js.
+    ========================================================= */
+
+    const formularioTarea = document.querySelector(
+        'form[action="guardar_tarea.php"], form[action="actualizar_tarea.php"]'
+    );
+
+    if (formularioTarea && typeof inicializarValidacionFormulario === 'function') {
+
+        const obligatorio = mensaje => valor => valor === '' ? mensaje : null;
+
+        inicializarValidacionFormulario(formularioTarea, {
+
+            titulo: valor => {
+                if (valor === '') return 'Este campo es obligatorio.';
+                if (valor.length > 150) return 'No puede superar los 150 caracteres.';
+                return null;
+            },
+
+            area: obligatorio('Selecciona un área.'),
+
+            fecha: (valor, input) => {
+                if (valor === '') return 'Selecciona una fecha.';
+                // Un <input type="date"> con fecha a medio escribir
+                // da value vacío pero badInput.
+                if (input.validity && input.validity.badInput) return 'Selecciona una fecha válida.';
+                return /^\d{4}-\d{2}-\d{2}$/.test(valor) ? null : 'Selecciona una fecha válida.';
+            },
+
+            hora: (valor, input) => {
+                if (input.validity && input.validity.badInput) return 'Introduce una hora válida.';
+                return valor === '' || /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(valor)
+                    ? null
+                    : 'Introduce una hora válida.';
+            },
+
+            responsable: valor => valor.length > 100 ? 'No puede superar los 100 caracteres.' : null,
+
+            estado: obligatorio('Selecciona un estado.')
+
+        });
+
     }
 
 });
